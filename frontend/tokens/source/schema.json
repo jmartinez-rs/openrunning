@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "./schema.json",
+  "title": "ATOS design tokens",
+  "description": "Single source of truth for ATOS design tokens. Modes are emitted as CSS custom properties scoped to :root (light) and .dark.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["meta", "global", "modes"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "description"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "modes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["light", "dark"],
+      "properties": {
+        "light": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "dark": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    }
+  }
+}

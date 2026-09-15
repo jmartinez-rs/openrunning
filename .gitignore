@@ -1,0 +1,33 @@
+# Python / Virtualenv
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Node / JS
+node_modules/
+dist/
+.output/
+.tanstack/
+bun.lockb
+
+# Environment & Storage
+.env
+*.local
+storage/
+*.fit
+*.gpx
+
+# IDEs & System
+.idea/
+.vscode/
+.DS_Store
+*.swp

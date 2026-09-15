@@ -1,0 +1,93 @@
+name: openrunning
+
+x-backend-environment: &backend-environment
+  PROJECT_NAME: ${PROJECT_NAME:-OpenRunning}
+  ENVIRONMENT: local
+  SECRET_KEY: ${SECRET_KEY:-openrunning-local-development-secret-key-32chars}
+  FIRST_SUPERUSER: ${FIRST_SUPERUSER:-admin@example.com}
+  FIRST_SUPERUSER_PASSWORD: ${FIRST_SUPERUSER_PASSWORD:-changethis}
+  FRONTEND_HOST: http://localhost:5173
+  BACKEND_CORS_ORIGINS: http://localhost:5173,http://localhost:8001
+  POSTGRES_SERVER: db
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: ${POSTGRES_DB:-openrunning_db}
+  POSTGRES_USER: ${POSTGRES_USER:-openrunning}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openrunning_dev_password}
+  STORAGE_PROVIDER: local
+  STORAGE_LOCAL_PATH: /app/storage
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-openrunning_db}
+      POSTGRES_USER: ${POSTGRES_USER:-openrunning}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openrunning_dev_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - openrunning-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.dev
+    restart: "no"
+    environment: *backend-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - openrunning-storage:/app/storage
+    command: ["bash", "scripts/prestart.sh"]
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.dev
+    restart: unless-stopped
+    environment: *backend-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./backend:/app/backend
+      - openrunning-storage:/app/storage
+    command: ["fastapi", "dev", "app/main.py", "--host", "0.0.0.0", "--port", "8000"]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/api/v1/utils/health-check/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.dev
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      VITE_API_URL: http://localhost:8001
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app/frontend
+      - openrunning-frontend-node-modules:/app/frontend/node_modules
+
+volumes:
+  openrunning-db-data:
+  openrunning-storage:
+  openrunning-frontend-node-modules:

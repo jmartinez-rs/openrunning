@@ -1,0 +1,755 @@
+{
+  "name": "Plan 10K Sub-60",
+  "goal": "Correr 10K en menos de 60 minutos",
+  "distance_km": 10.0,
+  "distance_unit": "km",
+  "target_time_seconds": 3540,
+  "target_pace_seconds_per_km": 355.0,
+  "start_date": "2026-08-04",
+  "end_date": "2026-09-13",
+  "status": "active",
+  "notes": "Plan de 6 semanas: construcción y velocidad, ritmo específico Sub-60 y puesta a punto para el 10K.",
+  "phases": [
+    {
+      "position": 1,
+      "name": "Construcción y Velocidad",
+      "color": "emerald",
+      "start_week": 1,
+      "end_week": 2,
+      "objective": "Acostumbrar al cuerpo a ritmos más rápidos que el objetivo (5:30–5:45 min/km) en bloques cortos para que correr a 5:55 min/km se sienta sostenible",
+      "description": "Semana adaptativa post 15K y arranque de la estructura fija (3 running + 2 gimnasio).",
+      "weeks": [
+        {
+          "number": 1,
+          "start_date": "2026-08-04",
+          "end_date": "2026-08-09",
+          "name": null,
+          "objective": "Semana adaptativa (post 15K): regenerativo, rodaje cómodo y fondo suave",
+          "notes": null,
+          "workouts": [
+            {
+              "date": "2026-08-04",
+              "type": "regeneration",
+              "objective": "Recuperación",
+              "name": "Trote súper suave",
+              "distance_km": null,
+              "duration_seconds": 1500,
+              "pace_seconds_per_km": null,
+              "intensity": "easy",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": "completed",
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 1500,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "25–30 min trote súper suave"
+                }
+              ]
+            },
+            {
+              "date": "2026-08-06",
+              "type": "easy_run",
+              "objective": "Rodaje cómodo",
+              "name": "Rodaje suave",
+              "distance_km": null,
+              "duration_seconds": 2100,
+              "pace_seconds_per_km": null,
+              "intensity": "easy",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": "completed",
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 2100,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "35–40 min ritmo cómodo"
+                }
+              ]
+            },
+            {
+              "date": "2026-08-08",
+              "type": "long_run",
+              "objective": "Fondo suave",
+              "name": "Fondo suave",
+              "distance_km": 7.5,
+              "duration_seconds": null,
+              "pace_seconds_per_km": null,
+              "intensity": "easy",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": "completed",
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 7500.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "7–8 km suave, buenas sensaciones"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "start_date": "2026-08-10",
+          "end_date": "2026-08-16",
+          "name": null,
+          "objective": "Introducir velocidad y comenzar el ritmo Sub-60",
+          "notes": null,
+          "workouts": [
+            {
+              "date": "2026-08-12",
+              "type": "easy_run",
+              "objective": "Rodaje cómodo",
+              "name": "Rodaje suave",
+              "distance_km": null,
+              "duration_seconds": 2400,
+              "pace_seconds_per_km": 410.0,
+              "intensity": "easy",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 2400,
+                  "pace_seconds_per_km": 410.0,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "40 min @ 6:50–7:00"
+                }
+              ]
+            },
+            {
+              "date": "2026-08-14",
+              "type": "intervals",
+              "objective": "Velocidad",
+              "name": "Pasadas 5 × 1 km",
+              "distance_km": 5.0,
+              "duration_seconds": null,
+              "pace_seconds_per_km": null,
+              "intensity": "hard",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 600,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "10' entrada en calor"
+                },
+                {
+                  "position": 2,
+                  "block_type": "interval",
+                  "repeats": 5,
+                  "distance_m": 1000.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 340.0,
+                  "pace_range_end_seconds_per_km": 350.0,
+                  "recovery_seconds": 120,
+                  "recovery_type": "jog",
+                  "notes": "5 × 1 km @ 5:40–5:50, 2' recuperación trotando"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 300,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "5' afloje"
+                }
+              ]
+            },
+            {
+              "date": "2026-08-16",
+              "type": "long_run",
+              "objective": "Fondo progresivo",
+              "name": "Fondo progresivo",
+              "distance_km": 9.0,
+              "duration_seconds": null,
+              "pace_seconds_per_km": null,
+              "intensity": "moderate",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 6000.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 390.0,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "6 km @ 6:30"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 3000.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 360.0,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "3 km @ 6:00"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "position": 2,
+      "name": "Ritmo Específico de Carrera",
+      "color": "amber",
+      "start_week": 3,
+      "end_week": 4,
+      "objective": "Consolidar la resistencia a velocidad con bloques largos a ritmo Sub-60 (5:50–5:58 min/km)",
+      "description": "Semanas centrales: bloques largos exactamente a ritmo de carrera y simulacro.",
+      "weeks": [
+        {
+          "number": 3,
+          "start_date": "2026-08-17",
+          "end_date": "2026-08-23",
+          "name": null,
+          "objective": "Consolidar ritmo Sub-60",
+          "notes": null,
+          "workouts": [
+            {
+              "date": "2026-08-19",
+              "type": "easy_run",
+              "objective": "Rodaje cómodo",
+              "name": "Rodaje suave",
+              "distance_km": null,
+              "duration_seconds": 2400,
+              "pace_seconds_per_km": 410.0,
+              "intensity": "easy",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 2400,
+                  "pace_seconds_per_km": 410.0,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "40 min @ 6:50"
+                }
+              ]
+            },
+            {
+              "date": "2026-08-21",
+              "type": "tempo",
+              "objective": "Ritmo específico",
+              "name": "3 × 2 km @ 5:50",
+              "distance_km": 6.0,
+              "duration_seconds": null,
+              "pace_seconds_per_km": null,
+              "intensity": "hard",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 600,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "10' entrada en calor"
+                },
+                {
+                  "position": 2,
+                  "block_type": "interval",
+                  "repeats": 3,
+                  "distance_m": 2000.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 350.0,
+                  "pace_range_end_seconds_per_km": 355.0,
+                  "recovery_seconds": 180,
+                  "recovery_type": "jog",
+                  "notes": "3 × 2 km @ 5:50–5:55, 3' trote"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 300,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "5' afloje"
+                }
+              ]
+            },
+            {
+              "date": "2026-08-23",
+              "type": "long_run",
+              "objective": "Fondo",
+              "name": "Fondo 11 km",
+              "distance_km": 11.0,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 385.0,
+              "intensity": "moderate",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 11000.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 385.0,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "11 km @ 6:20–6:30"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "start_date": "2026-08-24",
+          "end_date": "2026-08-30",
+          "name": null,
+          "objective": "Simulacro de carrera Sub-60",
+          "notes": null,
+          "workouts": [
+            {
+              "date": "2026-08-26",
+              "type": "easy_run",
+              "objective": "Rodaje suave",
+              "name": "Rodaje suave",
+              "distance_km": null,
+              "duration_seconds": 2100,
+              "pace_seconds_per_km": null,
+              "intensity": "easy",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 2100,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "35 min"
+                }
+              ]
+            },
+            {
+              "date": "2026-08-28",
+              "type": "test",
+              "objective": "Simulacro",
+              "name": "Simulacro 10K",
+              "distance_km": 6.0,
+              "duration_seconds": null,
+              "pace_seconds_per_km": null,
+              "intensity": "hard",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 600,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "10' entrada en calor"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 4000.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 355.0,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "4 km @ 5:55"
+                },
+                {
+                  "position": 3,
+                  "block_type": "recovery",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 180,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "3' pausa"
+                },
+                {
+                  "position": 4,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 2000.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 350.0,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "2 km @ 5:50"
+                },
+                {
+                  "position": 5,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 300,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "5' afloje"
+                }
+              ]
+            },
+            {
+              "date": "2026-08-30",
+              "type": "long_run",
+              "objective": "Fondo progresivo",
+              "name": "Fondo progresivo",
+              "distance_km": 11.5,
+              "duration_seconds": null,
+              "pace_seconds_per_km": null,
+              "intensity": "moderate",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 11500.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "11–12 km suave progresivo"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "position": 3,
+      "name": "Puesta a Punto y Descarga",
+      "color": "red",
+      "start_week": 5,
+      "end_week": 6,
+      "objective": "Llegar al pico de forma, bajar el volumen para limpiar la fatiga muscular y llegar con las piernas volando a carrera",
+      "description": "Descarga progresiva y activación previa a la carrera.",
+      "weeks": [
+        {
+          "number": 5,
+          "start_date": "2026-08-31",
+          "end_date": "2026-09-06",
+          "name": null,
+          "objective": "Puesta a punto",
+          "notes": null,
+          "workouts": [
+            {
+              "date": "2026-09-02",
+              "type": "easy_run",
+              "objective": "Rodaje suave",
+              "name": "Rodaje suave",
+              "distance_km": null,
+              "duration_seconds": 2100,
+              "pace_seconds_per_km": null,
+              "intensity": "easy",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 2100,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "35 min"
+                }
+              ]
+            },
+            {
+              "date": "2026-09-04",
+              "type": "intervals",
+              "objective": "Velocidad",
+              "name": "4 × 1 km @ 5:45",
+              "distance_km": 4.0,
+              "duration_seconds": null,
+              "pace_seconds_per_km": null,
+              "intensity": "hard",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 600,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "10' entrada en calor"
+                },
+                {
+                  "position": 2,
+                  "block_type": "interval",
+                  "repeats": 4,
+                  "distance_m": 1000.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 345.0,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": 120,
+                  "recovery_type": "jog",
+                  "notes": "4 × 1 km @ 5:45, 2' recuperación"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 300,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "5' afloje"
+                }
+              ]
+            },
+            {
+              "date": "2026-09-06",
+              "type": "long_run",
+              "objective": "Fondo suave",
+              "name": "Fondo suave",
+              "distance_km": 7.0,
+              "duration_seconds": null,
+              "pace_seconds_per_km": null,
+              "intensity": "easy",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 7000.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "7 km suave"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "start_date": "2026-09-07",
+          "end_date": "2026-09-13",
+          "name": null,
+          "objective": "Descarga y carrera",
+          "notes": null,
+          "workouts": [
+            {
+              "date": "2026-09-09",
+              "type": "activation",
+              "objective": "Activación",
+              "name": "Activación previa",
+              "distance_km": null,
+              "duration_seconds": 1800,
+              "pace_seconds_per_km": null,
+              "intensity": "easy",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 1800,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "30' suave"
+                },
+                {
+                  "position": 2,
+                  "block_type": "strides",
+                  "repeats": 4,
+                  "distance_m": 80.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "4 × 80 m progresiones"
+                }
+              ]
+            },
+            {
+              "date": "2026-09-11",
+              "type": "regeneration",
+              "objective": "Recuperación",
+              "name": "Regenerativo",
+              "distance_km": null,
+              "duration_seconds": 1200,
+              "pace_seconds_per_km": null,
+              "intensity": "easy",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": null,
+                  "duration_seconds": 1200,
+                  "pace_seconds_per_km": null,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "20' + estiramientos"
+                }
+              ]
+            },
+            {
+              "date": "2026-09-13",
+              "type": "race",
+              "objective": "Carrera objetivo",
+              "name": "10K Palermo",
+              "distance_km": 10.0,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 355.0,
+              "intensity": "hard",
+              "description": null,
+              "notes": null,
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 10000.0,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 355.0,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": null,
+                  "notes": "10K objetivo Sub-60"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
