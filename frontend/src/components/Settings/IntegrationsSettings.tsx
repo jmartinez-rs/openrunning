@@ -24,20 +24,12 @@ export function IntegrationsSettings() {
   }, [showSuccessToast, showErrorToast])
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h3 className="text-title-lg text-primary">Integraciones</h3>
-        <p className="text-body-md text-on-surface-variant">
-          Conectá tu cuenta de Strava para sincronizar tus carreras automáticamente.
-        </p>
-      </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <StravaIntegration />
-        <HevyIntegration />
-      </div>
+    <>
+      <StravaIntegration />
+      <HevyIntegration />
       <SyncManager />
       <SyncScheduleSettings />
       <SyncLog />
-    </div>
+    </>
   )
 }

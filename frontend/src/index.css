@@ -143,3 +143,99 @@
     cursor: pointer;
   }
 }
+
+/* ── Running Heatmap (ported from OpenGym) ─────────────────────────── */
+.hm-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.hm-wrap::-webkit-scrollbar {
+  display: none;
+}
+.hm-months {
+  display: flex;
+  margin-left: 28px;
+  margin-bottom: 5px;
+}
+.hm-mo {
+  flex: none;
+  width: 14px;
+  font-size: 11px;
+  color: hsl(var(--on-surface-variant));
+  white-space: nowrap;
+  overflow: visible;
+}
+.hm-body {
+  display: flex;
+}
+.hm-days {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: none;
+  width: 28px;
+}
+.hm-days span {
+  height: 11px;
+  font-size: 10px;
+  color: hsl(var(--on-surface-variant));
+  line-height: 11px;
+}
+.hm-grid {
+  display: flex;
+  gap: 3px;
+}
+.hm-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hm-c {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: hsl(var(--surface-variant));
+  flex: none;
+  cursor: default;
+}
+.hm-c.l1 {
+  background: color-mix(in srgb, var(--domain-cardio) 30%, hsl(var(--surface-variant)));
+}
+.hm-c.l2 {
+  background: color-mix(in srgb, var(--domain-cardio) 55%, hsl(var(--surface-variant)));
+}
+.hm-c.l3 {
+  background: color-mix(in srgb, var(--domain-cardio) 78%, hsl(var(--surface-variant)));
+}
+.hm-c.l4 {
+  background: var(--domain-cardio);
+}
+.hm-c.today {
+  box-shadow: 0 0 0 1.5px var(--domain-cardio);
+}
+.hm-c.future {
+  opacity: 0.3;
+}
+.hm-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+  margin-top: 9px;
+  font-size: 11px;
+  color: hsl(var(--on-surface-variant));
+}
+.hm-legend .hm-c {
+  width: 10px;
+  height: 10px;
+}
+
+@media (min-width: 1024px) {
+  .hm-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}

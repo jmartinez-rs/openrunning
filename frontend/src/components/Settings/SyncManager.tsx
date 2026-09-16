@@ -2,14 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Loader2, RefreshCw } from "lucide-react"
 
 import { SyncService } from "@/client"
+import { SettingsRow } from "./SettingsSection"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
@@ -48,41 +42,45 @@ export function SyncManager() {
   const syncing = stravaSync.isPending || hevySync.isPending
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Sincronización manual</CardTitle>
-        <CardDescription>
-          Forzá la importación de actividades desde cada proveedor.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-wrap items-center gap-3">
+    <SettingsRow
+      icon={RefreshCw}
+      iconBg="bg-blue-500/15"
+      iconColor="text-blue-400"
+      title="Sincronizar ahora"
+      subtitle="Ejecutar importación inmediata de actividades"
+    >
+      <div className="flex items-center gap-2">
         <Button
           type="button"
           variant="outline"
+          size="sm"
           disabled={syncing}
           onClick={() => stravaSync.mutate()}
+          className="h-8 rounded-xl border-slate-800 text-xs text-slate-300"
         >
           {stravaSync.isPending ? (
-            <Loader2 className="mr-2 size-4 animate-spin" />
+            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
           ) : (
-            <RefreshCw className="mr-2 size-4" />
+            <RefreshCw className="mr-1.5 size-3.5" />
           )}
-          Sincronizar Strava
+          Strava
         </Button>
         <Button
           type="button"
           variant="outline"
+          size="sm"
           disabled={syncing}
           onClick={() => hevySync.mutate()}
+          className="h-8 rounded-xl border-slate-800 text-xs text-slate-300"
         >
           {hevySync.isPending ? (
-            <Loader2 className="mr-2 size-4 animate-spin" />
+            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
           ) : (
-            <RefreshCw className="mr-2 size-4" />
+            <RefreshCw className="mr-1.5 size-3.5" />
           )}
-          Sincronizar Hevy
+          Hevy
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </SettingsRow>
   )
 }

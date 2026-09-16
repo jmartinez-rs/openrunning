@@ -1,16 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
-import { History } from "lucide-react"
+import { History, Loader2 } from "lucide-react"
 
-import { type SyncLogPublic, SyncService } from "@/client"
-import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { SyncService } from "@/client"
+import { SettingsRow } from "./SettingsSection"
+import { cn } from "@/lib/utils"
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("es-AR", {
@@ -21,64 +14,67 @@ function formatDateTime(value: string) {
   }).format(new Date(value))
 }
 
-function statusBadge(status: string) {
-  if (status === "success")
-    return <Badge className="bg-domain-success">Éxito</Badge>
-  if (status === "partial") return <Badge variant="secondary">Parcial</Badge>
-  if (status === "running") return <Badge variant="outline">En curso</Badge>
-  return <Badge variant="destructive">Error</Badge>
-}
-
 export function SyncLog() {
   const logsQuery = useQuery({
     queryKey: ["sync-logs"],
-    queryFn: () => SyncService.readSyncLogs({ limit: 10 }),
+    queryFn: () => SyncService.readSyncLogs({ limit: 1 }),
   })
 
+  if (logsQuery.isLoading) {
+    return (
+      <SettingsRow
+        icon={History}
+        iconBg="bg-slate-800/80"
+        iconColor="text-slate-400"
+        title="Última sincronización"
+        subtitle="Cargando historial..."
+        value={<Loader2 className="size-4 animate-spin text-slate-500" />}
+      />
+    )
+  }
+
+  const latest = logsQuery.data?.data?.[0]
+
+  if (!latest) {
+    return (
+      <SettingsRow
+        icon={History}
+        iconBg="bg-slate-800/80"
+        iconColor="text-slate-400"
+        title="Última sincronización"
+        subtitle="Sin registros aún"
+      />
+    )
+  }
+
+  const providerName =
+    latest.provider.charAt(0).toUpperCase() + latest.provider.slice(1)
+  const detailsMsg = String(latest.details?.message ?? "Sincronizado")
+  const subtitle = `${providerName} · ${detailsMsg} · ${formatDateTime(latest.started_at)}`
+  const isSuccess = latest.status === "success"
+  const isRunning = latest.status === "running"
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Historial de sincronización</CardTitle>
-        <CardDescription>
-          Últimas ejecuciones de sync por proveedor.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {logsQuery.isLoading ? (
-          <div className="flex flex-col gap-3">
-            {Array.from({ length: 3 }, (_, index) => (
-              <Skeleton className="h-12 w-full" key={index} />
-            ))}
-          </div>
-        ) : logsQuery.data?.data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <History className="mb-2 size-6 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Todavía no hay sincronizaciones registradas.
-            </p>
-          </div>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {(logsQuery.data?.data ?? []).map((log: SyncLogPublic) => (
-              <li
-                key={log.id}
-                className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium capitalize">
-                    {log.provider}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {String(log.details?.message ?? "")} ·{" "}
-                    {formatDateTime(log.started_at)}
-                  </p>
-                </div>
-                {statusBadge(log.status)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+    <SettingsRow
+      icon={History}
+      iconBg="bg-slate-800/80"
+      iconColor="text-slate-300"
+      title="Última sincronización"
+      subtitle={subtitle}
+      value={
+        <span
+          className={cn(
+            "rounded-md border px-2 py-0.5 text-xs font-semibold",
+            isSuccess
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+              : isRunning
+                ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
+                : "border-red-500/30 bg-red-500/10 text-red-400",
+          )}
+        >
+          {isSuccess ? "Éxito" : isRunning ? "En curso" : "Error"}
+        </span>
+      }
+    />
   )
 }

@@ -1,18 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Loader2, Target } from "lucide-react"
+import { Dumbbell, Footprints, HeartPulse, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { SettingsService } from "@/client"
+import { SettingsRow } from "./SettingsSection"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
@@ -62,73 +55,79 @@ export function WeeklyGoals() {
   })
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Target className="size-5" />
-          </div>
-          <div>
-            <CardTitle>Metas semanales</CardTitle>
-            <CardDescription>
-              Objetivos por defecto para comparar con tu rendimiento.
-            </CardDescription>
-          </div>
+    <div className="space-y-2">
+      <SettingsRow
+        icon={Footprints}
+        iconBg="bg-emerald-500/15"
+        iconColor="text-emerald-400"
+        title="Distancia semanal objetivo"
+        subtitle="Kilómetros de carrera planeados por semana"
+      >
+        <div className="flex items-center gap-1.5">
+          <Input
+            type="number"
+            step="0.1"
+            className="w-24 h-8 rounded-xl border-slate-800 bg-slate-950 text-xs text-center text-slate-200"
+            value={targetKm}
+            onChange={(e) => setTargetKm(e.target.value)}
+            placeholder="Ej: 30"
+          />
+          <span className="text-xs text-slate-400 font-medium">km</span>
         </div>
-      </CardHeader>
-      <CardContent>
-        {goalsQuery.isLoading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="goal-km">Kilómetros por semana</Label>
-              <Input
-                id="goal-km"
-                type="number"
-                step="0.1"
-                value={targetKm}
-                onChange={(e) => setTargetKm(e.target.value)}
-                placeholder="Ej: 30"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="goal-gym">Días de gimnasio</Label>
-              <Input
-                id="goal-gym"
-                type="number"
-                value={targetGymDays}
-                onChange={(e) => setTargetGymDays(e.target.value)}
-                placeholder="Ej: 3"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="goal-cardio">Minutos de cardio</Label>
-              <Input
-                id="goal-cardio"
-                type="number"
-                value={targetCardioMinutes}
-                onChange={(e) => setTargetCardioMinutes(e.target.value)}
-                placeholder="Ej: 150"
-              />
-            </div>
-            <div className="sm:col-span-3">
-              <Button
-                type="button"
-                disabled={mutation.isPending}
-                onClick={() => mutation.mutate()}
-              >
-                {mutation.isPending && (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                )}
-                Guardar metas
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </SettingsRow>
+
+      <SettingsRow
+        icon={Dumbbell}
+        iconBg="bg-purple-500/15"
+        iconColor="text-purple-400"
+        title="Días de gimnasio objetivo"
+        subtitle="Sesiones de fuerza semanales"
+      >
+        <div className="flex items-center gap-1.5">
+          <Input
+            type="number"
+            className="w-24 h-8 rounded-xl border-slate-800 bg-slate-950 text-xs text-center text-slate-200"
+            value={targetGymDays}
+            onChange={(e) => setTargetGymDays(e.target.value)}
+            placeholder="Ej: 3"
+          />
+          <span className="text-xs text-slate-400 font-medium">días</span>
+        </div>
+      </SettingsRow>
+
+      <SettingsRow
+        icon={HeartPulse}
+        iconBg="bg-rose-500/15"
+        iconColor="text-rose-400"
+        title="Minutos de cardio objetivo"
+        subtitle="Tiempo total de cardio acumulado por semana"
+      >
+        <div className="flex items-center gap-1.5">
+          <Input
+            type="number"
+            className="w-24 h-8 rounded-xl border-slate-800 bg-slate-950 text-xs text-center text-slate-200"
+            value={targetCardioMinutes}
+            onChange={(e) => setTargetCardioMinutes(e.target.value)}
+            placeholder="Ej: 150"
+          />
+          <span className="text-xs text-slate-400 font-medium">min</span>
+        </div>
+      </SettingsRow>
+
+      <div className="pt-2 flex justify-end">
+        <Button
+          type="button"
+          size="sm"
+          disabled={mutation.isPending}
+          onClick={() => mutation.mutate()}
+          className="rounded-xl bg-emerald-500 text-slate-950 font-semibold text-xs hover:bg-emerald-400"
+        >
+          {mutation.isPending && (
+            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+          )}
+          Guardar metas
+        </Button>
+      </div>
+    </div>
   )
 }

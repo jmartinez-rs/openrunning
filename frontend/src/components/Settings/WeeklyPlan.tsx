@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { CalendarDays } from "lucide-react"
+import { CalendarDays, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import {
@@ -8,15 +8,9 @@ import {
   RoutinesService,
   type TrainingPlanDayBase,
 } from "@/client"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { SettingsRow } from "./SettingsSection"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { LoadingButton } from "@/components/ui/loading-button"
 import {
   Select,
   SelectContent,
@@ -190,147 +184,107 @@ export function WeeklyPlan() {
   })
 
   const isLoading = planQuery.isLoading || routinesQuery.isLoading
-  const isError = planQuery.isError || routinesQuery.isError
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 7 }).map((_, index) => (
+          <Skeleton key={index} className="h-14 w-full rounded-xl bg-slate-900/60" />
+        ))}
+      </div>
+    )
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <CalendarDays className="size-5" />
-          </div>
-          <div>
-            <CardTitle>Plan semanal</CardTitle>
-            <CardDescription>
-              Armá la estructura semanal de entrenamiento.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <PlanSkeleton />
-        ) : isError ? (
-          <div className="flex flex-col items-center gap-3 rounded-lg border bg-muted/30 py-6 text-center">
-            <p className="text-sm font-medium">No se cargó el plan semanal</p>
-            <p className="text-xs text-muted-foreground">
-              Intentá de nuevo en unos segundos.
-            </p>
-            <LoadingButton
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                planQuery.refetch()
-                routinesQuery.refetch()
-              }}
-            >
-              Reintentar
-            </LoadingButton>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4">
-              {days.map((day) => (
-                <div
-                  key={day.weekday}
-                  className="grid grid-cols-[5.5rem_1fr] items-start gap-3 sm:grid-cols-[6.5rem_1fr]"
-                >
-                  <div className="pt-2 text-sm font-medium">
-                    {WEEKDAY_LABELS[day.weekday - 1]}
-                  </div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                    <Select
-                      value={day.kind}
-                      onValueChange={(value) =>
-                        handleKindChange(day.weekday, value as DayKind)
-                      }
-                    >
-                      <SelectTrigger
-                        aria-label="Tipo de entrenamiento"
-                        className="w-full sm:w-36"
-                      >
-                        <SelectValue placeholder="Tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {KIND_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    {day.kind === "strength" && (
-                      <Select
-                        value={day.routineId ?? NO_ROUTINE_VALUE}
-                        onValueChange={(value) =>
-                          handleRoutineChange(day.weekday, value)
-                        }
-                      >
-                        <SelectTrigger
-                          aria-label="Rutina de Hevy"
-                          className="w-full sm:flex-1"
-                        >
-                          <SelectValue placeholder="Rutina" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={NO_ROUTINE_VALUE}>
-                            Sin rutina
-                          </SelectItem>
-                          {routinesQuery.data?.map((routine) => (
-                            <SelectItem key={routine.id} value={routine.id}>
-                              {routine.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-
-                    {day.kind !== "rest" && (
-                      <Input
-                        value={day.label}
-                        onChange={(event) =>
-                          handleLabelChange(day.weekday, event.target.value)
-                        }
-                        placeholder="Tempo, Fondo, Series…"
-                        className="w-full sm:flex-1"
-                        aria-label="Detalle de la sesión"
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <LoadingButton
-              loading={mutation.isPending}
-              onClick={() => mutation.mutate()}
-            >
-              Guardar semana
-            </LoadingButton>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-function PlanSkeleton() {
-  return (
-    <div className="flex flex-col gap-4">
-      {Array.from({ length: 7 }).map((_, index) => (
-        <div
-          key={index}
-          className="grid grid-cols-[5.5rem_1fr] items-start gap-3 sm:grid-cols-[6.5rem_1fr]"
+    <div className="space-y-2">
+      {days.map((day) => (
+        <SettingsRow
+          key={day.weekday}
+          icon={CalendarDays}
+          iconBg="bg-slate-800/80"
+          iconColor="text-slate-300"
+          title={WEEKDAY_LABELS[day.weekday - 1]}
+          subtitle={
+            day.kind === "rest"
+              ? "Día de descanso"
+              : day.label || (day.kind === "running" ? "Carrera" : "Sesión de fuerza")
+          }
         >
-          <Skeleton className="h-5 w-16" />
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Skeleton className="h-9 w-full sm:w-36" />
-            <Skeleton className="h-9 w-full sm:flex-1" />
-            <Skeleton className="h-9 w-full sm:flex-1" />
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={day.kind}
+              onValueChange={(value) =>
+                handleKindChange(day.weekday, value as DayKind)
+              }
+            >
+              <SelectTrigger
+                aria-label="Tipo de entrenamiento"
+                className="h-8 w-28 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+              >
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {KIND_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {day.kind === "strength" && (
+              <Select
+                value={day.routineId ?? NO_ROUTINE_VALUE}
+                onValueChange={(value) =>
+                  handleRoutineChange(day.weekday, value)
+                }
+              >
+                <SelectTrigger
+                  aria-label="Rutina de Hevy"
+                  className="h-8 w-32 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+                >
+                  <SelectValue placeholder="Rutina" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_ROUTINE_VALUE}>Sin rutina</SelectItem>
+                  {routinesQuery.data?.map((routine) => (
+                    <SelectItem key={routine.id} value={routine.id}>
+                      {routine.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {day.kind !== "rest" && (
+              <Input
+                value={day.label}
+                onChange={(event) =>
+                  handleLabelChange(day.weekday, event.target.value)
+                }
+                placeholder="Detalle..."
+                className="h-8 w-32 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+                aria-label="Detalle de la sesión"
+              />
+            )}
           </div>
-        </div>
+        </SettingsRow>
       ))}
+
+      <div className="pt-2 flex justify-end">
+        <Button
+          type="button"
+          size="sm"
+          disabled={mutation.isPending}
+          onClick={() => mutation.mutate()}
+          className="rounded-xl bg-emerald-500 text-slate-950 font-semibold text-xs hover:bg-emerald-400"
+        >
+          {mutation.isPending && (
+            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+          )}
+          Guardar semana
+        </Button>
+      </div>
     </div>
   )
 }

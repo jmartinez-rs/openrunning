@@ -3,15 +3,8 @@ import { Loader2, Plug, PlugZap, Unplug } from "lucide-react"
 import type { ReactNode } from "react"
 
 import { SettingsService } from "@/client"
-import { Badge } from "@/components/ui/badge"
+import { SettingsRow } from "./SettingsSection"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
@@ -67,45 +60,45 @@ export function IntegrationCard({
   const connected = statusQuery.data?.connected ?? false
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
-              {connected ? (
-                <PlugZap className="size-5 text-primary" />
-              ) : (
-                <Plug className="size-5 text-muted-foreground" />
-              )}
-            </div>
-            <div>
-              <CardTitle>{title}</CardTitle>
-              <CardDescription className="max-w-sm">
-                {description}
-              </CardDescription>
-            </div>
-          </div>
-          {statusQuery.isLoading ? (
-            <Loader2 className="size-4 animate-spin text-muted-foreground" />
+    <div className="space-y-2">
+      <SettingsRow
+        icon={connected ? PlugZap : Plug}
+        iconBg={connected ? "bg-emerald-500/15" : "bg-slate-800/80"}
+        iconColor={connected ? "text-emerald-400" : "text-slate-400"}
+        title={title}
+        subtitle={description}
+        value={
+          statusQuery.isLoading ? (
+            <Loader2 className="size-4 animate-spin text-slate-500" />
           ) : (
-            <Badge variant={connected ? "default" : "secondary"}>
+            <span
+              className={cn(
+                "rounded-md border px-2 py-0.5 text-xs font-semibold",
+                connected
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                  : "border-slate-800 bg-slate-900 text-slate-400",
+              )}
+            >
               {connected ? "Conectado" : "Desconectado"}
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+            </span>
+          )
+        }
+      />
+
+      <div className="px-4 py-3 space-y-3 bg-slate-950/40">
         {children}
 
-        <div className="flex flex-wrap items-center gap-2 pt-2">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           <Button
             type="button"
             variant="outline"
+            size="sm"
             disabled={testMutation.isPending}
             onClick={() => testMutation.mutate()}
+            className="rounded-xl border-slate-800 text-xs text-slate-300"
           >
             {testMutation.isPending && (
-              <Loader2 className="mr-2 size-4 animate-spin" />
+              <Loader2 className="mr-1.5 size-3.5 animate-spin" />
             )}
             Probar conexión
           </Button>
@@ -113,16 +106,17 @@ export function IntegrationCard({
             <Button
               type="button"
               variant="ghost"
-              className="text-destructive hover:text-destructive"
+              size="sm"
+              className="rounded-xl text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
               disabled={disconnectMutation.isPending}
               onClick={() => disconnectMutation.mutate()}
             >
-              <Unplug className={cn("mr-2 size-4")} />
+              <Unplug className="mr-1.5 size-3.5" />
               Desconectar
             </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

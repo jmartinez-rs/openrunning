@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { ExternalLink, Loader2 } from "lucide-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { ExternalLink, Footprints, Loader2, Unplug } from "lucide-react"
 import { useState } from "react"
 
 import {
@@ -7,27 +7,59 @@ import {
   SettingsService,
   type StravaCredentialsIn,
 } from "@/client"
+import { SettingsRow } from "./SettingsSection"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { PasswordInput } from "@/components/ui/password-input"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
-import { IntegrationCard } from "./IntegrationCard"
 
 export function StravaIntegration() {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const [showManualForm, setShowManualForm] = useState(false)
   const [clientId, setClientId] = useState("")
   const [clientSecret, setClientSecret] = useState("")
   const [accessToken, setAccessToken] = useState("")
   const [refreshToken, setRefreshToken] = useState("")
 
-  const mutation = useMutation({
+  const statusQuery = useQuery({
+    queryKey: ["integration-status", "strava"],
+    queryFn: () => SettingsService.readIntegrationStatus({ provider: "strava" }),
+  })
+
+  const saveMutation = useMutation({
     mutationFn: (data: StravaCredentialsIn) =>
       SettingsService.saveStravaCredentials({ requestBody: data }),
     onSuccess: () => {
       showSuccessToast("Credenciales de Strava guardadas")
+      queryClient.invalidateQueries({
+        queryKey: ["integration-status", "strava"],
+      })
+      setShowManualForm(false)
+    },
+    onError: handleError.bind(showErrorToast),
+  })
+
+  const testMutation = useMutation({
+    mutationFn: () => SettingsService.testIntegration({ provider: "strava" }),
+    onSuccess: (result) => {
+      if (result.success) {
+        showSuccessToast(result.message)
+      } else {
+        showErrorToast(result.message)
+      }
+      queryClient.invalidateQueries({
+        queryKey: ["integration-status", "strava"],
+      })
+    },
+    onError: handleError.bind(showErrorToast),
+  })
+
+  const disconnectMutation = useMutation({
+    mutationFn: () => SettingsService.disconnectIntegration({ provider: "strava" }),
+    onSuccess: () => {
+      showSuccessToast("Strava desconectado")
       queryClient.invalidateQueries({
         queryKey: ["integration-status", "strava"],
       })
@@ -48,9 +80,11 @@ export function StravaIntegration() {
     onError: handleError.bind(showErrorToast),
   })
 
+  const connected = statusQuery.data?.connected ?? false
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    mutation.mutate({
+    saveMutation.mutate({
       client_id: clientId || null,
       client_secret: clientSecret || null,
       access_token: accessToken || null,
@@ -59,99 +93,137 @@ export function StravaIntegration() {
   }
 
   return (
-    <IntegrationCard
-      provider="strava"
-      title="Strava"
-      description="Conectá tu cuenta para sincronizar tus salidas con el permiso correcto."
-    >
-      <div className="rounded-md border bg-muted/40 px-3 py-3">
-        <p className="text-sm font-medium">Conexión automática</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          La forma recomendada: te redirige a Strava para autorizar la app con
-          los scopes <code>activity:read</code> y <code>profile:read_all</code>.
-          Los tokens del panel de Strava siempre tienen solo <code>read</code>.
-        </p>
-        <Button
-          type="button"
-          className="mt-3 w-full"
-          disabled={oauthMutation.isPending}
-          onClick={() => oauthMutation.mutate()}
-        >
-          {oauthMutation.isPending ? (
-            <Loader2 className="mr-2 size-4 animate-spin" />
+    <>
+      <SettingsRow
+        icon={Footprints}
+        iconBg="bg-orange-500/15"
+        iconColor="text-orange-400"
+        title="Strava"
+        subtitle="Sincronizar carreras y actividades de cardio automáticamente"
+      >
+        <div className="flex items-center gap-2">
+          {statusQuery.isLoading ? (
+            <Loader2 className="size-4 animate-spin text-slate-500" />
+          ) : connected ? (
+            <>
+              <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-400">
+                Conectado
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={testMutation.isPending}
+                onClick={() => testMutation.mutate()}
+                className="h-8 rounded-xl border-slate-800 text-xs text-slate-300"
+              >
+                {testMutation.isPending && (
+                  <Loader2 className="mr-1 size-3 animate-spin" />
+                )}
+                Probar
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-xl text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                disabled={disconnectMutation.isPending}
+                onClick={() => disconnectMutation.mutate()}
+              >
+                <Unplug className="size-3.5" />
+              </Button>
+            </>
           ) : (
-            <ExternalLink className="mr-2 size-4" />
+            <Button
+              type="button"
+              size="sm"
+              disabled={oauthMutation.isPending}
+              onClick={() => oauthMutation.mutate()}
+              className="h-8 rounded-xl bg-orange-500 text-slate-950 font-semibold text-xs hover:bg-orange-400"
+            >
+              {oauthMutation.isPending ? (
+                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+              ) : (
+                <ExternalLink className="mr-1.5 size-3.5" />
+              )}
+              Conectar
+            </Button>
           )}
-          Conectar con Strava
-        </Button>
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          Requiere registrar la URL de redirección en tu app de Strava:
-          <code className="block break-all">
-            http://localhost:18000/api/v1/auth/strava/callback
-          </code>
-        </p>
-      </div>
 
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-xs text-muted-foreground">
-          o configuración manual
-        </span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="strava-client-id">Client ID</Label>
-            <Input
-              id="strava-client-id"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              placeholder="ID de la aplicación"
-              autoComplete="off"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="strava-client-secret">Client Secret</Label>
-            <PasswordInput
-              id="strava-client-secret"
-              value={clientSecret}
-              onChange={(e) => setClientSecret(e.target.value)}
-              placeholder="Secreto de la aplicación"
-              autoComplete="off"
-            />
-          </div>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="strava-access-token">Access Token</Label>
-          <PasswordInput
-            id="strava-access-token"
-            value={accessToken}
-            onChange={(e) => setAccessToken(e.target.value)}
-            placeholder="Token de acceso (opcional)"
-            autoComplete="off"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="strava-refresh-token">Refresh Token</Label>
-          <PasswordInput
-            id="strava-refresh-token"
-            value={refreshToken}
-            onChange={(e) => setRefreshToken(e.target.value)}
-            placeholder="Token de refresco (opcional)"
-            autoComplete="off"
-          />
-        </div>
-        <div className="pt-1">
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending && (
-              <Loader2 className="mr-2 size-4 animate-spin" />
-            )}
-            Guardar credenciales
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowManualForm(!showManualForm)}
+            className="h-8 px-2 text-xs text-slate-400 hover:text-slate-200"
+            title="Credenciales manuales"
+          >
+            {showManualForm ? "Cancelar" : "Manual"}
           </Button>
         </div>
-      </form>
-    </IntegrationCard>
+      </SettingsRow>
+
+      {showManualForm && (
+        <div className="p-4 bg-slate-950/60 border-t border-slate-800/60 space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400 font-medium">Client ID</label>
+                <Input
+                  value={clientId}
+                  onChange={(e) => setClientId(e.target.value)}
+                  placeholder="ID de aplicación"
+                  className="h-8 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400 font-medium">Client Secret</label>
+                <PasswordInput
+                  value={clientSecret}
+                  onChange={(e) => setClientSecret(e.target.value)}
+                  placeholder="Secreto de aplicación"
+                  className="h-8 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400 font-medium">Access Token</label>
+                <PasswordInput
+                  value={accessToken}
+                  onChange={(e) => setAccessToken(e.target.value)}
+                  placeholder="Access Token (opcional)"
+                  className="h-8 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400 font-medium">Refresh Token</label>
+                <PasswordInput
+                  value={refreshToken}
+                  onChange={(e) => setRefreshToken(e.target.value)}
+                  placeholder="Refresh Token (opcional)"
+                  className="h-8 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={saveMutation.isPending}
+                className="h-8 rounded-xl bg-orange-500 text-slate-950 font-semibold text-xs hover:bg-orange-400"
+              >
+                {saveMutation.isPending && (
+                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                )}
+                Guardar credenciales
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+    </>
   )
 }
