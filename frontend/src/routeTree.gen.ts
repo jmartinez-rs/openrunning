@@ -15,6 +15,7 @@ import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutToolsRouteImport } from './routes/_layout/tools'
 import { Route as LayoutActivitiesIndexRouteImport } from './routes/_layout/activities/index'
 import { Route as LayoutActivitiesActivityIdRouteImport } from './routes/_layout/activities/$activityId'
 import { Route as LayoutAnalyticsIndexRouteImport } from './routes/_layout/analytics/index'
@@ -56,6 +57,11 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutToolsRoute = LayoutToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutActivitiesIndexRoute = LayoutActivitiesIndexRouteImport.update({
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof LayoutSettingsRoute
+  '/tools': typeof LayoutToolsRoute
   '/activities/$activityId': typeof LayoutActivitiesActivityIdRoute
   '/analytics/cardio': typeof LayoutAnalyticsCardioRoute
   '/analytics/strength': typeof LayoutAnalyticsStrengthRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof LayoutSettingsRoute
+  '/tools': typeof LayoutToolsRoute
   '/': typeof LayoutIndexRoute
   '/activities/$activityId': typeof LayoutActivitiesActivityIdRoute
   '/analytics/cardio': typeof LayoutAnalyticsCardioRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_layout/settings': typeof LayoutSettingsRoute
+  '/_layout/tools': typeof LayoutToolsRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/activities/$activityId': typeof LayoutActivitiesActivityIdRoute
   '/_layout/analytics/cardio': typeof LayoutAnalyticsCardioRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/settings'
+    | '/tools'
     | '/activities/$activityId'
     | '/analytics/cardio'
     | '/analytics/strength'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/settings'
+    | '/tools'
     | '/'
     | '/activities/$activityId'
     | '/analytics/cardio'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/_layout/settings'
+    | '/_layout/tools'
     | '/_layout/'
     | '/_layout/activities/$activityId'
     | '/_layout/analytics/cardio'
@@ -300,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof LayoutSettingsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/tools': {
+      id: '/_layout/tools'
+      path: '/tools'
+      fullPath: '/tools'
+      preLoaderRoute: typeof LayoutToolsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/activities/': {
@@ -398,6 +417,7 @@ declare module '@tanstack/react-router' {
 
 interface LayoutRouteChildren {
   LayoutSettingsRoute: typeof LayoutSettingsRoute
+  LayoutToolsRoute: typeof LayoutToolsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutActivitiesActivityIdRoute: typeof LayoutActivitiesActivityIdRoute
   LayoutAnalyticsCardioRoute: typeof LayoutAnalyticsCardioRoute
@@ -416,6 +436,7 @@ interface LayoutRouteChildren {
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSettingsRoute: LayoutSettingsRoute,
+  LayoutToolsRoute: LayoutToolsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutActivitiesActivityIdRoute: LayoutActivitiesActivityIdRoute,
   LayoutAnalyticsCardioRoute: LayoutAnalyticsCardioRoute,

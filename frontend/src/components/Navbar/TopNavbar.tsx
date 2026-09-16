@@ -3,6 +3,7 @@ import { Link as RouterLink, useRouterState } from "@tanstack/react-router"
 import {
   BarChart3,
   Bell,
+  Calculator,
   CalendarDays,
   Flame,
   Footprints,
@@ -32,6 +33,7 @@ const navItems: Item[] = [
   { icon: Flame, title: "Planes", path: "/routines" },
   { icon: Trophy, title: "Carreras", path: "/races" },
   { icon: Footprints, title: "Calzado", path: "/shoes" },
+  { icon: Calculator, title: "Herramientas", path: "/tools" },
   { icon: BarChart3, title: "Analítica", path: "/analytics" },
   { icon: Settings2, title: "Configuración", path: "/settings" },
 ]
