@@ -1,7 +1,8 @@
 import uuid
 from datetime import date, datetime, time, timedelta
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
+from app.services.file_parser import parse_fit_file, parse_gpx_file
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select
 
@@ -196,3 +197,54 @@ def delete_activity(
     session.delete(activity)
     session.commit()
     return {"message": "Activity deleted successfully"}
+
+
+@router.post("/upload", response_model=ActivityPublic)
+async def upload_activity_file(
+    session: SessionDep,
+    current_user: CurrentUser,
+    file: UploadFile = File(...),
+) -> ActivityPublic:
+    """Sube y procesa un archivo GPS .gpx o .fit directamente."""
+    filename = file.filename or "carrera.gpx"
+    content = await file.read()
+
+    if filename.lower().endswith(".gpx"):
+        data = parse_gpx_file(content, filename)
+        source_type = "gpx_file"
+    elif filename.lower().endswith(".fit"):
+        data = parse_fit_file(content, filename)
+        source_type = "fit_file"
+    else:
+        raise HTTPException(
+            status_code=400, detail="Formato no soportado. Debe ser un archivo .gpx o .fit"
+        )
+
+    activity = Activity(
+        user_id=current_user.id,
+        name=data.name,
+        source_type=source_type,
+        timestamp=data.timestamp,
+        has_gps=data.polyline_str is not None,
+        duration_seconds=int(data.elapsed_time_seconds),
+    )
+    session.add(activity)
+    session.commit()
+    session.refresh(activity)
+
+    cardio = ActivityCardio(
+        activity_id=activity.id,
+        distance_meters=data.distance_meters,
+        elapsed_time_seconds=int(data.elapsed_time_seconds),
+        moving_time_seconds=int(data.moving_time_seconds),
+        avg_hr=data.avg_hr,
+        max_hr=data.max_hr,
+        elevation_gain=data.elevation_gain,
+        summary_polyline=data.polyline_str,
+    )
+    session.add(cardio)
+    session.commit()
+    session.refresh(cardio)
+
+    return _public_activity(activity, cardio)
+

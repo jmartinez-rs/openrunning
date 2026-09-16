@@ -1,11 +1,13 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   ChevronLeft,
   ChevronRight,
+  Loader2,
   RefreshCw,
   Search,
   SearchX,
+  Upload,
 } from "lucide-react"
 import { useState } from "react"
 
@@ -16,6 +18,7 @@ import { MiniCalendar } from "@/components/Common/MiniCalendar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import useCustomToast from "@/hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/activities/")({
   component: Activities,
@@ -30,11 +33,14 @@ function currentMonthKey(): string {
 }
 
 function Activities() {
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
   const [sourceType, setSourceType] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [fromDate, setFromDate] = useState("")
   const [toDate, setToDate] = useState("")
   const [skip, setSkip] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
   const [applied, setApplied] = useState({
     sourceType: "all",
     fromDate: "",
@@ -42,6 +48,39 @@ function Activities() {
   })
 
   const monthKey = currentMonthKey()
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch("/api/v1/activities/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Error al subir el archivo")
+      }
+
+      showSuccessToast("Actividad GPS importada correctamente")
+      queryClient.invalidateQueries({ queryKey: ["activities"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+    } catch (err: any) {
+      showErrorToast(err.message || "No se pudo procesar el archivo GPS")
+    } finally {
+      setIsUploading(false)
+      e.target.value = ""
+    }
+  }
 
   const query = useQuery({
     queryKey: ["activities", applied, skip],
@@ -88,11 +127,28 @@ function Activities() {
 
   return (
     <div className="col-span-12 flex flex-col gap-6">
-      <div>
-        <h1 className="text-headline-lg text-primary">Actividades</h1>
-        <p className="text-body-md text-on-surface-variant">
-          Tus sesiones de running y fuerza sincronizadas.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-headline-lg text-primary">Actividades</h1>
+          <p className="text-body-md text-on-surface-variant">
+            Tus sesiones de running y carreras registradas.
+          </p>
+        </div>
+        <label className="cursor-pointer font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2 rounded-xl inline-flex items-center gap-2 text-sm shadow-md transition-all">
+          {isUploading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Upload className="size-4 stroke-[2.5]" />
+          )}
+          <span>Importar .fit / .gpx</span>
+          <input
+            type="file"
+            accept=".gpx,.fit"
+            onChange={handleFileUpload}
+            disabled={isUploading}
+            className="hidden"
+          />
+        </label>
       </div>
 
       {summaryQuery.isLoading ? (
