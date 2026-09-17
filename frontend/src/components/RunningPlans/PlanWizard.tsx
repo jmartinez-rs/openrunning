@@ -1,19 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 import {
-  ArrowDown,
-  ArrowUp,
-  CalendarDays,
+  Activity,
+  ArrowLeft,
+  Calendar,
   Check,
-  ChevronLeft,
   ChevronRight,
+  Flag,
+  Footprints,
+  Gauge,
   Loader2,
-  Minus,
-  Plus,
-  Trash2,
+  Sparkles,
+  TrendingUp,
+  Trophy,
+  Wand2,
+  Zap,
 } from "lucide-react"
-import type { ReactNode } from "react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import {
   type RacePublic,
@@ -22,38 +25,9 @@ import {
   type RunningPlanPublic,
   RunningPlansService,
 } from "@/client"
-import {
-  addDaysToIso,
-  BLOCK_TYPE_META,
-  type BlockType,
-  blocksDistanceKm,
-  buildBlockPreview,
-  defaultTrainingDates,
-  durationInputToSeconds,
-  formatDateRange,
-  formatDistance,
-  formatShortDate,
-  INTENSITY_META,
-  type Intensity,
-  PHASE_COLORS,
-  type PhaseColor,
-  PLAN_STATUS_META,
-  type PlanStatus,
-  paceInputToSeconds,
-  secondsToDurationInput,
-  secondsToPaceInput,
-  WORKOUT_TYPE_META,
-  type WorkoutType,
-} from "@/components/RunningPlans/running-utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -65,11 +39,32 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import useCustomToast from "@/hooks/useCustomToast"
+import {
+  calculateVDOT,
+  formatPace as mathFormatPace,
+  formatTime,
+  getTrainingPaces,
+  parsePace as mathParsePace,
+  predictTimeRiegel,
+} from "@/lib/running-math"
 import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
+import {
+  addDaysToIso,
+  type BlockType,
+  blocksDistanceKm,
+  durationInputToSeconds,
+  formatShortDate,
+  type Intensity,
+  type PhaseColor,
+  type PlanStatus,
+  WORKOUT_TYPE_META,
+  type WorkoutType,
+  PHASE_COLORS,
+} from "./running-utils"
 
 // ---------------------------------------------------------------------------
-// Tipos del draft (espejo de la jerarquía RunningPlan, con inputs de formulario)
+// Tipos del Draft
 // ---------------------------------------------------------------------------
 
 interface BlockDraft {
@@ -141,134 +136,41 @@ interface PlanDraft {
   phases: PhaseDraft[]
 }
 
-const STEPS = [
-  { title: "Objetivo" },
-  { title: "Fases" },
-  { title: "Semanas" },
-  { title: "Sesiones" },
-  { title: "Bloques" },
-  { title: "Revisión" },
+const ONBOARDING_STEPS = [
+  { id: 1, title: "1. Objetivo Principal", desc: "Tipo de plan y distancia" },
+  { id: 2, title: "2. Nivel & VDOT", desc: "Marca reciente y ritmos" },
+  { id: 3, title: "3. Volumen Actual", desc: "Kilometraje habitual" },
+  { id: 4, title: "4. Disponibilidad", desc: "Frecuencia y Tirada Larga" },
+  { id: 5, title: "5. Motor Algorítmico", desc: "Generar plan con estructurado" },
 ] as const
 
-const textareaClass =
-  "flex min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-
-function errorInputClass(error?: boolean): string {
-  return error ? "border-destructive focus-visible:ring-destructive" : ""
-}
-
-function emptyBlock(position: number): BlockDraft {
-  return {
-    position,
-    block_type: "main",
-    repeats: 1,
-    distance_m: null,
-    duration_seconds: null,
-    pace_seconds_per_km: null,
-    pace_range_end_seconds_per_km: null,
-    recovery_seconds: null,
-    recovery_type: "jog",
-    notes: "",
-  }
-}
-
-function emptyWorkout(): WorkoutDraft {
-  return {
-    date: "",
-    type: "easy_run",
-    objective: "",
-    name: "",
-    distance_km: null,
-    duration_seconds: null,
-    pace_seconds_per_km: null,
-    intensity: "easy",
-    description: "",
-    notes: "",
-    cancelled: false,
-    status_override: null,
-    blocks: [emptyBlock(1)],
-  }
-}
-
-function defaultWorkoutForDate(date: string): WorkoutDraft {
-  return {
-    date,
-    type: "easy_run",
-    objective: "",
-    name: "",
-    distance_km: null,
-    duration_seconds: null,
-    pace_seconds_per_km: null,
-    intensity: "easy",
-    description: "",
-    notes: "",
-    cancelled: false,
-    status_override: null,
-    blocks: [],
-  }
-}
-
-function weekDefaultDates(planStartDate: string, week: WeekDraft): string[] {
-  if (week.start_date && week.end_date) {
-    return defaultTrainingDates(week.start_date, week.end_date)
-  }
-  if (!planStartDate) return []
-  const monday = addDaysToIso(planStartDate, (week.number - 1) * 7)
-  return defaultTrainingDates(monday, addDaysToIso(monday, 6))
-}
-
-function prefillWeekSessions(
-  planStartDate: string,
-  week: WeekDraft,
-): WorkoutDraft[] {
-  return weekDefaultDates(planStartDate, week).map(defaultWorkoutForDate)
-}
-
-function emptyWeek(number: number): WeekDraft {
-  return {
-    number,
-    start_date: "",
-    end_date: "",
-    name: "",
-    objective: "",
-    notes: "",
-    workouts: [],
-  }
-}
-
-function emptyPhase(position: number): PhaseDraft {
-  return {
-    position,
-    name: "",
-    color: "emerald",
-    start_week: 1,
-    end_week: 1,
-    objective: "",
-    description: "",
-    weeks: [emptyWeek(1)],
-  }
-}
+const DAYS_OF_WEEK = [
+  { id: 1, label: "Lunes", short: "L" },
+  { id: 2, label: "Martes", short: "M" },
+  { id: 3, label: "Miércoles", short: "X" },
+  { id: 4, label: "Jueves", short: "J" },
+  { id: 5, label: "Viernes", short: "V" },
+  { id: 6, label: "Sábado", short: "S" },
+  { id: 0, label: "Domingo", short: "D" },
+]
 
 function createEmptyDraft(): PlanDraft {
+  const today = new Date().toISOString().split("T")[0]
   return {
     name: "",
     goal: "",
-    distance_km: null,
+    distance_km: 21.1,
     distance_unit: "km",
     target_time_seconds: null,
     target_pace_seconds_per_km: null,
-    start_date: "",
+    start_date: today,
     end_date: "",
-    status: "planned",
+    status: "active",
     race_id: null,
     notes: "",
-    phases: [emptyPhase(1)],
+    phases: [],
   }
 }
-
-// ---------------------------------------------------------------------------
-// Mapeos entre draft y el contrato del cliente (no toca running-utils)
-// ---------------------------------------------------------------------------
 
 function publicToDraft(plan: RunningPlanPublic): PlanDraft {
   return {
@@ -395,2369 +297,1303 @@ function buildPayload(draft: PlanDraft): RunningPlanCreate {
 }
 
 // ---------------------------------------------------------------------------
-// Validaciones por paso
+// Runna Engine — Algoritmo de Generación de Sesiones Estructuradas
 // ---------------------------------------------------------------------------
 
-function goalStepValid(draft: PlanDraft): boolean {
-  return Boolean(
-    draft.name.trim() &&
-      draft.start_date &&
-      (draft.end_date === "" || draft.end_date >= draft.start_date),
-  )
-}
+function generateRunnaPlanStructure({
+  draft,
+  planType: _planType,
+  targetKm,
+  numWeeks,
+  userLevel: _userLevel,
+  refDistanceKm,
+  refTimeSeconds,
+  currentWeeklyKm,
+  longestRunKm,
+  selectedDays,
+  longRunDay,
+}: {
+  draft: PlanDraft
+  planType: string
+  targetKm: number
+  numWeeks: number
+  userLevel: string
+  refDistanceKm: number
+  refTimeSeconds: number
+  currentWeeklyKm: number
+  longestRunKm: number
+  selectedDays: number[]
+  longRunDay: number
+}): PlanDraft {
+  const startDateISO = draft.start_date || new Date().toISOString().split("T")[0]
+  const calculatedEndDate = addDaysToIso(startDateISO, numWeeks * 7 - 1)
 
-function phasesStepValid(draft: PlanDraft): boolean {
-  return (
-    draft.phases.length > 0 &&
-    draft.phases.every(
-      (phase) =>
-        phase.name.trim() &&
-        phase.start_week != null &&
-        phase.end_week != null &&
-        phase.end_week >= phase.start_week,
-    )
-  )
-}
+  // Calculate VDOT & Paces using Jack Daniels formulas
+  const vdot = calculateVDOT(refDistanceKm * 1000, refTimeSeconds)
+  const paces = getTrainingPaces(vdot)
 
-function weeksStepValid(draft: PlanDraft): boolean {
-  return (
-    draft.phases.length > 0 &&
-    draft.phases.every(
-      (phase) =>
-        phase.weeks.length > 0 &&
-        phase.weeks.every((week) => week.number != null && week.number >= 1),
-    )
-  )
-}
+  const easyPaceSec = mathParsePace(paces.easyMin) || 330
+  const tempoPaceSec = mathParsePace(paces.threshold) || 270
+  const intervalPaceSec = mathParsePace(paces.interval) || 240
+  const longRunPaceSec = mathParsePace(paces.easyMax) || 345
 
-function sessionsStepValid(draft: PlanDraft): boolean {
-  const seen = new Set<string>()
-  for (const phase of draft.phases) {
-    for (const week of phase.weeks) {
-      for (const workout of week.workouts) {
-        if (!workout.date) return false
-        if (seen.has(workout.date)) return false
-        seen.add(workout.date)
-        const hasDistance =
-          workout.distance_km != null && workout.distance_km > 0
-        const hasDuration =
-          workout.duration_seconds != null && workout.duration_seconds > 0
-        if (!hasDistance && !hasDuration) return false
+  // Predict finish time for target distance using Riegel's formula
+  const predictedFinishSec = predictTimeRiegel(
+    refDistanceKm * 1000,
+    refTimeSeconds,
+    targetKm * 1000,
+  )
+  const predictedPaceSec = Math.round(predictedFinishSec / targetKm)
+
+  // 4 Phase Specs
+  const p1End = Math.max(1, Math.round(numWeeks * 0.3))
+  const p2End = Math.max(p1End + 1, Math.round(numWeeks * 0.65))
+  const p3End = Math.max(p2End + 1, Math.round(numWeeks * 0.85))
+  const p4End = numWeeks
+
+  const phasesSpec: Array<{
+    name: string
+    color: PhaseColor
+    start: number
+    end: number
+    objective: string
+  }> = [
+    {
+      name: "Fase Base Aeróbica",
+      color: "emerald" as PhaseColor,
+      start: 1,
+      end: p1End,
+      objective: `Rodajes suaves a ritmo ${paces.easyMin}-${paces.easyMax} min/km y adaptación neuromuscular`,
+    },
+    {
+      name: "Fase Construcción & Tempo",
+      color: "amber" as PhaseColor,
+      start: p1End + 1,
+      end: p2End,
+      objective: `Series a ritmo umbral (${paces.threshold} min/km) e incremento controlado de carga`,
+    },
+    {
+      name: "Fase Pico & Intervalos VO2",
+      color: "violet" as PhaseColor,
+      start: p2End + 1,
+      end: p3End,
+      objective: `Intervalos de velocidad (${paces.interval} min/km) y fondos largos máximos`,
+    },
+    {
+      name: "Fase Tapering & Carrera",
+      color: "sky" as PhaseColor,
+      start: p3End + 1,
+      end: p4End,
+      objective: "Descarga de volumen (-40%), afinamiento de ritmo y día del objetivo",
+    },
+  ].filter((p) => p.start <= p.end)
+
+  // Sorted days ensuring longRunDay is handled
+  const sortedDays = [...selectedDays].sort((a, b) => {
+    const orderA = a === longRunDay ? 99 : a === 0 ? 7 : a
+    const orderB = b === longRunDay ? 99 : b === 0 ? 7 : b
+    return orderA - orderB
+  })
+
+  const generatedPhases: PhaseDraft[] = phasesSpec.map((spec, phaseIdx) => {
+    const weeksInPhase: WeekDraft[] = []
+
+    for (let wNum = spec.start; wNum <= spec.end; wNum++) {
+      const weekMonday = addDaysToIso(startDateISO, (wNum - 1) * 7)
+      const weekSunday = addDaysToIso(weekMonday, 6)
+
+      // Calculate weekly long run target distance
+      const progressRatio = wNum / numWeeks
+      const baseLongKm = Math.max(longestRunKm, 6)
+      const targetLongKm = Math.min(targetKm * 0.85, 32)
+      let weekLongKm = Math.round(baseLongKm + progressRatio * (targetLongKm - baseLongKm))
+
+      // Tapering phase reduces volume
+      if (phaseIdx === 3 && wNum < numWeeks) {
+        weekLongKm = Math.round(weekLongKm * 0.6)
+      } else if (wNum === numWeeks) {
+        weekLongKm = targetKm // Race Day
       }
-    }
-  }
-  return true
-}
 
-function blocksStepValid(draft: PlanDraft): boolean {
-  for (const phase of draft.phases) {
-    for (const week of phase.weeks) {
-      for (const workout of week.workouts) {
-        for (const block of workout.blocks) {
-          const hasDistance = block.distance_m != null && block.distance_m > 0
-          const hasDuration =
-            block.duration_seconds != null && block.duration_seconds > 0
-          const paceOrderOk =
-            block.pace_seconds_per_km == null ||
-            block.pace_range_end_seconds_per_km == null ||
-            block.pace_range_end_seconds_per_km >= block.pace_seconds_per_km
-          if (
-            (!hasDistance && !hasDuration) ||
-            block.repeats < 1 ||
-            !paceOrderOk
-          ) {
-            return false
+      const workouts: WorkoutDraft[] = []
+
+      sortedDays.forEach((dayId, dayIdx) => {
+        const offset = dayId === 0 ? 6 : dayId - 1
+        const workoutDate = addDaysToIso(weekMonday, offset)
+
+        const isLongRunDay = dayId === longRunDay || (dayIdx === sortedDays.length - 1 && !sortedDays.includes(longRunDay))
+        const isQualityDay = dayIdx === 1 || (sortedDays.length > 3 && dayIdx === 2)
+
+        let type: WorkoutType = "easy_run"
+        let name = "Rodaje Suave Aeróbico"
+        let distKm = Math.max(5, Math.round(currentWeeklyKm / sortedDays.length))
+        let targetPace = easyPaceSec
+        let intensity: Intensity = "easy"
+        let blocks: BlockDraft[] = []
+
+        if (isLongRunDay) {
+          type = wNum === numWeeks ? "race" : "long_run"
+          name = wNum === numWeeks ? `Día de Carrera Objetivo (${targetKm} km)` : `Tirada Larga de Fondo (${weekLongKm} km)`
+          distKm = weekLongKm
+          targetPace = wNum === numWeeks ? predictedPaceSec : longRunPaceSec
+          intensity = wNum === numWeeks ? "hard" : "moderate"
+
+          // Long Run Structured Blocks
+          const mainKm = Math.max(2, distKm - 3)
+          blocks = [
+            {
+              position: 1,
+              block_type: "warmup",
+              repeats: 1,
+              distance_m: 2000,
+              duration_seconds: null,
+              pace_seconds_per_km: easyPaceSec + 15,
+              pace_range_end_seconds_per_km: null,
+              recovery_seconds: null,
+              recovery_type: "jog",
+              notes: "Entrada en calor suave",
+            },
+            {
+              position: 2,
+              block_type: "main",
+              repeats: 1,
+              distance_m: mainKm * 1000,
+              duration_seconds: null,
+              pace_seconds_per_km: longRunPaceSec,
+              pace_range_end_seconds_per_km: null,
+              recovery_seconds: null,
+              recovery_type: "jog",
+              notes: "Ritmo cómodo conversacional",
+            },
+            {
+              position: 3,
+              block_type: "cooldown",
+              repeats: 1,
+              distance_m: 1000,
+              duration_seconds: null,
+              pace_seconds_per_km: easyPaceSec + 20,
+              pace_range_end_seconds_per_km: null,
+              recovery_seconds: null,
+              recovery_type: "jog",
+              notes: "Afloje final",
+            },
+          ]
+        } else if (isQualityDay && phaseIdx >= 1) {
+          if (phaseIdx === 1) {
+            // Tempo Run
+            type = "tempo"
+            name = "Sesión Tempo (Umbral Láctico)"
+            distKm = 8 + Math.round(wNum * 0.4)
+            targetPace = tempoPaceSec
+            intensity = "hard"
+
+            const tempoKm = Math.max(3, distKm - 3)
+            blocks = [
+              {
+                position: 1,
+                block_type: "warmup",
+                repeats: 1,
+                distance_m: 1500,
+                duration_seconds: null,
+                pace_seconds_per_km: easyPaceSec,
+                pace_range_end_seconds_per_km: null,
+                recovery_seconds: null,
+                recovery_type: "jog",
+                notes: "Calentamiento",
+              },
+              {
+                position: 2,
+                block_type: "main",
+                repeats: 1,
+                distance_m: tempoKm * 1000,
+                duration_seconds: null,
+                pace_seconds_per_km: tempoPaceSec,
+                pace_range_end_seconds_per_km: null,
+                recovery_seconds: null,
+                recovery_type: "jog",
+                notes: `Bloque Tempo sostenido @ ${paces.threshold}/km`,
+              },
+              {
+                position: 3,
+                block_type: "cooldown",
+                repeats: 1,
+                distance_m: 1500,
+                duration_seconds: null,
+                pace_seconds_per_km: easyPaceSec,
+                pace_range_end_seconds_per_km: null,
+                recovery_seconds: null,
+                recovery_type: "jog",
+                notes: "Enfriamiento",
+              },
+            ]
+          } else if (phaseIdx === 2) {
+            // Interval Session
+            type = "intervals"
+            name = "Intervalos de Velocidad (VO2 Max)"
+            distKm = 9
+            targetPace = intervalPaceSec
+            intensity = "hard"
+
+            const reps = Math.min(8, 4 + Math.floor(wNum * 0.4))
+            blocks = [
+              {
+                position: 1,
+                block_type: "warmup",
+                repeats: 1,
+                distance_m: 1500,
+                duration_seconds: null,
+                pace_seconds_per_km: easyPaceSec,
+                pace_range_end_seconds_per_km: null,
+                recovery_seconds: null,
+                recovery_type: "jog",
+                notes: "Calentamiento + progresiones",
+              },
+              {
+                position: 2,
+                block_type: "interval",
+                repeats: reps,
+                distance_m: 800,
+                duration_seconds: null,
+                pace_seconds_per_km: intervalPaceSec,
+                pace_range_end_seconds_per_km: null,
+                recovery_seconds: 90,
+                recovery_type: "jog",
+                notes: `${reps}x800m @ ${paces.interval}/km con 90s trote`,
+              },
+              {
+                position: 3,
+                block_type: "cooldown",
+                repeats: 1,
+                distance_m: 1500,
+                duration_seconds: null,
+                pace_seconds_per_km: easyPaceSec,
+                pace_range_end_seconds_per_km: null,
+                recovery_seconds: null,
+                recovery_type: "jog",
+                notes: "Enfriamiento libre",
+              },
+            ]
+          } else {
+            // Activation
+            type = "activation"
+            name = "Activación y Progresiones"
+            distKm = 5
+            targetPace = easyPaceSec
+            intensity = "easy"
+            blocks = [
+              {
+                position: 1,
+                block_type: "warmup",
+                repeats: 1,
+                distance_m: 3000,
+                duration_seconds: null,
+                pace_seconds_per_km: easyPaceSec,
+                pace_range_end_seconds_per_km: null,
+                recovery_seconds: null,
+                recovery_type: "jog",
+                notes: "Rodaje suave",
+              },
+              {
+                position: 2,
+                block_type: "strides",
+                repeats: 4,
+                distance_m: 100,
+                duration_seconds: null,
+                pace_seconds_per_km: intervalPaceSec,
+                pace_range_end_seconds_per_km: null,
+                recovery_seconds: 45,
+                recovery_type: "walk",
+                notes: "Progresiones sueltas",
+              },
+              {
+                position: 3,
+                block_type: "cooldown",
+                repeats: 1,
+                distance_m: 1000,
+                duration_seconds: null,
+                pace_seconds_per_km: easyPaceSec,
+                pace_range_end_seconds_per_km: null,
+                recovery_seconds: null,
+                recovery_type: "jog",
+                notes: "Afloje final",
+              },
+            ]
           }
+        } else {
+          // Easy Run
+          type = "easy_run"
+          name = "Rodaje Suave Aeróbico"
+          distKm = Math.max(5, Math.round(6 + wNum * 0.2))
+          targetPace = easyPaceSec
+          intensity = "easy"
+          blocks = [
+            {
+              position: 1,
+              block_type: "warmup",
+              repeats: 1,
+              distance_m: 1000,
+              duration_seconds: null,
+              pace_seconds_per_km: easyPaceSec + 10,
+              pace_range_end_seconds_per_km: null,
+              recovery_seconds: null,
+              recovery_type: "jog",
+              notes: "Trote inicial",
+            },
+            {
+              position: 2,
+              block_type: "main",
+              repeats: 1,
+              distance_m: Math.max(2, distKm - 2) * 1000,
+              duration_seconds: null,
+              pace_seconds_per_km: easyPaceSec,
+              pace_range_end_seconds_per_km: null,
+              recovery_seconds: null,
+              recovery_type: "jog",
+              notes: "Ritmo Z2 aeróbico",
+            },
+            {
+              position: 3,
+              block_type: "cooldown",
+              repeats: 1,
+              distance_m: 1000,
+              duration_seconds: null,
+              pace_seconds_per_km: easyPaceSec + 10,
+              pace_range_end_seconds_per_km: null,
+              recovery_seconds: null,
+              recovery_type: "jog",
+              notes: "Soltura",
+            },
+          ]
         }
-      }
-    }
-  }
-  return true
-}
 
-interface WorkoutRef {
-  phaseIndex: number
-  weekIndex: number
-  workoutIndex: number
-  workout: WorkoutDraft
-}
-
-function collectWorkouts(draft: PlanDraft): WorkoutRef[] {
-  const out: WorkoutRef[] = []
-  draft.phases.forEach((phase, phaseIndex) => {
-    phase.weeks.forEach((week, weekIndex) => {
-      week.workouts.forEach((workout, workoutIndex) => {
-        out.push({ phaseIndex, weekIndex, workoutIndex, workout })
+        workouts.push({
+          date: workoutDate,
+          type,
+          name,
+          objective: `${name} (${distKm} km @ ${mathFormatPace(targetPace)}/km)`,
+          distance_km: distKm,
+          duration_seconds: null,
+          pace_seconds_per_km: targetPace,
+          intensity,
+          description: "",
+          notes: "",
+          cancelled: false,
+          status_override: null,
+          blocks,
+        })
       })
-    })
-  })
-  return out
-}
 
-function findDuplicateDates(draft: PlanDraft): Set<string> {
-  const counts = new Map<string, number>()
-  for (const { workout } of collectWorkouts(draft)) {
-    if (!workout.date) continue
-    counts.set(workout.date, (counts.get(workout.date) ?? 0) + 1)
-  }
-  return new Set(
-    [...counts.entries()]
-      .filter(([, count]) => count > 1)
-      .map(([date]) => date),
-  )
-}
-
-function suggestWeekNumber(phase: PhaseDraft): number {
-  const existing = new Set(phase.weeks.map((week) => week.number))
-  const start = Math.max(1, phase.start_week)
-  const end = Math.max(start, phase.end_week)
-  for (let n = start; n <= end; n += 1) {
-    if (!existing.has(n)) return n
-  }
-  let n = end + 1
-  while (existing.has(n)) n += 1
-  return n
-}
-
-function reorder<T>(items: T[], from: number, to: number): T[] {
-  if (to < 0 || to >= items.length) return items
-  const next = [...items]
-  const [item] = next.splice(from, 1)
-  next.splice(to, 0, item)
-  return next
-}
-
-// ---------------------------------------------------------------------------
-// Inputs reutilizables (sin perder la escritura intermedia del usuario)
-// ---------------------------------------------------------------------------
-
-function NumberField({
-  value,
-  onValueChange,
-  id,
-  className,
-  placeholder,
-  min,
-  step,
-}: {
-  value: number | null
-  onValueChange: (value: number | null) => void
-  id?: string
-  className?: string
-  placeholder?: string
-  min?: number
-  step?: number | string
-}) {
-  const [text, setText] = useState(() => (value == null ? "" : String(value)))
-  const lastEmitted = useRef(value)
-
-  useEffect(() => {
-    if (value !== lastEmitted.current) {
-      setText(value == null ? "" : String(value))
-      lastEmitted.current = value
+      weeksInPhase.push({
+        number: wNum,
+        start_date: weekMonday,
+        end_date: weekSunday,
+        name: `Semana ${wNum}`,
+        objective: `Volumen semana: ~${workouts.reduce((acc, curr) => acc + (curr.distance_km || 0), 0)} km`,
+        notes: "",
+        workouts,
+      })
     }
-  }, [value])
 
-  return (
-    <Input
-      id={id}
-      type="number"
-      inputMode="decimal"
-      min={min}
-      step={step}
-      className={className}
-      placeholder={placeholder}
-      value={text}
-      onChange={(e) => {
-        const raw = e.target.value
-        setText(raw)
-        const parsed = raw.trim() === "" ? null : Number(raw)
-        const next = parsed == null || Number.isNaN(parsed) ? null : parsed
-        lastEmitted.current = next
-        onValueChange(next)
-      }}
-    />
-  )
-}
-
-function DurationText({
-  value,
-  onValueChange,
-  id,
-  placeholder,
-  className,
-}: {
-  value: number | null
-  onValueChange: (value: number | null) => void
-  id?: string
-  placeholder?: string
-  className?: string
-}) {
-  const [text, setText] = useState(() => secondsToDurationInput(value))
-  const lastEmitted = useRef(value)
-
-  useEffect(() => {
-    if (value !== lastEmitted.current) {
-      setText(secondsToDurationInput(value))
-      lastEmitted.current = value
-    }
-  }, [value])
-
-  return (
-    <Input
-      id={id}
-      inputMode="numeric"
-      placeholder={placeholder ?? "hh:mm"}
-      className={className}
-      value={text}
-      onChange={(e) => {
-        const raw = e.target.value
-        setText(raw)
-        const next = durationInputToSeconds(raw)
-        lastEmitted.current = next
-        onValueChange(next)
-      }}
-    />
-  )
-}
-
-function PaceText({
-  value,
-  onValueChange,
-  id,
-  placeholder,
-  className,
-}: {
-  value: number | null
-  onValueChange: (value: number | null) => void
-  id?: string
-  placeholder?: string
-  className?: string
-}) {
-  const [text, setText] = useState(() => secondsToPaceInput(value))
-  const lastEmitted = useRef(value)
-
-  useEffect(() => {
-    if (value !== lastEmitted.current) {
-      setText(secondsToPaceInput(value))
-      lastEmitted.current = value
-    }
-  }, [value])
-
-  return (
-    <Input
-      id={id}
-      inputMode="numeric"
-      placeholder={placeholder ?? "mm:ss"}
-      className={className}
-      value={text}
-      onChange={(e) => {
-        const raw = e.target.value
-        setText(raw)
-        const next = paceInputToSeconds(raw)
-        lastEmitted.current = next
-        onValueChange(next)
-      }}
-    />
-  )
-}
-
-function Field({
-  label,
-  htmlFor,
-  hint,
-  error,
-  children,
-  className,
-}: {
-  label: string
-  htmlFor?: string
-  hint?: string
-  error?: string
-  children: ReactNode
-  className?: string
-}) {
-  return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
-      <Label htmlFor={htmlFor}>{label}</Label>
-      {children}
-      {error ? (
-        <p className="text-xs text-destructive">{error}</p>
-      ) : hint ? (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      ) : null}
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Stepper
-// ---------------------------------------------------------------------------
-
-function NumberStepper({
-  value,
-  onValueChange,
-  step = 1,
-  min = 0,
-  placeholder,
-  className,
-}: {
-  value: number | null
-  onValueChange: (value: number | null) => void
-  step?: number
-  min?: number
-  placeholder?: string
-  className?: string
-}) {
-  const base = value ?? min
-  const round2 = (n: number) => Math.round(n * 100) / 100
-  return (
-    <div className="flex items-center gap-1">
-      <Button
-        type="button"
-        variant="outline"
-        size="icon-sm"
-        aria-label="Disminuir"
-        disabled={base <= min}
-        onClick={() => onValueChange(round2(Math.max(min, base - step)))}
-      >
-        <Minus className="size-3.5" />
-      </Button>
-      <NumberField
-        value={value}
-        onValueChange={onValueChange}
-        placeholder={placeholder}
-        min={min}
-        step={String(step)}
-        className={className}
-      />
-      <Button
-        type="button"
-        variant="outline"
-        size="icon-sm"
-        aria-label="Aumentar"
-        onClick={() => onValueChange(round2(base + step))}
-      >
-        <Plus className="size-3.5" />
-      </Button>
-    </div>
-  )
-}
-
-function DurationStepper({
-  value,
-  onValueChange,
-  stepMinutes = 5,
-  className,
-}: {
-  value: number | null
-  onValueChange: (value: number | null) => void
-  stepMinutes?: number
-  className?: string
-}) {
-  const stepSeconds = stepMinutes * 60
-  const base = value ?? 0
-  return (
-    <div className="flex items-center gap-1">
-      <Button
-        type="button"
-        variant="outline"
-        size="icon-sm"
-        aria-label="Disminuir"
-        disabled={value != null && value <= 0}
-        onClick={() => onValueChange(Math.max(0, base - stepSeconds))}
-      >
-        <Minus className="size-3.5" />
-      </Button>
-      <DurationText
-        value={value}
-        onValueChange={onValueChange}
-        className={className}
-      />
-      <Button
-        type="button"
-        variant="outline"
-        size="icon-sm"
-        aria-label="Aumentar"
-        onClick={() => onValueChange(base + stepSeconds)}
-      >
-        <Plus className="size-3.5" />
-      </Button>
-    </div>
-  )
-}
-
-function IntervalBuilder({
-  onAdd,
-}: {
-  onAdd: (data: Partial<BlockDraft>) => void
-}) {
-  const [reps, setReps] = useState(5)
-  const [distanceM, setDistanceM] = useState(1000)
-  const [paceStart, setPaceStart] = useState<number | null>(null)
-  const [paceEnd, setPaceEnd] = useState<number | null>(null)
-  const [recoveryMin, setRecoveryMin] = useState(2)
-  const [recoveryType, setRecoveryType] = useState<"jog" | "walk">("jog")
-
-  const paceOrderError =
-    paceStart != null && paceEnd != null && paceEnd < paceStart
-  const canAdd = reps >= 1 && distanceM > 0 && !paceOrderError
-
-  const preview = buildBlockPreview({
-    block_type: "interval",
-    repeats: reps,
-    distance_m: distanceM,
-    pace_seconds_per_km: paceStart,
-    pace_range_end_seconds_per_km: paceEnd,
-    recovery_seconds: recoveryMin > 0 ? recoveryMin * 60 : null,
-    recovery_type: recoveryType,
-  })
-
-  return (
-    <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-      <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase">
-        Agregar intervalo
-      </p>
-      <div className="grid gap-3 sm:grid-cols-6">
-        <Field label="Reps">
-          <NumberStepper
-            value={reps}
-            step={1}
-            min={1}
-            onValueChange={(value) => setReps(value ?? 1)}
-          />
-        </Field>
-        <Field label="Distancia (m)">
-          <NumberStepper
-            value={distanceM}
-            step={100}
-            min={0}
-            onValueChange={(value) => setDistanceM(value ?? 0)}
-          />
-        </Field>
-        <Field label="Ritmo" hint="mm:ss">
-          <PaceText
-            value={paceStart}
-            onValueChange={setPaceStart}
-            className={errorInputClass(paceOrderError)}
-          />
-        </Field>
-        <Field label="Ritmo máximo" hint="mm:ss">
-          <PaceText
-            value={paceEnd}
-            onValueChange={setPaceEnd}
-            className={errorInputClass(paceOrderError)}
-          />
-        </Field>
-        <Field label="Recuperación (min)">
-          <NumberStepper
-            value={recoveryMin}
-            step={0.5}
-            min={0}
-            onValueChange={(value) => setRecoveryMin(value ?? 0)}
-          />
-        </Field>
-        <Field label="Recuperación tipo">
-          <Select
-            value={recoveryType}
-            onValueChange={(value) => setRecoveryType(value as "jog" | "walk")}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="jog">Trotando</SelectItem>
-              <SelectItem value="walk">Caminando</SelectItem>
-            </SelectContent>
-          </Select>
-        </Field>
-      </div>
-      {paceOrderError && (
-        <p className="mt-2 text-xs text-destructive">
-          El ritmo máximo debe ser mayor o igual al ritmo inicial.
-        </p>
-      )}
-      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/10 bg-primary/5 px-3 py-2">
-        <span className="text-xs font-semibold text-muted-foreground uppercase">
-          Vista previa
-        </span>
-        <span className="text-sm font-medium">{preview}</span>
-      </div>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="mt-3"
-        disabled={!canAdd}
-        onClick={() =>
-          onAdd({
-            block_type: "interval",
-            repeats: reps,
-            distance_m: distanceM,
-            duration_seconds: null,
-            pace_seconds_per_km: paceStart,
-            pace_range_end_seconds_per_km: paceEnd,
-            recovery_seconds: recoveryMin > 0 ? recoveryMin * 60 : null,
-            recovery_type: recoveryType,
-          })
-        }
-      >
-        <Plus className="mr-1 size-3" /> Agregar intervalo
-      </Button>
-    </div>
-  )
-}
-
-function Stepper({
-  current,
-  onSelect,
-}: {
-  current: number
-  onSelect: (index: number) => void
-}) {
-  return (
-    <nav
-      aria-label="Pasos del asistente"
-      className="flex items-center gap-1 overflow-x-auto pb-2 sm:gap-2"
-    >
-      {STEPS.map((step, index) => {
-        const done = index < current
-        const active = index === current
-        const clickable = index <= current
-        return (
-          <div
-            key={step.title}
-            className="flex shrink-0 items-center gap-1 sm:gap-2"
-          >
-            <button
-              type="button"
-              disabled={!clickable}
-              onClick={() => onSelect(index)}
-              aria-current={active ? "step" : undefined}
-              aria-label={`Paso ${index + 1}: ${step.title}${done ? " (completado)" : ""}`}
-              className={cn(
-                "flex items-center gap-1.5 rounded-full px-2 py-1 text-sm transition sm:gap-2 sm:px-3",
-                active
-                  ? "bg-primary/10 text-primary"
-                  : clickable
-                    ? "hover:bg-accent"
-                    : "hover:bg-transparent",
-                !clickable && "cursor-not-allowed opacity-60",
-                index > current && "text-muted-foreground",
-              )}
-            >
-              <span
-                className={cn(
-                  "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                  done
-                    ? "bg-primary text-primary-foreground"
-                    : active
-                      ? "bg-primary/15 text-primary ring-1 ring-primary/20"
-                      : "bg-muted text-muted-foreground",
-                )}
-              >
-                {done ? <Check className="size-3.5" /> : index + 1}
-              </span>
-              <span className="hidden whitespace-nowrap sm:inline">
-                {step.title}
-              </span>
-            </button>
-            {index < STEPS.length - 1 && (
-              <div
-                className={cn(
-                  "h-px w-4 sm:w-6",
-                  index < current ? "bg-primary/40" : "bg-border",
-                )}
-              />
-            )}
-          </div>
-        )
-      })}
-    </nav>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Paso 1: Objetivo
-// ---------------------------------------------------------------------------
-
-function ObjectiveStep({
-  draft,
-  races,
-  onUpdate,
-}: {
-  draft: PlanDraft
-  races: RacePublic[]
-  onUpdate: (patch: Partial<PlanDraft>) => void
-}) {
-  const selectedRace = races.find((race) => race.id === draft.race_id) ?? null
-  return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <Field
-        label="Nombre *"
-        htmlFor="plan-name"
-        className="sm:col-span-2"
-        error={!draft.name.trim() ? "El nombre es obligatorio." : undefined}
-      >
-        <Input
-          id="plan-name"
-          value={draft.name}
-          className={errorInputClass(!draft.name.trim())}
-          onChange={(e) => onUpdate({ name: e.target.value })}
-          placeholder="Ej: Plan 10K Sub-60"
-        />
-      </Field>
-      <Field label="Objetivo" className="sm:col-span-2">
-        <textarea
-          className={cn(textareaClass, "min-h-20")}
-          value={draft.goal}
-          onChange={(e) => onUpdate({ goal: e.target.value })}
-          placeholder="Ej: Correr 10K en menos de 60 minutos"
-        />
-      </Field>
-      <Field label="Distancia objetivo" htmlFor="plan-distance">
-        <NumberStepper
-          value={draft.distance_km}
-          onValueChange={(value) => onUpdate({ distance_km: value })}
-          placeholder="10"
-          step={0.5}
-          min={0}
-        />
-      </Field>
-      <Field label="Unidad">
-        <Select
-          value={draft.distance_unit}
-          onValueChange={(value) =>
-            onUpdate({ distance_unit: value as "km" | "mi" })
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="km">km</SelectItem>
-            <SelectItem value="mi">mi</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
-      <Field
-        label="Tiempo objetivo"
-        htmlFor="plan-target-time"
-        hint="Formato hh:mm"
-      >
-        <DurationStepper
-          value={draft.target_time_seconds}
-          onValueChange={(value) => onUpdate({ target_time_seconds: value })}
-          stepMinutes={5}
-        />
-      </Field>
-      <Field
-        label="Ritmo objetivo"
-        htmlFor="plan-target-pace"
-        hint="Formato mm:ss por km"
-      >
-        <PaceText
-          id="plan-target-pace"
-          value={draft.target_pace_seconds_per_km}
-          onValueChange={(value) =>
-            onUpdate({ target_pace_seconds_per_km: value })
-          }
-        />
-      </Field>
-      <Field
-        label="Fecha inicio *"
-        htmlFor="plan-start"
-        error={
-          !draft.start_date ? "La fecha de inicio es obligatoria." : undefined
-        }
-      >
-        <Input
-          id="plan-start"
-          type="date"
-          value={draft.start_date}
-          className={errorInputClass(!draft.start_date)}
-          onChange={(e) => onUpdate({ start_date: e.target.value })}
-        />
-      </Field>
-      <Field
-        label="Fecha cierre"
-        htmlFor="plan-end"
-        error={
-          draft.end_date &&
-          draft.start_date &&
-          draft.end_date < draft.start_date
-            ? "La fecha de cierre debe ser posterior al inicio."
-            : undefined
-        }
-      >
-        <Input
-          id="plan-end"
-          type="date"
-          min={draft.start_date || undefined}
-          value={draft.end_date}
-          className={errorInputClass(
-            Boolean(
-              draft.end_date &&
-                draft.start_date &&
-                draft.end_date < draft.start_date,
-            ),
-          )}
-          onChange={(e) => onUpdate({ end_date: e.target.value })}
-        />
-      </Field>
-      <Field label="Estado">
-        <Select
-          value={draft.status}
-          onValueChange={(value) => onUpdate({ status: value as PlanStatus })}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(PLAN_STATUS_META) as PlanStatus[]).map((status) => (
-              <SelectItem key={status} value={status}>
-                {PLAN_STATUS_META[status].label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Field>
-      <Field
-        label="Carrera objetivo"
-        hint={
-          selectedRace
-            ? `${formatShortDate(selectedRace.date)} · ${formatDistance(selectedRace.distance_km)}`
-            : undefined
-        }
-      >
-        <Select
-          value={draft.race_id ?? "none"}
-          onValueChange={(value) =>
-            onUpdate({ race_id: value === "none" ? null : value })
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Sin carrera" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Sin carrera</SelectItem>
-            {races.map((race) => (
-              <SelectItem key={race.id} value={race.id}>
-                {race.event_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Field>
-      <Field label="Notas" className="sm:col-span-2">
-        <textarea
-          className={cn(textareaClass, "min-h-20")}
-          value={draft.notes}
-          onChange={(e) => onUpdate({ notes: e.target.value })}
-          placeholder="Opcional"
-        />
-      </Field>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Paso 2: Fases
-// ---------------------------------------------------------------------------
-
-function PhasesStep({
-  draft,
-  onPhaseChange,
-  onAddPhase,
-  onRemovePhase,
-}: {
-  draft: PlanDraft
-  onPhaseChange: (index: number, patch: Partial<PhaseDraft>) => void
-  onAddPhase: () => void
-  onRemovePhase: (index: number) => void
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      {draft.phases.map((phase, index) => {
-        const weekRangeError =
-          phase.end_week != null &&
-          phase.start_week != null &&
-          phase.end_week < phase.start_week
-        return (
-          <Card key={index}>
-            <CardHeader className="flex-row items-center justify-between gap-2">
-              <CardTitle className="text-base">Fase {index + 1}</CardTitle>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`Eliminar fase ${index + 1}`}
-                disabled={draft.phases.length === 1}
-                onClick={() => onRemovePhase(index)}
-              >
-                <Trash2 className="size-4 text-destructive" />
-              </Button>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <Field
-                label="Nombre *"
-                className="sm:col-span-2"
-                error={
-                  !phase.name.trim() ? "El nombre es obligatorio." : undefined
-                }
-              >
-                <Input
-                  value={phase.name}
-                  className={errorInputClass(!phase.name.trim())}
-                  onChange={(e) =>
-                    onPhaseChange(index, { name: e.target.value })
-                  }
-                  placeholder="Ej: Construcción y Velocidad"
-                />
-              </Field>
-              <Field label="Color">
-                <div className="flex flex-wrap items-center gap-2">
-                  {(Object.keys(PHASE_COLORS) as PhaseColor[]).map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      aria-label={`Color ${color}`}
-                      aria-pressed={phase.color === color}
-                      className={cn(
-                        "h-7 w-7 rounded-full border-2 transition hover:scale-105",
-                        PHASE_COLORS[color].bar,
-                        phase.color === color
-                          ? "border-foreground ring-2 ring-offset-1 ring-foreground/20"
-                          : "border-transparent hover:opacity-90",
-                      )}
-                      onClick={() => onPhaseChange(index, { color })}
-                    />
-                  ))}
-                </div>
-              </Field>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Semana inicial">
-                  <NumberField
-                    value={phase.start_week}
-                    className={errorInputClass(weekRangeError)}
-                    onValueChange={(value) =>
-                      onPhaseChange(index, { start_week: value ?? 1 })
-                    }
-                    min={1}
-                  />
-                </Field>
-                <Field label="Semana final">
-                  <NumberField
-                    value={phase.end_week}
-                    className={errorInputClass(weekRangeError)}
-                    onValueChange={(value) =>
-                      onPhaseChange(index, { end_week: value ?? 1 })
-                    }
-                    min={1}
-                  />
-                </Field>
-              </div>
-              <Field label="Objetivo" className="sm:col-span-2">
-                <Input
-                  value={phase.objective}
-                  onChange={(e) =>
-                    onPhaseChange(index, { objective: e.target.value })
-                  }
-                  placeholder="Ej: Adaptación a ritmos superiores al objetivo"
-                />
-              </Field>
-              <Field label="Descripción" className="sm:col-span-2">
-                <textarea
-                  className={cn(textareaClass, "min-h-16")}
-                  value={phase.description}
-                  onChange={(e) =>
-                    onPhaseChange(index, { description: e.target.value })
-                  }
-                  placeholder="Opcional"
-                />
-              </Field>
-              {weekRangeError && (
-                <p className="text-xs text-destructive sm:col-span-2">
-                  La semana final debe ser mayor o igual a la inicial.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        )
-      })}
-      <Button type="button" variant="outline" onClick={onAddPhase}>
-        <Plus className="mr-2 size-4" /> Agregar fase
-      </Button>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Paso 3: Semanas
-// ---------------------------------------------------------------------------
-
-function WeeksStep({
-  draft,
-  onWeekChange,
-  onAddWeek,
-  onRemoveWeek,
-}: {
-  draft: PlanDraft
-  onWeekChange: (
-    phaseIndex: number,
-    weekIndex: number,
-    patch: Partial<WeekDraft>,
-  ) => void
-  onAddWeek: (phaseIndex: number) => void
-  onRemoveWeek: (phaseIndex: number, weekIndex: number) => void
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      {draft.phases.map((phase, phaseIndex) => (
-        <Card key={phaseIndex}>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Fase {phaseIndex + 1}: {phase.name.trim() || "Sin nombre"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {phase.weeks.map((week, weekIndex) => (
-              <div key={weekIndex} className="rounded-lg border p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold">
-                    Semana {week.number}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Eliminar semana ${week.number}`}
-                    disabled={phase.weeks.length === 1}
-                    onClick={() => onRemoveWeek(phaseIndex, weekIndex)}
-                  >
-                    <Trash2 className="size-4 text-destructive" />
-                  </Button>
-                </div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  <Field
-                    label="Número *"
-                    error={
-                      week.number == null || week.number < 1
-                        ? "El número debe ser mayor a 0."
-                        : undefined
-                    }
-                  >
-                    <NumberField
-                      value={week.number}
-                      className={errorInputClass(
-                        week.number == null || week.number < 1,
-                      )}
-                      onValueChange={(value) =>
-                        onWeekChange(phaseIndex, weekIndex, {
-                          number: value ?? 1,
-                        })
-                      }
-                      min={1}
-                    />
-                  </Field>
-                  <Field label="Fecha inicio">
-                    <Input
-                      type="date"
-                      value={week.start_date}
-                      onChange={(e) =>
-                        onWeekChange(phaseIndex, weekIndex, {
-                          start_date: e.target.value,
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field label="Fecha fin">
-                    <Input
-                      type="date"
-                      min={week.start_date || undefined}
-                      value={week.end_date}
-                      onChange={(e) =>
-                        onWeekChange(phaseIndex, weekIndex, {
-                          end_date: e.target.value,
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field label="Nombre">
-                    <Input
-                      value={week.name}
-                      onChange={(e) =>
-                        onWeekChange(phaseIndex, weekIndex, {
-                          name: e.target.value,
-                        })
-                      }
-                      placeholder="Opcional"
-                    />
-                  </Field>
-                  <Field label="Objetivo">
-                    <Input
-                      value={week.objective}
-                      onChange={(e) =>
-                        onWeekChange(phaseIndex, weekIndex, {
-                          objective: e.target.value,
-                        })
-                      }
-                      placeholder="Ej: Carga acumulada"
-                    />
-                  </Field>
-                  <Field label="Notas">
-                    <Input
-                      value={week.notes}
-                      onChange={(e) =>
-                        onWeekChange(phaseIndex, weekIndex, {
-                          notes: e.target.value,
-                        })
-                      }
-                      placeholder="Opcional"
-                    />
-                  </Field>
-                </div>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onAddWeek(phaseIndex)}
-            >
-              <Plus className="mr-1 size-3" /> Agregar semana
-            </Button>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Paso 4: Sesiones
-// ---------------------------------------------------------------------------
-
-function SessionsStep({
-  draft,
-  duplicateDates,
-  onWorkoutChange,
-  onAddWorkout,
-  onRemoveWorkout,
-  onAddDefaultWorkouts,
-}: {
-  draft: PlanDraft
-  duplicateDates: Set<string>
-  onWorkoutChange: (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-    patch: Partial<WorkoutDraft>,
-  ) => void
-  onAddWorkout: (phaseIndex: number, weekIndex: number) => void
-  onRemoveWorkout: (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-  ) => void
-  onAddDefaultWorkouts: (phaseIndex: number, weekIndex: number) => void
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      {draft.phases.map((phase, phaseIndex) =>
-        phase.weeks.map((week, weekIndex) => (
-          <Card key={`${phaseIndex}-${weekIndex}`}>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Fase {phaseIndex + 1} · Semana {week.number}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {week.workouts.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Sin sesiones en esta semana.
-                </p>
-              )}
-              {week.workouts.map((workout, workoutIndex) => {
-                const duplicated = duplicateDates.has(workout.date)
-                const noEffort =
-                  !(workout.distance_km != null && workout.distance_km > 0) &&
-                  !(
-                    workout.duration_seconds != null &&
-                    workout.duration_seconds > 0
-                  )
-                return (
-                  <div
-                    key={workoutIndex}
-                    className={cn(
-                      "rounded-lg border p-3",
-                      duplicated && "border-destructive/50 bg-destructive/5",
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold">
-                        Sesión {workoutIndex + 1}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Eliminar sesión ${workoutIndex + 1}`}
-                        disabled={week.workouts.length === 1}
-                        onClick={() =>
-                          onRemoveWorkout(phaseIndex, weekIndex, workoutIndex)
-                        }
-                      >
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
-                    </div>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-4">
-                      <Field
-                        label="Fecha *"
-                        error={
-                          duplicated
-                            ? "Ya hay otra sesión con esta fecha."
-                            : !workout.date
-                              ? "Indicá una fecha."
-                              : undefined
-                        }
-                      >
-                        <Input
-                          type="date"
-                          className={errorInputClass(
-                            duplicated || !workout.date,
-                          )}
-                          value={workout.date}
-                          onChange={(e) =>
-                            onWorkoutChange(
-                              phaseIndex,
-                              weekIndex,
-                              workoutIndex,
-                              {
-                                date: e.target.value,
-                              },
-                            )
-                          }
-                        />
-                      </Field>
-                      <Field label="Tipo">
-                        <Select
-                          value={workout.type}
-                          onValueChange={(value) =>
-                            onWorkoutChange(
-                              phaseIndex,
-                              weekIndex,
-                              workoutIndex,
-                              { type: value as WorkoutType },
-                            )
-                          }
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(
-                              Object.keys(WORKOUT_TYPE_META) as WorkoutType[]
-                            ).map((type) => (
-                              <SelectItem key={type} value={type}>
-                                <span className="inline-flex items-center gap-1.5">
-                                  <span>{WORKOUT_TYPE_META[type].emoji}</span>
-                                  <span>{WORKOUT_TYPE_META[type].label}</span>
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                      <Field label="Objetivo de sesión">
-                        <Input
-                          value={workout.objective}
-                          onChange={(e) =>
-                            onWorkoutChange(
-                              phaseIndex,
-                              weekIndex,
-                              workoutIndex,
-                              { objective: e.target.value },
-                            )
-                          }
-                          placeholder="Ej: Velocidad"
-                        />
-                      </Field>
-                      <Field label="Nombre (opcional)">
-                        <Input
-                          value={workout.name}
-                          onChange={(e) =>
-                            onWorkoutChange(
-                              phaseIndex,
-                              weekIndex,
-                              workoutIndex,
-                              {
-                                name: e.target.value,
-                              },
-                            )
-                          }
-                          placeholder="Ej: 5×1000"
-                        />
-                      </Field>
-                      <Field label="Distancia (km)">
-                        <NumberStepper
-                          value={workout.distance_km}
-                          onValueChange={(value) =>
-                            onWorkoutChange(
-                              phaseIndex,
-                              weekIndex,
-                              workoutIndex,
-                              { distance_km: value },
-                            )
-                          }
-                          placeholder="10"
-                          step={0.5}
-                          min={0}
-                          className={errorInputClass(noEffort)}
-                        />
-                      </Field>
-                      <Field label="Duración" hint="Formato hh:mm">
-                        <DurationStepper
-                          value={workout.duration_seconds}
-                          onValueChange={(value) =>
-                            onWorkoutChange(
-                              phaseIndex,
-                              weekIndex,
-                              workoutIndex,
-                              { duration_seconds: value },
-                            )
-                          }
-                          stepMinutes={5}
-                          className={errorInputClass(noEffort)}
-                        />
-                      </Field>
-                      <Field label="Ritmo" hint="Formato mm:ss">
-                        <PaceText
-                          value={workout.pace_seconds_per_km}
-                          onValueChange={(value) =>
-                            onWorkoutChange(
-                              phaseIndex,
-                              weekIndex,
-                              workoutIndex,
-                              { pace_seconds_per_km: value },
-                            )
-                          }
-                        />
-                      </Field>
-                      <Field label="Intensidad">
-                        <Select
-                          value={workout.intensity}
-                          onValueChange={(value) =>
-                            onWorkoutChange(
-                              phaseIndex,
-                              weekIndex,
-                              workoutIndex,
-                              { intensity: value as Intensity },
-                            )
-                          }
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(Object.keys(INTENSITY_META) as Intensity[]).map(
-                              (intensity) => (
-                                <SelectItem key={intensity} value={intensity}>
-                                  {INTENSITY_META[intensity].label}
-                                </SelectItem>
-                              ),
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                      <Field label="Descripción" className="sm:col-span-4">
-                        <textarea
-                          className={cn(textareaClass, "min-h-16")}
-                          value={workout.description}
-                          onChange={(e) =>
-                            onWorkoutChange(
-                              phaseIndex,
-                              weekIndex,
-                              workoutIndex,
-                              { description: e.target.value },
-                            )
-                          }
-                          placeholder="Opcional"
-                        />
-                      </Field>
-                    </div>
-                    {noEffort && (
-                      <p className="mt-2 text-xs text-destructive">
-                        Indicá distancia o duración para esta sesión.
-                      </p>
-                    )}
-                  </div>
-                )
-              })}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onAddDefaultWorkouts(phaseIndex, weekIndex)}
-                >
-                  <CalendarDays className="mr-1 size-3" /> Agregar días default
-                  (mié/jue/dom)
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onAddWorkout(phaseIndex, weekIndex)}
-                >
-                  <Plus className="mr-1 size-3" /> Agregar sesión
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )),
-      )}
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Paso 5: Bloques
-// ---------------------------------------------------------------------------
-
-function BlocksStep({
-  draft,
-  onBlockChange,
-  onAddBlock,
-  onRemoveBlock,
-  onMoveBlock,
-  onAddInterval,
-}: {
-  draft: PlanDraft
-  onBlockChange: (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-    blockIndex: number,
-    patch: Partial<BlockDraft>,
-  ) => void
-  onAddBlock: (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-  ) => void
-  onRemoveBlock: (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-    blockIndex: number,
-  ) => void
-  onMoveBlock: (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-    blockIndex: number,
-    direction: -1 | 1,
-  ) => void
-  onAddInterval: (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-    data: Partial<BlockDraft>,
-  ) => void
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      {draft.phases.map((phase, phaseIndex) =>
-        phase.weeks.map((week, weekIndex) =>
-          week.workouts.map((workout, workoutIndex) => (
-            <Card key={`${phaseIndex}-${weekIndex}-${workoutIndex}`}>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Sesión {workoutIndex + 1} · Semana {week.number}
-                </CardTitle>
-                <CardDescription>
-                  {workout.objective.trim() || "Sin objetivo"} ·{" "}
-                  {formatShortDate(workout.date)}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3">
-                {workout.type === "intervals" && (
-                  <IntervalBuilder
-                    onAdd={(data) =>
-                      onAddInterval(phaseIndex, weekIndex, workoutIndex, data)
-                    }
-                  />
-                )}
-                {workout.blocks.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    Sin bloques en esta sesión.
-                  </p>
-                )}
-                {workout.blocks.map((block, blockIndex) => {
-                  const hasDistance =
-                    block.distance_m != null && block.distance_m > 0
-                  const hasDuration =
-                    block.duration_seconds != null && block.duration_seconds > 0
-                  const noEffort = !hasDistance && !hasDuration
-                  const paceOrderError =
-                    block.pace_seconds_per_km != null &&
-                    block.pace_range_end_seconds_per_km != null &&
-                    block.pace_range_end_seconds_per_km <
-                      block.pace_seconds_per_km
-                  return (
-                    <div key={blockIndex} className="rounded-lg border p-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-sm font-semibold">
-                          Bloque {blockIndex + 1}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label="Mover bloque arriba"
-                            disabled={blockIndex === 0}
-                            onClick={() =>
-                              onMoveBlock(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                                -1,
-                              )
-                            }
-                          >
-                            <ArrowUp className="size-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label="Mover bloque abajo"
-                            disabled={blockIndex === workout.blocks.length - 1}
-                            onClick={() =>
-                              onMoveBlock(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                                1,
-                              )
-                            }
-                          >
-                            <ArrowDown className="size-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label="Eliminar bloque"
-                            disabled={workout.blocks.length === 1}
-                            onClick={() =>
-                              onRemoveBlock(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                              )
-                            }
-                          >
-                            <Trash2 className="size-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="mt-3 grid gap-3 sm:grid-cols-4">
-                        <Field label="Tipo">
-                          <Select
-                            value={block.block_type}
-                            onValueChange={(value) =>
-                              onBlockChange(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                                { block_type: value as BlockType },
-                              )
-                            }
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(
-                                Object.keys(BLOCK_TYPE_META) as BlockType[]
-                              ).map((blockType) => (
-                                <SelectItem key={blockType} value={blockType}>
-                                  {BLOCK_TYPE_META[blockType].label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </Field>
-                        <Field label="Repeticiones">
-                          <NumberField
-                            value={block.repeats}
-                            onValueChange={(value) =>
-                              onBlockChange(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                                {
-                                  repeats:
-                                    value == null
-                                      ? 1
-                                      : Math.max(1, Math.round(value)),
-                                },
-                              )
-                            }
-                            min={1}
-                          />
-                        </Field>
-                        <Field label="Distancia (m)">
-                          <NumberStepper
-                            value={block.distance_m}
-                            className={errorInputClass(noEffort)}
-                            onValueChange={(value) =>
-                              onBlockChange(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                                { distance_m: value },
-                              )
-                            }
-                            placeholder="1000"
-                            step={100}
-                            min={0}
-                          />
-                        </Field>
-                        <Field label="Duración" hint="Formato hh:mm">
-                          <DurationStepper
-                            value={block.duration_seconds}
-                            className={errorInputClass(noEffort)}
-                            onValueChange={(value) =>
-                              onBlockChange(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                                { duration_seconds: value },
-                              )
-                            }
-                            stepMinutes={5}
-                          />
-                        </Field>
-                        <Field label="Ritmo" hint="Formato mm:ss">
-                          <PaceText
-                            value={block.pace_seconds_per_km}
-                            onValueChange={(value) =>
-                              onBlockChange(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                                { pace_seconds_per_km: value },
-                              )
-                            }
-                          />
-                        </Field>
-                        <Field label="Ritmo máximo" hint="Para rango 5:40–5:50">
-                          <PaceText
-                            value={block.pace_range_end_seconds_per_km}
-                            className={errorInputClass(paceOrderError)}
-                            onValueChange={(value) =>
-                              onBlockChange(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                                { pace_range_end_seconds_per_km: value },
-                              )
-                            }
-                          />
-                        </Field>
-                        <Field label="Recuperación (min)">
-                          <NumberStepper
-                            value={
-                              block.recovery_seconds == null
-                                ? null
-                                : Math.round(
-                                    (block.recovery_seconds / 60) * 10,
-                                  ) / 10
-                            }
-                            onValueChange={(value) =>
-                              onBlockChange(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                                {
-                                  recovery_seconds:
-                                    value == null
-                                      ? null
-                                      : Math.round(value * 60),
-                                },
-                              )
-                            }
-                            placeholder="2"
-                            step={0.5}
-                            min={0}
-                          />
-                        </Field>
-                        <Field label="Tipo de recuperación">
-                          <Select
-                            value={block.recovery_type}
-                            onValueChange={(value) =>
-                              onBlockChange(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                                { recovery_type: value as "jog" | "walk" },
-                              )
-                            }
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="jog">Trotando</SelectItem>
-                              <SelectItem value="walk">Caminando</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </Field>
-                        <Field label="Notas" className="sm:col-span-4">
-                          <Input
-                            value={block.notes}
-                            onChange={(e) =>
-                              onBlockChange(
-                                phaseIndex,
-                                weekIndex,
-                                workoutIndex,
-                                blockIndex,
-                                { notes: e.target.value },
-                              )
-                            }
-                            placeholder="Opcional"
-                          />
-                        </Field>
-                      </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/10 bg-primary/5 px-3 py-2">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase">
-                          Vista previa
-                        </span>
-                        <span className="text-sm font-medium">
-                          {buildBlockPreview(block)}
-                        </span>
-                      </div>
-                      {noEffort && (
-                        <p className="mt-2 text-xs text-destructive">
-                          Indicá distancia o duración para este bloque.
-                        </p>
-                      )}
-                      {paceOrderError && (
-                        <p className="mt-2 text-xs text-destructive">
-                          El ritmo máximo debe ser mayor o igual al ritmo
-                          inicial.
-                        </p>
-                      )}
-                    </div>
-                  )
-                })}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    onAddBlock(phaseIndex, weekIndex, workoutIndex)
-                  }
-                >
-                  <Plus className="mr-1 size-3" /> Agregar bloque
-                </Button>
-              </CardContent>
-            </Card>
-          )),
-        ),
-      )}
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Paso 6: Revisión
-// ---------------------------------------------------------------------------
-
-function ReviewStep({ draft }: { draft: PlanDraft }) {
-  const { totalWeeks, totalSessions, plannedKm } = useMemo(() => {
-    let sessions = 0
-    let km = 0
-    for (const { workout } of collectWorkouts(draft)) {
-      sessions += 1
-      if (workout.distance_km != null && workout.distance_km > 0) {
-        km += workout.distance_km
-      } else {
-        km += blocksDistanceKm(workout.blocks) ?? 0
-      }
-    }
     return {
-      totalWeeks: draft.phases.reduce(
-        (acc, phase) => acc + phase.weeks.length,
-        0,
-      ),
-      totalSessions: sessions,
-      plannedKm: Math.round(km * 10) / 10,
+      position: phaseIdx + 1,
+      name: spec.name,
+      color: spec.color,
+      start_week: spec.start,
+      end_week: spec.end,
+      objective: spec.objective,
+      description: "",
+      weeks: weeksInPhase,
     }
-  }, [draft])
+  })
 
-  const typeCounts = useMemo(() => {
-    const counts = new Map<WorkoutType, number>()
-    for (const { workout } of collectWorkouts(draft)) {
-      counts.set(workout.type, (counts.get(workout.type) ?? 0) + 1)
-    }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1])
-  }, [draft])
+  // Format plan name automatically if empty
+  const planName =
+    draft.name.trim() ||
+    `Plan ${targetKm}K — Runna Engine (${numWeeks} sem)`
 
-  const selectedRace = draft.race_id
-
-  return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Resumen de tu plan</CardTitle>
-          <CardDescription>
-            {draft.name.trim() || "Plan sin nombre"} ·{" "}
-            {PLAN_STATUS_META[draft.status].label}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground uppercase">
-              Fechas
-            </span>
-            <span className="text-sm font-medium">
-              {draft.start_date
-                ? formatDateRange(draft.start_date, draft.end_date || null)
-                : "—"}
-            </span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground uppercase">
-              Semanas
-            </span>
-            <span className="text-sm font-medium">{totalWeeks}</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground uppercase">
-              Sesiones
-            </span>
-            <span className="text-sm font-medium">{totalSessions}</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground uppercase">
-              Km planificados
-            </span>
-            <span className="text-sm font-medium">
-              {formatDistance(plannedKm)}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Distribución por tipo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {typeCounts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Todavía no definiste sesiones.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {typeCounts.map(([type, count]) => (
-                <Badge
-                  key={type}
-                  variant="outline"
-                  className={cn("gap-1.5", WORKOUT_TYPE_META[type].badgeClass)}
-                >
-                  <span>{WORKOUT_TYPE_META[type].emoji}</span>
-                  <span>
-                    {count} {WORKOUT_TYPE_META[type].label}
-                  </span>
-                </Badge>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {draft.goal.trim() && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Detalles</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            <div>
-              <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                Objetivo
-              </span>
-              <p className="text-sm font-medium">{draft.goal.trim()}</p>
-            </div>
-            {selectedRace && (
-              <div>
-                <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                  Carrera
-                </span>
-                <p className="text-sm font-medium">Asignada</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  )
+  return {
+    ...draft,
+    name: planName,
+    goal: draft.goal || `Completar ${targetKm} km en ${formatTime(predictedFinishSec)} (${mathFormatPace(predictedPaceSec)}/km)`,
+    distance_km: targetKm,
+    target_time_seconds: predictedFinishSec,
+    target_pace_seconds_per_km: predictedPaceSec,
+    end_date: calculatedEndDate,
+    phases: generatedPhases,
+  }
 }
 
-// ---------------------------------------------------------------------------
-// Wizard principal
-// ---------------------------------------------------------------------------
-
-export function PlanWizard({ editId }: { editId: string | null }) {
+export function PlanWizard({ editId }: { editId?: string | null }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
+  const [step, setStep] = useState<number>(1)
   const [draft, setDraft] = useState<PlanDraft>(createEmptyDraft)
-  const [step, setStep] = useState(0)
-  const hydrated = useRef(false)
 
-  const planQuery = useQuery({
-    queryKey: ["running-plan", editId],
-    queryFn: () => RunningPlansService.readPlan({ planId: editId as string }),
+  // Questionnaire / Onboarding state (Runna style)
+  const [planType, setPlanType] = useState<string>("race")
+  const [targetKm, setTargetKm] = useState<number>(21.1)
+  const [numWeeks, setNumWeeks] = useState<number>(12)
+  const [userLevel, setUserLevel] = useState<string>("intermediate")
+  const [refDistanceKm, setRefDistanceKm] = useState<number>(5)
+  const [refTimeInput, setRefTimeInput] = useState<string>("00:24:30")
+  const [currentWeeklyKm, setCurrentWeeklyKm] = useState<number>(25)
+  const [longestRunKm, setLongestRunKm] = useState<number>(12)
+  const [selectedDays, setSelectedDays] = useState<number[]>([2, 4, 6, 0]) // Tue, Thu, Sat, Sun
+  const [longRunDay, setLongRunDay] = useState<number>(0) // Sunday
+
+  // Calculated VDOT preview
+  const refTimeSeconds = useMemo(
+    () => durationInputToSeconds(refTimeInput) || 1470,
+    [refTimeInput],
+  )
+
+  const calculatedVdot = useMemo(
+    () => calculateVDOT(refDistanceKm * 1000, refTimeSeconds),
+    [refDistanceKm, refTimeSeconds],
+  )
+
+  const calculatedPaces = useMemo(
+    () => getTrainingPaces(calculatedVdot),
+    [calculatedVdot],
+  )
+
+  const predictedRaceSec = useMemo(
+    () => predictTimeRiegel(refDistanceKm * 1000, refTimeSeconds, targetKm * 1000),
+    [refDistanceKm, refTimeSeconds, targetKm],
+  )
+
+  // Fetch plan if in edit mode
+  const editQuery = useQuery({
+    queryKey: ["running-plan", editId ?? ""],
+    queryFn: () => RunningPlansService.readPlan({ planId: editId! }),
     enabled: Boolean(editId),
   })
 
-  const racesQuery = useQuery({
-    queryKey: ["races", "options"],
-    queryFn: () => RacesService.readRaces({ limit: 100 }),
-  })
-  const races = racesQuery.data?.data ?? []
-
   useEffect(() => {
-    if (planQuery.data && !hydrated.current) {
-      hydrated.current = true
-      setDraft(publicToDraft(planQuery.data))
+    if (editQuery.data) {
+      const converted = publicToDraft(editQuery.data)
+      setDraft(converted)
+      if (converted.distance_km) setTargetKm(converted.distance_km)
     }
-  }, [planQuery.data])
+  }, [editQuery.data])
 
-  const updatePlan = (patch: Partial<PlanDraft>) =>
-    setDraft((prev) => ({ ...prev, ...patch }))
+  const racesQuery = useQuery({
+    queryKey: ["races"],
+    queryFn: () => RacesService.readRaces(),
+  })
 
-  const updatePhase = (index: number, patch: Partial<PhaseDraft>) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, i) =>
-        i === index ? { ...phase, ...patch } : phase,
-      ),
-    }))
-
-  const addPhase = () =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: [...prev.phases, emptyPhase(prev.phases.length + 1)],
-    }))
-
-  const removePhase = (index: number) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases
-        .filter((_, i) => i !== index)
-        .map((phase, i) => ({ ...phase, position: i + 1 })),
-    }))
-
-  const updateWeek = (
-    phaseIndex: number,
-    weekIndex: number,
-    patch: Partial<WeekDraft>,
-  ) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) =>
-        pi === phaseIndex
-          ? {
-              ...phase,
-              weeks: phase.weeks.map((week, wi) => {
-                if (wi !== weekIndex) return week
-                const next = { ...week, ...patch }
-                if (
-                  (patch.start_date || patch.end_date) &&
-                  next.workouts.length === 0
-                ) {
-                  next.workouts = prefillWeekSessions(prev.start_date, next)
-                }
-                return next
-              }),
-            }
-          : phase,
-      ),
-    }))
-
-  const addWeek = (phaseIndex: number) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) => {
-        if (pi !== phaseIndex) return phase
-        const week = emptyWeek(suggestWeekNumber(phase))
-        const workouts = prefillWeekSessions(prev.start_date, week)
-        return { ...phase, weeks: [...phase.weeks, { ...week, workouts }] }
-      }),
-    }))
-
-  const removeWeek = (phaseIndex: number, weekIndex: number) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) =>
-        pi === phaseIndex
-          ? { ...phase, weeks: phase.weeks.filter((_, wi) => wi !== weekIndex) }
-          : phase,
-      ),
-    }))
-
-  const updateWorkout = (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-    patch: Partial<WorkoutDraft>,
-  ) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) =>
-        pi === phaseIndex
-          ? {
-              ...phase,
-              weeks: phase.weeks.map((week, wi) =>
-                wi === weekIndex
-                  ? {
-                      ...week,
-                      workouts: week.workouts.map((workout, xi) =>
-                        xi === workoutIndex
-                          ? { ...workout, ...patch }
-                          : workout,
-                      ),
-                    }
-                  : week,
-              ),
-            }
-          : phase,
-      ),
-    }))
-
-  const addWorkout = (phaseIndex: number, weekIndex: number) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) =>
-        pi === phaseIndex
-          ? {
-              ...phase,
-              weeks: phase.weeks.map((week, wi) =>
-                wi === weekIndex
-                  ? { ...week, workouts: [...week.workouts, emptyWorkout()] }
-                  : week,
-              ),
-            }
-          : phase,
-      ),
-    }))
-
-  const removeWorkout = (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-  ) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) =>
-        pi === phaseIndex
-          ? {
-              ...phase,
-              weeks: phase.weeks.map((week, wi) =>
-                wi === weekIndex
-                  ? {
-                      ...week,
-                      workouts: week.workouts.filter(
-                        (_, xi) => xi !== workoutIndex,
-                      ),
-                    }
-                  : week,
-              ),
-            }
-          : phase,
-      ),
-    }))
-
-  const addDefaultWorkouts = (phaseIndex: number, weekIndex: number) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) =>
-        pi === phaseIndex
-          ? {
-              ...phase,
-              weeks: phase.weeks.map((week, wi) => {
-                if (wi !== weekIndex) return week
-                const existing = new Set(
-                  week.workouts.map((workout) => workout.date).filter(Boolean),
-                )
-                const missing = prefillWeekSessions(
-                  prev.start_date,
-                  week,
-                ).filter((workout) => !existing.has(workout.date))
-                return {
-                  ...week,
-                  workouts: [...week.workouts, ...missing],
-                }
-              }),
-            }
-          : phase,
-      ),
-    }))
-
-  const updateBlock = (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-    blockIndex: number,
-    patch: Partial<BlockDraft>,
-  ) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) =>
-        pi === phaseIndex
-          ? {
-              ...phase,
-              weeks: phase.weeks.map((week, wi) =>
-                wi === weekIndex
-                  ? {
-                      ...week,
-                      workouts: week.workouts.map((workout, xi) =>
-                        xi === workoutIndex
-                          ? {
-                              ...workout,
-                              blocks: workout.blocks.map((block, bi) =>
-                                bi === blockIndex
-                                  ? { ...block, ...patch }
-                                  : block,
-                              ),
-                            }
-                          : workout,
-                      ),
-                    }
-                  : week,
-              ),
-            }
-          : phase,
-      ),
-    }))
-
-  const addBlock = (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-  ) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) =>
-        pi === phaseIndex
-          ? {
-              ...phase,
-              weeks: phase.weeks.map((week, wi) =>
-                wi === weekIndex
-                  ? {
-                      ...week,
-                      workouts: week.workouts.map((workout, xi) =>
-                        xi === workoutIndex
-                          ? {
-                              ...workout,
-                              blocks: [
-                                ...workout.blocks,
-                                emptyBlock(workout.blocks.length + 1),
-                              ],
-                            }
-                          : workout,
-                      ),
-                    }
-                  : week,
-              ),
-            }
-          : phase,
-      ),
-    }))
-
-  const addIntervalBlock = (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-    data: Partial<BlockDraft>,
-  ) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) =>
-        pi === phaseIndex
-          ? {
-              ...phase,
-              weeks: phase.weeks.map((week, wi) =>
-                wi === weekIndex
-                  ? {
-                      ...week,
-                      workouts: week.workouts.map((workout, xi) =>
-                        xi === workoutIndex
-                          ? {
-                              ...workout,
-                              blocks: [
-                                ...workout.blocks,
-                                {
-                                  ...emptyBlock(workout.blocks.length + 1),
-                                  ...data,
-                                },
-                              ],
-                            }
-                          : workout,
-                      ),
-                    }
-                  : week,
-              ),
-            }
-          : phase,
-      ),
-    }))
-
-  const removeBlock = (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-    blockIndex: number,
-  ) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) =>
-        pi === phaseIndex
-          ? {
-              ...phase,
-              weeks: phase.weeks.map((week, wi) =>
-                wi === weekIndex
-                  ? {
-                      ...week,
-                      workouts: week.workouts.map((workout, xi) =>
-                        xi === workoutIndex
-                          ? {
-                              ...workout,
-                              blocks: workout.blocks
-                                .filter((_, bi) => bi !== blockIndex)
-                                .map((block, bi) => ({
-                                  ...block,
-                                  position: bi + 1,
-                                })),
-                            }
-                          : workout,
-                      ),
-                    }
-                  : week,
-              ),
-            }
-          : phase,
-      ),
-    }))
-
-  const moveBlock = (
-    phaseIndex: number,
-    weekIndex: number,
-    workoutIndex: number,
-    blockIndex: number,
-    direction: -1 | 1,
-  ) =>
-    setDraft((prev) => ({
-      ...prev,
-      phases: prev.phases.map((phase, pi) =>
-        pi === phaseIndex
-          ? {
-              ...phase,
-              weeks: phase.weeks.map((week, wi) =>
-                wi === weekIndex
-                  ? {
-                      ...week,
-                      workouts: week.workouts.map((workout, xi) =>
-                        xi === workoutIndex
-                          ? {
-                              ...workout,
-                              blocks: reorder(
-                                workout.blocks,
-                                blockIndex,
-                                blockIndex + direction,
-                              ).map((block, bi) => ({
-                                ...block,
-                                position: bi + 1,
-                              })),
-                            }
-                          : workout,
-                      ),
-                    }
-                  : week,
-              ),
-            }
-          : phase,
-      ),
-    }))
-
-  const duplicateDates = useMemo(() => findDuplicateDates(draft), [draft])
-
-  const stepValid = [
-    goalStepValid(draft),
-    phasesStepValid(draft),
-    weeksStepValid(draft),
-    sessionsStepValid(draft),
-    blocksStepValid(draft),
-    true,
-  ][step]
-
-  const mutation = useMutation({
-    mutationFn: () => {
-      const payload = buildPayload(draft)
-      if (editId) {
-        return RunningPlansService.replacePlan({
-          planId: editId,
-          requestBody: payload,
-        })
-      }
-      return RunningPlansService.createPlan({ requestBody: payload })
-    },
-    onSuccess: (result) => {
-      showSuccessToast(editId ? "Plan actualizado" : "Plan creado")
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: (payload: RunningPlanCreate) =>
+      RunningPlansService.createPlan({ requestBody: payload }),
+    onSuccess: (res) => {
+      showSuccessToast("¡Plan generado y guardado exitosamente!")
       queryClient.invalidateQueries({ queryKey: ["running-plans"] })
-      queryClient.invalidateQueries({ queryKey: ["running-plan"] })
-      navigate({ to: "/routines/run/$planId", params: { planId: result.id } })
+      navigate({ to: "/routines/run/$planId", params: { planId: res.id } })
     },
     onError: handleError.bind(showErrorToast),
   })
 
-  const goNext = () =>
-    setStep((current) => Math.min(current + 1, STEPS.length - 1))
-  const goBack = () => setStep((current) => Math.max(current - 1, 0))
-  const goToStep = (index: number) =>
-    setStep((current) => (index <= current ? index : current))
+  const updateMutation = useMutation({
+    mutationFn: (payload: RunningPlanCreate) =>
+      RunningPlansService.replacePlan({ planId: editId!, requestBody: payload }),
+    onSuccess: () => {
+      showSuccessToast("Plan actualizado")
+      queryClient.invalidateQueries({ queryKey: ["running-plans"] })
+      queryClient.invalidateQueries({ queryKey: ["running-plan", editId] })
+      navigate({ to: "/routines/run/$planId", params: { planId: editId! } })
+    },
+    onError: handleError.bind(showErrorToast),
+  })
 
-  if (editId && planQuery.isLoading) {
-    return (
-      <div className="flex flex-col gap-4">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-96 w-full" />
-      </div>
+  const isPending = createMutation.isPending || updateMutation.isPending
+
+  const handleSave = () => {
+    if (!draft.name.trim()) {
+      showErrorToast("Ingresá un nombre para tu plan")
+      return
+    }
+    const payload = buildPayload(draft)
+    if (editId) {
+      updateMutation.mutate(payload)
+    } else {
+      createMutation.mutate(payload)
+    }
+  }
+
+  const toggleDay = (dayId: number) => {
+    setSelectedDays((prev) =>
+      prev.includes(dayId) ? prev.filter((d) => d !== dayId) : [...prev, dayId],
     )
   }
 
-  if (editId && planQuery.isError) {
+  const handleGenerateRunnaEngine = () => {
+    if (selectedDays.length === 0) {
+      showErrorToast("Seleccioná al menos 1 día de entrenamiento")
+      return
+    }
+
+    const generated = generateRunnaPlanStructure({
+      draft,
+      planType,
+      targetKm,
+      numWeeks,
+      userLevel,
+      refDistanceKm,
+      refTimeSeconds,
+      currentWeeklyKm,
+      longestRunKm,
+      selectedDays,
+      longRunDay,
+    })
+
+    setDraft(generated)
+    showSuccessToast("¡Algoritmo Runna ejecutado! Plan generado con bloques exactos.")
+    setStep(6) // Jump to Unified Editor & Preview
+  }
+
+  // Weekly Km chart stats for Unified Editor
+  const weeklyKmStats = useMemo(() => {
+    const stats: Array<{ weekNum: number; totalKm: number }> = []
+    draft.phases.forEach((phase) => {
+      phase.weeks.forEach((week) => {
+        const km = week.workouts.reduce(
+          (acc, w) => acc + (w.distance_km || blocksDistanceKm(w.blocks) || 0),
+          0,
+        )
+        stats.push({ weekNum: week.number, totalKm: Math.round(km * 10) / 10 })
+      })
+    })
+    return stats
+  }, [draft])
+
+  const maxWeeklyKm = Math.max(...weeklyKmStats.map((s) => s.totalKm), 1)
+
+  if (editQuery.isLoading) {
     return (
-      <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <p className="text-lg font-semibold">No se pudo cargar el plan</p>
-        <Button type="button" variant="outline" asChild>
-          <Link to="/routines">
-            <ChevronLeft className="mr-2 size-4" /> Volver a rutinas
-          </Link>
-        </Button>
+      <div className="flex flex-col gap-4 py-8">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 w-full" />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {editId ? "Editar plan" : "Nuevo plan de running"}
-          </h1>
-          <p className="text-muted-foreground">
-            Planificá tu temporada con fases, semanas y sesiones.
-          </p>
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto py-2">
+      {/* Top Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl" asChild>
+            <Link to="/routines">
+              <ArrowLeft className="size-5" />
+            </Link>
+          </Button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-white">
+                {editId ? "Editar Plan de Running" : "Creador de Planes Estilo Runna"}
+              </h1>
+              <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 gap-1 text-[11px] font-bold">
+                <Sparkles className="size-3" /> Algoritmo VDOT
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-400">
+              Respondé las preguntas clave y el algoritmo calculará matemáticamente tus cargas, ritmos y bloques.
+            </p>
+          </div>
         </div>
-        <Stepper current={step} onSelect={goToStep} />
-      </header>
 
-      <div className="pb-4">
-        {step === 0 && (
-          <ObjectiveStep draft={draft} races={races} onUpdate={updatePlan} />
-        )}
-        {step === 1 && (
-          <PhasesStep
-            draft={draft}
-            onPhaseChange={updatePhase}
-            onAddPhase={addPhase}
-            onRemovePhase={removePhase}
-          />
-        )}
-        {step === 2 && (
-          <WeeksStep
-            draft={draft}
-            onWeekChange={updateWeek}
-            onAddWeek={addWeek}
-            onRemoveWeek={removeWeek}
-          />
-        )}
-        {step === 3 && (
-          <SessionsStep
-            draft={draft}
-            duplicateDates={duplicateDates}
-            onWorkoutChange={updateWorkout}
-            onAddWorkout={addWorkout}
-            onRemoveWorkout={removeWorkout}
-            onAddDefaultWorkouts={addDefaultWorkouts}
-          />
-        )}
-        {step === 4 && (
-          <BlocksStep
-            draft={draft}
-            onBlockChange={updateBlock}
-            onAddBlock={addBlock}
-            onRemoveBlock={removeBlock}
-            onMoveBlock={moveBlock}
-            onAddInterval={addIntervalBlock}
-          />
-        )}
-        {step === 5 && <ReviewStep draft={draft} />}
-      </div>
-
-      <footer className="sticky bottom-0 z-10 -mx-6 border-t bg-background/95 px-6 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] backdrop-blur md:-mx-8 md:px-8">
-        <div className="flex items-center justify-between gap-3">
+        {step === 6 && (
           <Button
             type="button"
-            variant="outline"
-            disabled={step === 0 || mutation.isPending}
-            onClick={goBack}
+            onClick={handleSave}
+            disabled={isPending}
+            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 gap-2 rounded-xl cursor-pointer"
           >
-            <ChevronLeft className="mr-1 size-4" /> Atrás
+            {isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Check className="size-4 stroke-[3]" />
+            )}
+            <span>{editId ? "Guardar Cambios" : "Guardar Plan"}</span>
           </Button>
-          {step < STEPS.length - 1 ? (
-            <Button
-              type="button"
-              disabled={!stepValid || mutation.isPending}
-              onClick={goNext}
-            >
-              Continuar <ChevronRight className="ml-1 size-4" />
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              disabled={!stepValid || mutation.isPending}
-              onClick={() => mutation.mutate()}
-            >
-              {mutation.isPending && (
-                <Loader2 className="mr-2 size-4 animate-spin" />
+        )}
+      </div>
+
+      {/* Step Indicator Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 border-b border-slate-800 pb-4">
+        {ONBOARDING_STEPS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setStep(s.id)}
+            className={cn(
+              "flex flex-col gap-1 p-2.5 rounded-xl text-left border transition-all duration-200 cursor-pointer",
+              step === s.id
+                ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-400 shadow-sm"
+                : "border-slate-800 bg-slate-900/80 text-slate-400 hover:bg-slate-800 hover:text-white",
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <span
+                className={cn(
+                  "size-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                  step === s.id
+                    ? "bg-emerald-500 text-slate-950"
+                    : "bg-slate-800 text-slate-400 border border-slate-700",
+                )}
+              >
+                {s.id}
+              </span>
+              {step > s.id && <Check className="size-3.5 text-emerald-400" />}
+            </div>
+            <span className="font-bold text-xs truncate">{s.title}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* STEP 1: Objetivo Principal */}
+      {step === 1 && (
+        <Card className="p-6 bg-slate-900 border-slate-800 shadow-xl rounded-2xl">
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
+              <Trophy className="size-5 text-amber-400" />
+              1. Tu Objetivo Principal
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-0 flex flex-col gap-6">
+            {/* Plan Type Cards */}
+            <div className="flex flex-col gap-3">
+              <Label className="font-semibold text-xs text-slate-300">¿Cuál es tu tipo de objetivo?</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  {
+                    id: "race",
+                    title: "Carrera Oficial",
+                    desc: "Preparar un evento oficial con fecha límite",
+                    icon: Trophy,
+                  },
+                  {
+                    id: "distance",
+                    title: "Cubrir Distancia",
+                    desc: "Superar 5K, 10K, 21K o 42K por tu cuenta",
+                    icon: Flag,
+                  },
+                  {
+                    id: "faster",
+                    title: "Mejorar Marca",
+                    desc: "Aumentar velocidad y bajar tiempos",
+                    icon: Zap,
+                  },
+                  {
+                    id: "beginner",
+                    title: "Empezar a Correr",
+                    desc: "Plan desde cero para ganar hábito y resistencia",
+                    icon: Footprints,
+                  },
+                ].map((type) => (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setPlanType(type.id)}
+                    className={cn(
+                      "flex flex-col gap-2 p-4 rounded-xl border text-left transition-all cursor-pointer",
+                      planType === type.id
+                        ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-400 shadow-sm ring-1 ring-emerald-500/40"
+                        : "border-slate-800 bg-slate-800/40 text-slate-300 hover:bg-slate-800 hover:border-slate-700",
+                    )}
+                  >
+                    <type.icon className={cn("size-6", planType === type.id ? "text-emerald-400" : "text-slate-400")} />
+                    <div>
+                      <h4 className="font-bold text-sm text-white">{type.title}</h4>
+                      <p className="text-xs text-slate-400 mt-0.5">{type.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Distance Target Selection */}
+            <div className="flex flex-col gap-3 border-t border-slate-800 pt-4">
+              <Label className="font-semibold text-xs text-slate-300">Distancia Objetivo</Label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "5K", km: 5 },
+                  { label: "10K", km: 10 },
+                  { label: "21.1K (Media Maratón)", km: 21.1 },
+                  { label: "42.2K (Maratón)", km: 42.2 },
+                  { label: "50K (Ultra)", km: 50 },
+                ].map((d) => (
+                  <button
+                    key={d.km}
+                    type="button"
+                    onClick={() => {
+                      setTargetKm(d.km)
+                      setDraft({ ...draft, distance_km: d.km })
+                    }}
+                    className={cn(
+                      "px-4 py-2 rounded-xl border font-bold text-xs transition-all cursor-pointer",
+                      targetKm === d.km
+                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/60 shadow-xs"
+                        : "bg-slate-800/60 text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white",
+                    )}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Plan Duration / Race Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-800 pt-4">
+              {planType === "race" && (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="race-select" className="font-semibold text-xs text-slate-300">
+                    Carrera Objetivo Guardada
+                  </Label>
+                  <Select
+                    value={draft.race_id ?? "none"}
+                    onValueChange={(val) =>
+                      setDraft({ ...draft, race_id: val === "none" ? null : val })
+                    }
+                  >
+                    <SelectTrigger id="race-select" className="bg-slate-800 border-slate-700 text-white rounded-xl">
+                      <SelectValue placeholder="Seleccionar de tus carreras" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                      <SelectItem value="none" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">Sin carrera vinculada</SelectItem>
+                      {(racesQuery.data?.data ?? []).map((r: RacePublic) => (
+                        <SelectItem key={r.id} value={r.id} className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">
+                          {r.event_name} ({r.distance_km} km)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
-              {editId ? "Guardar cambios" : "Guardar plan"}
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="num-weeks-select" className="font-semibold text-xs text-slate-300">
+                  Duración del Bloque (Semanas)
+                </Label>
+                <Select
+                  value={numWeeks.toString()}
+                  onValueChange={(val) => setNumWeeks(parseInt(val, 10))}
+                >
+                  <SelectTrigger id="num-weeks-select" className="bg-slate-800 border-slate-700 text-white rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="6" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">6 Semanas (Expreso)</SelectItem>
+                    <SelectItem value="8" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">8 Semanas (Corto)</SelectItem>
+                    <SelectItem value="12" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">12 Semanas (Recomendado Runna)</SelectItem>
+                    <SelectItem value="16" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">16 Semanas (Maratón 42K)</SelectItem>
+                    <SelectItem value="20" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">20 Semanas (Ultra / Bloque Extendido)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button type="button" onClick={() => setStep(2)} className="gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 rounded-xl cursor-pointer">
+                <span>Siguiente: Nivel & Ritmos VDOT</span>
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 2: Nivel & Marca Reciente (Cálculo VDOT en vivo) */}
+      {step === 2 && (
+        <Card className="p-6 bg-slate-900/90 border-slate-800 shadow-xl text-white">
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
+              <Gauge className="size-5 text-indigo-400" />
+              2. Nivel Actual & Calculadora VDOT (Dato Clave)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-0 flex flex-col gap-6">
+            {/* Level selection */}
+            <div className="flex flex-col gap-3">
+              <Label className="font-semibold text-sm text-slate-300">Tu Nivel Auto-Percibido</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: "beginner", label: "Principiante" },
+                  { id: "intermediate", label: "Intermedio" },
+                  { id: "advanced", label: "Avanzado" },
+                  { id: "elite", label: "Élite" },
+                ].map((lvl) => (
+                  <button
+                    key={lvl.id}
+                    type="button"
+                    onClick={() => setUserLevel(lvl.id)}
+                    className={cn(
+                      "py-2.5 px-3 rounded-xl border text-center font-bold text-xs transition-all",
+                      userLevel === lvl.id
+                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/60 shadow-xs"
+                        : "bg-slate-800/60 text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white",
+                    )}
+                  >
+                    {lvl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Reference Performance Input */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-800 pt-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="ref-dist" className="font-semibold text-slate-300">
+                  Distancia de Referencia Reciente
+                </Label>
+                <Select
+                  value={refDistanceKm.toString()}
+                  onValueChange={(val) => setRefDistanceKm(parseFloat(val))}
+                >
+                  <SelectTrigger id="ref-dist" className="bg-slate-800/80 border-slate-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="5">5K Reciente</SelectItem>
+                    <SelectItem value="10">10K Reciente</SelectItem>
+                    <SelectItem value="21.1">21.1K (Media Maratón)</SelectItem>
+                    <SelectItem value="42.2">42.2K (Maratón)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="ref-time" className="font-semibold text-slate-300">
+                  Mejor Tiempo Reciente (hh:mm:ss o mm:ss)
+                </Label>
+                <Input
+                  id="ref-time"
+                  placeholder="00:24:30"
+                  value={refTimeInput}
+                  onChange={(e) => setRefTimeInput(e.target.value)}
+                  className="bg-slate-800/80 border-slate-700 text-white font-mono"
+                />
+              </div>
+            </div>
+
+            {/* Calculated VDOT Live Preview Card */}
+            <div className="flex flex-col gap-3 rounded-xl border border-emerald-500/30 bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 p-4 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-emerald-500 text-slate-950 font-extrabold text-xs">
+                    VDOT: {calculatedVdot}
+                  </Badge>
+                  <span className="text-xs font-bold text-white">
+                    Ritmos de Entrenamiento Calculados por Algoritmo (Jack Daniels)
+                  </span>
+                </div>
+
+                <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-400">
+                  {refDistanceKm}K en {formatTime(refTimeSeconds)}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+                <div className="flex flex-col p-2.5 rounded-lg border border-slate-800 bg-slate-900/80">
+                  <span className="text-[10px] uppercase font-bold text-slate-400">
+                    Rodaje Suave (Z2)
+                  </span>
+                  <span className="text-sm font-extrabold text-emerald-400">
+                    {calculatedPaces.easyMin} - {calculatedPaces.easyMax} /km
+                  </span>
+                </div>
+
+                <div className="flex flex-col p-2.5 rounded-lg border border-slate-800 bg-slate-900/80">
+                  <span className="text-[10px] uppercase font-bold text-slate-400">
+                    Ritmo Tempo (Umbral)
+                  </span>
+                  <span className="text-sm font-extrabold text-amber-400">
+                    {calculatedPaces.threshold} /km
+                  </span>
+                </div>
+
+                <div className="flex flex-col p-2.5 rounded-lg border border-slate-800 bg-slate-900/80">
+                  <span className="text-[10px] uppercase font-bold text-slate-400">
+                    Intervalos (VO2 Max)
+                  </span>
+                  <span className="text-sm font-extrabold text-purple-400">
+                    {calculatedPaces.interval} /km
+                  </span>
+                </div>
+
+                <div className="flex flex-col p-2.5 rounded-lg border border-slate-800 bg-slate-900/80">
+                  <span className="text-[10px] uppercase font-bold text-slate-400">
+                    Objetivo {targetKm}K (Riegel)
+                  </span>
+                  <span className="text-sm font-extrabold text-teal-400">
+                    {formatTime(predictedRaceSec)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between border-t border-slate-800 pt-4">
+              <Button type="button" variant="outline" className="border-slate-700 text-slate-300" onClick={() => setStep(1)}>
+                Atrás
+              </Button>
+              <Button type="button" onClick={() => setStep(3)} className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold">
+                <span>Siguiente: Volumen Actual</span>
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 3: Volumen Actual & Antecedentes */}
+      {step === 3 && (
+        <Card className="p-6 bg-slate-900/90 border-slate-800 shadow-xl text-white">
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
+              <Activity className="size-5 text-emerald-400" />
+              3. Volumen Semanal Actual & Prevención de Lesiones
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-0 flex flex-col gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="current-weekly" className="font-semibold text-slate-300">
+                  Kilometraje Semanal Promedio Actual ({currentWeeklyKm} km/sem)
+                </Label>
+                <Input
+                  id="current-weekly"
+                  type="number"
+                  value={currentWeeklyKm}
+                  onChange={(e) => setCurrentWeeklyKm(parseInt(e.target.value, 10) || 10)}
+                  className="font-extrabold text-base bg-slate-800/80 border-slate-700 text-white"
+                />
+                <p className="text-xs text-slate-400">
+                  El algoritmo usará este dato para que el volumen de la Semana 1 no supere un incremento del 10-15%.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="longest-run" className="font-semibold text-slate-300">
+                  Tirada Más Larga Reciente del Último Mes ({longestRunKm} km)
+                </Label>
+                <Input
+                  id="longest-run"
+                  type="number"
+                  value={longestRunKm}
+                  onChange={(e) => setLongestRunKm(parseInt(e.target.value, 10) || 5)}
+                  className="font-extrabold text-base bg-slate-800/80 border-slate-700 text-white"
+                />
+                <p className="text-xs text-slate-400">
+                  Permite escalar la distancia de la tirada larga del fin de semana progresivamente.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-between border-t border-slate-800 pt-4">
+              <Button type="button" variant="outline" className="border-slate-700 text-slate-300" onClick={() => setStep(2)}>
+                Atrás
+              </Button>
+              <Button type="button" onClick={() => setStep(4)} className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold">
+                <span>Siguiente: Disponibilidad Semanal</span>
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 4: Disponibilidad Semanal & Tirada Larga */}
+      {step === 4 && (
+        <Card className="p-6 bg-slate-900/90 border-slate-800 shadow-xl text-white">
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
+              <Calendar className="size-5 text-sky-400" />
+              4. Disponibilidad Semanal & Días de Entrenamiento
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-0 flex flex-col gap-6">
+            {/* Days Selection */}
+            <div className="flex flex-col gap-3">
+              <Label className="font-semibold text-sm text-slate-300">Seleccioná los Días en los que Podés Salir a Correr</Label>
+              <div className="flex flex-wrap gap-2">
+                {DAYS_OF_WEEK.map((d) => {
+                  const isSelected = selectedDays.includes(d.id)
+                  return (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => toggleDay(d.id)}
+                      className={cn(
+                        "flex flex-col items-center justify-center size-14 rounded-xl border transition-all font-bold text-sm",
+                        isSelected
+                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/60 shadow-xs"
+                          : "bg-slate-800/60 text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white",
+                      )}
+                    >
+                      <span>{d.short}</span>
+                      <span className="text-[10px] font-normal opacity-80">
+                        {d.label.slice(0, 3)}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-slate-400">
+                Seleccionaste {selectedDays.length} días por semana.
+              </p>
+            </div>
+
+            {/* Long Run Day selector */}
+            <div className="flex flex-col gap-3 border-t border-slate-800 pt-4">
+              <Label htmlFor="long-run-day" className="font-semibold text-slate-300">
+                Día Preferido para la Tirada Larga (Fondo)
+              </Label>
+              <Select
+                value={longRunDay.toString()}
+                onValueChange={(val) => setLongRunDay(parseInt(val, 10))}
+              >
+                <SelectTrigger id="long-run-day" className="w-64 bg-slate-800/80 border-slate-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                  <SelectItem value="0">Domingo (Recomendado)</SelectItem>
+                  <SelectItem value="6">Sábado</SelectItem>
+                  <SelectItem value="5">Viernes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-between border-t border-slate-800 pt-4">
+              <Button type="button" variant="outline" className="border-slate-700 text-slate-300" onClick={() => setStep(3)}>
+                Atrás
+              </Button>
+              <Button type="button" onClick={() => setStep(5)} className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold">
+                <span>Siguiente: Resumen & Algoritmo Runna</span>
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 5: Resumen & Motor Algorítmico */}
+      {step === 5 && (
+        <Card className="p-6 border-emerald-500/40 bg-slate-900/90 shadow-xl text-white">
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="text-xl font-extrabold flex items-center gap-2 text-white">
+              <Sparkles className="size-6 text-amber-400 animate-pulse" />
+              5. Generar Plan Completo con Algoritmo Runna
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-0 flex flex-col gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-800/60 border border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-xs text-slate-400">Distancia & Bloque</span>
+                <span className="font-extrabold text-white">{targetKm} km en {numWeeks} Semanas</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-slate-400">Puntaje VDOT & Ritmos</span>
+                <span className="font-extrabold text-emerald-400">VDOT {calculatedVdot} ({calculatedPaces.easyMin} - {calculatedPaces.threshold}/km)</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-slate-400">Días Semanales</span>
+                <span className="font-extrabold text-white">{selectedDays.length} días/sem (Fondo: {DAYS_OF_WEEK.find(d => d.id === longRunDay)?.label})</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <Button
+                type="button"
+                onClick={handleGenerateRunnaEngine}
+                className="bg-gradient-to-r from-teal-500 to-emerald-400 hover:from-teal-600 hover:to-emerald-500 text-slate-950 font-extrabold text-base px-8 py-6 rounded-2xl shadow-xl transition-all gap-3 cursor-pointer"
+              >
+                <Wand2 className="size-6" />
+                <span>⚡ Ejecutar Algoritmo & Generar Plan Estructurado</span>
+              </Button>
+              <p className="text-xs text-slate-400">
+                Cada sesión del plan se creará con sus bloques exactos de calentamiento, ritmos objetivo, repeticiones y enfriamiento.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 6: Editor Unificado & Vista Previa */}
+      {step === 6 && (
+        <div className="flex flex-col gap-6">
+          {/* Weekly Volume Chart */}
+          <Card className="p-4 bg-slate-900/90 border-slate-800 shadow-xl text-white">
+            <CardHeader className="p-0 pb-3 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 text-white">
+                <TrendingUp className="size-4 text-emerald-400" />
+                Carga de Volumen Semanal Calculada (Km)
+              </CardTitle>
+              <Badge variant="outline" className="text-xs font-bold border-emerald-500/30 text-emerald-400">
+                VDOT {calculatedVdot} · {draft.phases.reduce((acc, p) => acc + p.weeks.length, 0)} Semanas
+              </Badge>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="flex items-end gap-1.5 h-28 pt-4 pb-2 px-2 overflow-x-auto">
+                {weeklyKmStats.map((st) => {
+                  const barHeightPct = (st.totalKm / maxWeeklyKm) * 100
+                  return (
+                    <div
+                      key={st.weekNum}
+                      className="flex flex-col items-center gap-1 flex-1 min-w-[20px] group relative"
+                    >
+                      <span className="text-[10px] font-bold text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {st.totalKm}
+                      </span>
+                      <div className="w-full bg-slate-800 rounded-t-md overflow-hidden h-20 flex items-end">
+                        <div
+                          className="w-full bg-gradient-to-t from-teal-500 to-emerald-400 group-hover:brightness-110 transition-all rounded-t-md"
+                          style={{ height: `${Math.max(5, barHeightPct)}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        S{st.weekNum}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Phases & Weeks Unified Editor */}
+          <div className="flex flex-col gap-4">
+            {draft.phases.map((phase, pIdx) => {
+              const phaseColor =
+                PHASE_COLORS[phase.color as PhaseColor] ?? PHASE_COLORS.emerald
+              return (
+                <div key={pIdx} className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/90 p-4 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className={cn("size-3 rounded-full shrink-0", phaseColor.bar)} />
+                      <Input
+                        value={phase.name}
+                        onChange={(e) => {
+                          const newPhases = [...draft.phases]
+                          newPhases[pIdx].name = e.target.value
+                          setDraft({ ...draft, phases: newPhases })
+                        }}
+                        className="font-bold text-sm h-8 w-72 bg-slate-800/80 text-white border-slate-700 focus:border-emerald-500 rounded-lg px-2.5"
+                      />
+                    </div>
+                    <span className="text-xs text-slate-400 font-medium">
+                      Semanas {phase.start_week}–{phase.end_week}
+                    </span>
+                  </div>
+
+                  {/* Weeks list inside phase */}
+                  <div className="flex flex-col gap-3">
+                    {phase.weeks.map((week, wIdx) => (
+                      <div
+                        key={wIdx}
+                        className="rounded-xl border border-slate-800 bg-slate-800/40 p-3 flex flex-col gap-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-white">
+                            Semana {week.number} ({formatShortDate(week.start_date)} -{" "}
+                            {formatShortDate(week.end_date)})
+                          </span>
+                          <span className="text-xs font-semibold text-emerald-400">
+                            Total:{" "}
+                            {week.workouts.reduce(
+                              (acc, w) => acc + (w.distance_km || 0),
+                              0,
+                            )}{" "}
+                            km
+                          </span>
+                        </div>
+
+                        {/* Workouts Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-1">
+                          {week.workouts.map((workout, wkIdx) => {
+                            const typeMeta =
+                              WORKOUT_TYPE_META[workout.type] ?? WORKOUT_TYPE_META.easy_run
+                            return (
+                              <div
+                                key={wkIdx}
+                                className="flex flex-col gap-2 p-2.5 rounded-xl border border-slate-800 bg-slate-900/90 text-xs shadow-xs"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] text-slate-400 font-semibold">
+                                    {formatShortDate(workout.date)}
+                                  </span>
+                                  <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-bold border", typeMeta.badgeClass)}>
+                                    {typeMeta.emoji} {typeMeta.label}
+                                  </span>
+                                </div>
+
+                                <Input
+                                  value={workout.name}
+                                  onChange={(e) => {
+                                    const newPhases = [...draft.phases]
+                                    newPhases[pIdx].weeks[wIdx].workouts[wkIdx].name = e.target.value
+                                    setDraft({ ...draft, phases: newPhases })
+                                  }}
+                                  className="h-7 text-xs font-bold px-2 py-1 bg-slate-800 border-slate-700 text-white focus:border-emerald-500 rounded-lg"
+                                />
+
+                                <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+                                  <span>Distancia:</span>
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      step="0.5"
+                                      value={workout.distance_km ?? ""}
+                                      onChange={(e) => {
+                                        const newPhases = [...draft.phases]
+                                        newPhases[pIdx].weeks[wIdx].workouts[
+                                          wkIdx
+                                        ].distance_km = e.target.value
+                                          ? parseFloat(e.target.value)
+                                          : null
+                                        setDraft({ ...draft, phases: newPhases })
+                                      }}
+                                      className="h-6 text-xs w-16 px-1.5 py-0 bg-slate-800 border-slate-700 text-white font-extrabold focus:border-emerald-500 rounded-lg"
+                                    />
+                                    <span className="text-[10px] text-slate-400">km</span>
+                                  </div>
+                                </div>
+
+                                {workout.blocks.length > 0 && (
+                                  <span className="text-[10px] text-emerald-400 font-mono truncate font-medium">
+                                    ✓ {workout.blocks.length} bloques estructurados
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="flex justify-between pt-4">
+            <Button type="button" variant="outline" className="border-slate-700 text-slate-300" onClick={() => setStep(5)}>
+              Volver al Cuestionario
             </Button>
-          )}
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={isPending}
+              className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold shadow-md gap-2 px-6 py-5 text-base"
+            >
+              {isPending && <Loader2 className="size-4 animate-spin" />}
+              <span>{editId ? "Guardar Cambios" : "Confirmar y Guardar Plan"}</span>
+            </Button>
+          </div>
         </div>
-      </footer>
+      )}
     </div>
   )
 }

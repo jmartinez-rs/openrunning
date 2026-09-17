@@ -1,167 +1,65 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import {
-  ChevronDown,
-  ChevronRight,
-  Folder,
-  FolderPlus,
   Footprints,
-  Pencil,
   Plus,
-  Search,
-  Star,
-  Trash2,
+  Sparkles,
 } from "lucide-react"
 import { useState } from "react"
 
 import {
-  type RoutinePublic,
-  RoutinesService,
   RunningPlansService,
 } from "@/client"
-import { RoutineCard } from "@/components/Routines/RoutineCard"
-import { RoutineFormDialog } from "@/components/Routines/RoutineFormDialog"
+import { ActivePlanHero } from "@/components/RunningPlans/ActivePlanHero"
 import { RunningPlanCard } from "@/components/RunningPlans/RunningPlanCard"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import useCustomToast from "@/hooks/useCustomToast"
+import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/_layout/routines/")({
   component: Routines,
-  head: () => ({ meta: [{ title: "Planes de Running - OpenRunning" }] }),
+  head: () => ({ meta: [{ title: "Planes de Entrenamiento - OpenRunning" }] }),
 })
 
-function FolderDialog({
-  open,
-  onOpenChange,
-  initialName,
-  onSave,
-  saving,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  initialName?: string
-  onSave: (name: string) => void
-  saving: boolean
-}) {
-  const [name, setName] = useState(initialName ?? "")
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {initialName ? "Renombrar carpeta" : "Nueva carpeta"}
-          </DialogTitle>
-          <DialogDescription>
-            Agrupá tus rutinas en carpetas para organizar tu entrenamiento
-            actual.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="folder-name">Nombre</Label>
-          <Input
-            id="folder-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Ej: Rutina nueva"
-          />
-        </div>
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            disabled={!name.trim() || saving}
-            onClick={() => onSave(name.trim())}
-          >
-            Guardar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
+// ---------------------------------------------------------------------------
+// Status filter chips
+// ---------------------------------------------------------------------------
+
+const STATUS_FILTERS = [
+  { label: "Todos", value: "" },
+  { label: "Activos", value: "active" },
+  { label: "Planificados", value: "planned" },
+  { label: "Finalizados", value: "completed" },
+] as const
+
+// ---------------------------------------------------------------------------
+// Main page component
+// ---------------------------------------------------------------------------
 
 function Routines() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [tab, setTab] = useState<"gym" | "run">("run")
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<{
-    type: "gym" | "run"
-    id: string
-  } | null>(null)
-  const [folderDialog, setFolderDialog] = useState<{
-    open: boolean
-    folderId?: string
-    initialName?: string
-  }>({ open: false })
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [statusFilter, setStatusFilter] = useState("")
 
-  const toggleCollapsed = (folderId: string) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev)
-      if (next.has(folderId)) {
-        next.delete(folderId)
-      } else {
-        next.add(folderId)
-      }
-      return next
-    })
-  }
-
-  const query = useQuery({
-    queryKey: ["routines", tab],
-    queryFn: () => RoutinesService.readRoutines({ type: tab }),
-    enabled: tab === "gym",
-  })
-
+  // ----- Running Plans queries -----
   const plansQuery = useQuery({
     queryKey: ["running-plans"],
     queryFn: () => RunningPlansService.readPlans(),
-    enabled: tab === "run",
   })
 
   const plans = plansQuery.data?.data ?? []
 
-  const foldersQuery = useQuery({
-    queryKey: ["routines-folders", tab],
-    queryFn: () => RoutinesService.readFolders(),
-    enabled: tab === "gym",
-  })
+  // Split plans: active vs others
+  const activePlan = plans.find((p) => p.status === "active") ?? null
+  const otherPlans = plans.filter((p) => p.id !== activePlan?.id)
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["routines"] })
-    queryClient.invalidateQueries({ queryKey: ["routines-folders"] })
-  }
-
-  const deleteRoutine = useMutation({
-    mutationFn: (id: string) =>
-      RoutinesService.deleteRoutine({ routineId: id }),
-    onSuccess: () => {
-      showSuccessToast("Rutina eliminada")
-      invalidate()
-    },
-    onError: handleError.bind(showErrorToast),
-  })
+  // Apply status filter to other plans
+  const filteredPlans = statusFilter
+    ? otherPlans.filter((p) => p.status === statusFilter)
+    : otherPlans
 
   const deleteRunPlan = useMutation({
     mutationFn: (id: string) => RunningPlansService.deletePlan({ planId: id }),
@@ -172,416 +70,157 @@ function Routines() {
     onError: handleError.bind(showErrorToast),
   })
 
-  const createFolder = useMutation({
-    mutationFn: (name: string) =>
-      RoutinesService.createFolder({ requestBody: { name } }),
-    onSuccess: () => {
-      showSuccessToast("Carpeta creada")
-      setFolderDialog({ open: false })
-      invalidate()
-    },
-    onError: handleError.bind(showErrorToast),
-  })
-
-  const renameFolder = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) =>
-      RoutinesService.renameFolder({ folderId: id, requestBody: { name } }),
-    onSuccess: () => {
-      showSuccessToast("Carpeta renombrada")
-      setFolderDialog({ open: false })
-      invalidate()
-    },
-    onError: handleError.bind(showErrorToast),
-  })
-
-  const deleteFolder = useMutation({
-    mutationFn: (id: string) => RoutinesService.deleteFolder({ folderId: id }),
-    onSuccess: () => {
-      showSuccessToast("Carpeta eliminada")
-      invalidate()
-    },
-    onError: handleError.bind(showErrorToast),
-  })
-
-  const setPrimaryFolder = useMutation({
-    mutationFn: (id: string) =>
-      RoutinesService.setPrimaryFolder({ folderId: id }),
-    onSuccess: () => {
-      showSuccessToast("Carpeta principal actualizada")
-      invalidate()
-    },
-    onError: handleError.bind(showErrorToast),
-  })
-
-  const clearPrimaryFolder = useMutation({
-    mutationFn: (id: string) =>
-      RoutinesService.clearPrimaryFolder({ folderId: id }),
-    onSuccess: () => {
-      showSuccessToast("Carpeta principal eliminada")
-      invalidate()
-    },
-    onError: handleError.bind(showErrorToast),
-  })
-
-  const assignFolder = useMutation({
-    mutationFn: ({
-      routineId,
-      folderId,
-    }: {
-      routineId: string
-      folderId: string | null
-    }) =>
-      RoutinesService.assignRoutineFolder({
-        routineId,
-        requestBody: { folder_id: folderId },
-      }),
-    onSuccess: () => invalidate(),
-    onError: handleError.bind(showErrorToast),
-  })
-
-  const routines = query.data?.data ?? []
-  const folders = (
-    tab === "gym" ? (foldersQuery.data?.data ?? []) : []
-  ) as Array<{
-    id: string
-    name: string
-    is_primary?: boolean
-    routines?: RoutinePublic[]
-  }>
-
-  const unassigned = routines.filter((routine) => !routine.folder_id)
-  const routineGroups = folders.map((folder) => ({
-    folder,
-    routines: (folder.routines ?? []).filter((r) => r.type === tab),
-  }))
-
-  const folderSaving = createFolder.isPending || renameFolder.isPending
-
-  const folderSelect = (routine: RoutinePublic) => (
-    <select
-      className="rounded-md border bg-background px-2 py-1 text-xs"
-      value={routine.folder_id ?? ""}
-      onClick={(e) => e.stopPropagation()}
-      onChange={(e) => {
-        const folderId = e.target.value || null
-        assignFolder.mutate({ routineId: routine.id, folderId })
-      }}
-    >
-      <option value="">Sin carpeta</option>
-      {folders.map((folder) => (
-        <option key={folder.id} value={folder.id}>
-          {folder.name}
-        </option>
-      ))}
-    </select>
-  )
-
-  const actionsFor = (routine: RoutinePublic) => (
-    <div className="absolute right-3 top-3 z-10 hidden items-center gap-1 group-hover:flex">
-      {folderSelect(routine)}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={(event) => {
-          event.preventDefault()
-          setEditing({ type: tab, id: routine.id })
-          setFormOpen(true)
-        }}
-      >
-        <Pencil className="size-4" />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        disabled={deleteRoutine.isPending}
-        onClick={(event) => {
-          event.preventDefault()
-          deleteRoutine.mutate(routine.id)
-        }}
-      >
-        <Trash2 className="size-4 text-destructive" />
-      </Button>
-    </div>
-  )
-
-  const renderRoutines = (items: RoutinePublic[]) => (
-    <div className="flex flex-col gap-3">
-      {items.map((routine) => (
-        <div className="group relative" key={routine.id}>
-          <RoutineCard routine={routine} />
-          {actionsFor(routine)}
-        </div>
-      ))}
-    </div>
-  )
-
   return (
     <div className="col-span-12 flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* ── Page Header ────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
         <div>
-          <h1 className="text-headline-lg text-primary">Rutinas</h1>
-          <p className="text-body-md text-on-surface-variant">
-            {tab === "run"
-              ? "Tus planes de running con fases, semanas y sesiones."
-              : "Tu biblioteca de entrenamientos planificados, organizada por carpetas."}
+          <h1 className="text-2xl font-black text-white tracking-tight">
+            Planes de Entrenamiento
+          </h1>
+          <p className="text-xs text-slate-400 font-medium">
+            Organizá tu temporada con planes estructurados de running.
           </p>
         </div>
-        <div className="flex gap-2">
-          {tab === "gym" ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setFolderDialog({ open: true })}
-            >
-              <FolderPlus className="mr-2 size-4" /> Nueva carpeta
-            </Button>
-          ) : null}
+        <div>
           <Button
             type="button"
-            onClick={() => {
-              if (tab === "run") {
-                navigate({ to: "/routines/run/new" })
-              } else {
-                setFormOpen(true)
-              }
-            }}
+            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 rounded-xl cursor-pointer"
+            onClick={() => navigate({ to: "/routines/run/new" })}
           >
-            <Plus className="mr-2 size-4" />{" "}
-            {tab === "run" ? "Nuevo plan" : "Nueva rutina"}
+            <Plus className="mr-2 size-4 stroke-[3]" />
+            Nuevo plan
           </Button>
         </div>
       </div>
 
-      <Tabs
-        value={tab}
-        onValueChange={(value) => setTab(value as "gym" | "run")}
-      >
-        <TabsList>
-          <TabsTrigger value="run">Running</TabsTrigger>
-          <TabsTrigger value="gym">Gimnasio</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={tab} className="pt-4">
-          {tab === "run" ? (
-            plansQuery.isLoading ? (
-              <div className="flex flex-col gap-3">
-                {Array.from({ length: 3 }, (_, index) => (
-                  <Skeleton className="h-28 w-full" key={index} />
-                ))}
-              </div>
-            ) : plans.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="mb-4 rounded-full bg-domain-cardio/10 p-4 text-domain-cardio">
-                  <Footprints className="size-8" />
-                </div>
-                <h3 className="text-lg font-semibold">
-                  No hay planes de running
-                </h3>
-                <p className="text-body-md text-on-surface-variant">
-                  Creá tu primer plan para organizar tu temporada.
-                </p>
-                <Button
-                  type="button"
-                  className="mt-4"
-                  onClick={() => navigate({ to: "/routines/run/new" })}
-                >
-                  <Plus className="mr-2 size-4" /> Crear plan
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {plans.map((plan) => (
-                  <RunningPlanCard
-                    key={plan.id}
-                    plan={plan}
-                    onEdit={() =>
-                      navigate({
-                        to: "/routines/run/new",
-                        search: { edit: plan.id },
-                      })
-                    }
-                    onDelete={() => deleteRunPlan.mutate(plan.id)}
-                    deleting={deleteRunPlan.isPending}
-                  />
-                ))}
-              </div>
-            )
-          ) : query.isLoading ? (
-            <div className="flex flex-col gap-3">
-              {Array.from({ length: 4 }, (_, index) => (
-                <Skeleton className="h-24 w-full" key={index} />
-              ))}
+      {/* ── Main Content ────────────────────────────────────────────── */}
+      {plansQuery.isLoading ? (
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-56 w-full rounded-2xl bg-slate-800/80" />
+          <Skeleton className="h-28 w-full rounded-2xl bg-slate-800/80" />
+          <Skeleton className="h-28 w-full rounded-2xl bg-slate-800/80" />
+        </div>
+      ) : plans.length === 0 ? (
+        /* ── Empty state (Runna-inspired onboarding) ── */
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl">
+          <div className="relative mb-6">
+            <div className="flex size-20 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <Footprints className="size-9 animate-pulse" />
             </div>
-          ) : routines.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="mb-4 rounded-full bg-surface-container-low p-4">
-                <Search className="size-8 text-on-surface-variant" />
-              </div>
-              <h3 className="text-lg font-semibold">
-                No hay rutinas de gimnasio
-              </h3>
-              <p className="text-body-md text-on-surface-variant">
-                Creá tu primera rutina para empezar.
-              </p>
-              <Button
-                type="button"
-                className="mt-4"
-                onClick={() => setFormOpen(true)}
+            <div className="absolute -right-1 -top-1 flex size-7 items-center justify-center rounded-full bg-emerald-500 text-slate-950 shadow-md font-bold">
+              <Sparkles className="size-3.5" />
+            </div>
+          </div>
+          <h3 className="text-xl font-bold text-white tracking-tight">
+            Comenzá tu plan de entrenamiento
+          </h3>
+          <p className="mt-2 max-w-md text-xs text-slate-400 font-medium">
+            Creá un plan personalizado con fases, semanas y sesiones
+            estructuradas. Definí tus ritmos, distancias y objetivos
+            para cada sesión.
+          </p>
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <Button
+              type="button"
+              size="lg"
+              className="gap-2 rounded-xl px-8 text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 cursor-pointer"
+              onClick={() => navigate({ to: "/routines/run/new" })}
+            >
+              <Plus className="size-5 stroke-[3]" />
+              Crear mi primer plan
+            </Button>
+          </div>
+
+          {/* Mini explainer */}
+          <div className="mt-10 grid max-w-xl grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { step: "1", title: "Fases", desc: "Base, construcción, tapering" },
+              { step: "2", title: "Semanas", desc: "Carga progresiva" },
+              { step: "3", title: "Sesiones", desc: "Intervalos, tempo, fondo" },
+              { step: "4", title: "Bloques", desc: "Ritmos y recuperaciones" },
+            ].map((item) => (
+              <div
+                key={item.step}
+                className="flex flex-col items-center gap-1.5 rounded-2xl bg-slate-800/60 border border-slate-700/60 p-3.5 text-center"
               >
-                <Plus className="mr-2 size-4" /> Crear rutina
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-8">
-              {routineGroups.map(({ folder, routines: groupRoutines }) => {
-                const isCollapsed = collapsed.has(folder.id)
-                return (
-                  <section key={folder.id} className="flex flex-col gap-3">
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        className="flex flex-1 items-center gap-2 rounded-md px-1 py-1 text-left hover:bg-accent"
-                        onClick={() => toggleCollapsed(folder.id)}
-                      >
-                        {isCollapsed ? (
-                          <ChevronRight className="size-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronDown className="size-4 text-muted-foreground" />
-                        )}
-                        <Folder
-                          className={`size-4 ${folder.is_primary ? "text-domain-race" : "text-muted-foreground"}`}
-                        />
-                        <h2 className="font-semibold">{folder.name}</h2>
-                        {folder.is_primary ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-domain-race/10 px-2 py-0.5 text-label-sm text-domain-race">
-                            <Star className="size-3" fill="currentColor" />
-                            Principal
-                          </span>
-                        ) : null}
-                        <span className="text-xs text-muted-foreground">
-                          ({groupRoutines.length})
-                        </span>
-                      </button>
-                      <div className="flex gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={
-                            folder.is_primary
-                              ? "Quitar carpeta principal"
-                              : "Definir como carpeta principal"
-                          }
-                          title={
-                            folder.is_primary
-                              ? "Quitar carpeta principal"
-                              : "Definir como carpeta principal"
-                          }
-                          disabled={
-                            setPrimaryFolder.isPending ||
-                            clearPrimaryFolder.isPending
-                          }
-                          className={
-                            folder.is_primary ? "text-domain-race" : ""
-                          }
-                          onClick={() => {
-                            if (folder.is_primary) {
-                              clearPrimaryFolder.mutate(folder.id)
-                            } else {
-                              setPrimaryFolder.mutate(folder.id)
-                            }
-                          }}
-                        >
-                          <Star
-                            className="size-4"
-                            fill={folder.is_primary ? "currentColor" : "none"}
-                          />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            setFolderDialog({
-                              open: true,
-                              folderId: folder.id,
-                              initialName: folder.name,
-                            })
-                          }
-                        >
-                          <Pencil className="size-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          disabled={deleteFolder.isPending}
-                          onClick={() => deleteFolder.mutate(folder.id)}
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                    {!isCollapsed ? (
-                      groupRoutines.length > 0 ? (
-                        renderRoutines(groupRoutines)
-                      ) : (
-                        <p className="rounded-md bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-                          Carpeta vacía
-                        </p>
-                      )
-                    ) : null}
-                  </section>
-                )
-              })}
+                <span className="flex size-7 items-center justify-center rounded-xl bg-emerald-500/15 text-xs font-bold text-emerald-400 border border-emerald-500/30">
+                  {item.step}
+                </span>
+                <span className="text-xs font-bold text-white">
+                  {item.title}
+                </span>
+                <span className="text-[11px] leading-tight text-slate-400">
+                  {item.desc}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {/* ── Active Plan Hero ────────────────────── */}
+          {activePlan && <ActivePlanHero plan={activePlan} />}
 
-              {unassigned.length > 0 ? (
-                <section className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-semibold text-muted-foreground">
-                      Sin carpeta
-                    </h2>
-                    <span className="text-xs text-muted-foreground">
-                      ({unassigned.length})
-                    </span>
-                  </div>
-                  {renderRoutines(unassigned)}
-                </section>
-              ) : null}
+          {/* ── Filter chips + other plans ──────────── */}
+          {otherPlans.length > 0 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-end justify-between border-b border-slate-800 pb-2">
+                <h2 className="text-lg font-bold text-white">
+                  {activePlan ? "Otros planes" : "Tus planes"}
+                </h2>
+                <span className="text-xs font-semibold text-slate-400">
+                  {filteredPlans.length}{" "}
+                  {filteredPlans.length === 1 ? "plan" : "planes"}
+                </span>
+              </div>
+
+              {/* Status filter chips */}
+              <div className="flex flex-wrap items-center gap-2">
+                {STATUS_FILTERS.map((filter) => (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => setStatusFilter(filter.value)}
+                    className={cn(
+                      "rounded-xl px-4 py-1.5 text-xs font-bold transition-all cursor-pointer border",
+                      statusFilter === filter.value
+                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/60 shadow-xs"
+                        : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white",
+                    )}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Plan list */}
+              {filteredPlans.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/60 px-4 py-8 text-center text-xs text-slate-400">
+                  No hay planes con el filtro seleccionado.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {filteredPlans.map((plan) => (
+                    <RunningPlanCard
+                      key={plan.id}
+                      plan={plan}
+                      onEdit={() =>
+                        navigate({
+                          to: "/routines/run/new",
+                          search: { edit: plan.id },
+                        })
+                      }
+                      onDelete={() => deleteRunPlan.mutate(plan.id)}
+                      deleting={deleteRunPlan.isPending}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
-        </TabsContent>
-      </Tabs>
-
-      <RoutineFormDialog
-        open={formOpen}
-        onOpenChange={(open) => {
-          setFormOpen(open)
-          if (!open) setEditing(null)
-        }}
-        routineType={tab}
-        routine={
-          editing
-            ? (routines.find((routine) => routine.id === editing.id) ?? null)
-            : null
-        }
-      />
-
-      <FolderDialog
-        open={folderDialog.open}
-        onOpenChange={(open) => setFolderDialog((prev) => ({ ...prev, open }))}
-        initialName={folderDialog.initialName}
-        saving={folderSaving}
-        onSave={(name) => {
-          if (folderDialog.folderId) {
-            renameFolder.mutate({ id: folderDialog.folderId, name })
-          } else {
-            createFolder.mutate(name)
-          }
-        }}
-      />
+        </div>
+      )}
     </div>
   )
 }

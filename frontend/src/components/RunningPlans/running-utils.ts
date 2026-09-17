@@ -106,12 +106,27 @@ export const PLAN_STATUS_META: Record<
   {
     label: string
     variant: "default" | "secondary" | "destructive" | "outline"
-    className?: string
+    className: string
   }
 > = {
-  planned: { label: "Planificada", variant: "outline" },
-  active: { label: "Activa", variant: "default" },
-  completed: { label: "Finalizada", variant: "secondary" },
+  active: {
+    label: "Activo",
+    variant: "default",
+    className:
+      "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold",
+  },
+  planned: {
+    label: "Pausado / Planificado",
+    variant: "outline",
+    className:
+      "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold",
+  },
+  completed: {
+    label: "Finalizado",
+    variant: "secondary",
+    className:
+      "bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30 font-bold",
+  },
 }
 
 export const INTENSITY_META: Record<Intensity, { label: string }> = {
@@ -372,4 +387,147 @@ export function defaultTrainingDates(start: string, end: string): string[] {
     guard += 1
   }
   return result
+}
+
+// ---------------------------------------------------------------------------
+// Helpers for the redesigned /routines page
+// ---------------------------------------------------------------------------
+
+/** Spanish short day names indexed by JS getDay() (0=domingo). */
+const SHORT_DAY_NAMES = ["D", "L", "M", "M", "J", "V", "S"] as const
+
+/** Returns the Spanish short name for a JS day index (0=Sun → "D"). */
+export function getShortDayName(dayIndex: number): string {
+  return SHORT_DAY_NAMES[dayIndex] ?? "?"
+}
+
+/** Progress breakdown for a plan. */
+export interface PlanProgress {
+  total: number
+  completed: number
+  missed: number
+  planned: number
+  percent: number
+}
+
+/** Computes progress from a RunningPlanSummaryPublic-shaped object. */
+export function computeProgress(summary: {
+  completed: number
+  missed: number
+  planned: number
+  sessions: number
+}): PlanProgress {
+  const total = summary.sessions
+  const percent = total > 0 ? Math.round((summary.completed / total) * 100) : 0
+  return {
+    total,
+    completed: summary.completed,
+    missed: summary.missed,
+    planned: summary.planned,
+    percent,
+  }
+}
+
+/** ISO dates for Monday→Sunday of the week containing `referenceDate`. */
+export function getWeekBoundsISO(referenceDate?: Date): {
+  monday: string
+  sunday: string
+} {
+  const d = referenceDate ?? new Date()
+  const day = d.getDay() // 0=Sun
+  const diff = day === 0 ? -6 : 1 - day
+  const monday = new Date(d)
+  monday.setDate(d.getDate() + diff)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  return { monday: isoLocal(monday), sunday: isoLocal(sunday) }
+}
+
+function isoLocal(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+
+/**
+ * Given plan phases (full detail), find the week whose date range contains
+ * `today`. Returns the week, its workouts, and parent phase info, or null.
+ */
+export function getCurrentWeekFromPhases(
+  phases: Array<{
+    name: string
+    color: string
+    weeks?: Array<{
+      id: string
+      number: number
+      start_date?: string | null
+      end_date?: string | null
+      workouts?: Array<{
+        id: string
+        date: string
+        type: string
+        status: string
+        name?: string | null
+        objective?: string | null
+        distance_km?: number | null
+        pace_seconds_per_km?: number | null
+        cancelled: boolean
+        [key: string]: unknown
+      }>
+    }>
+  }>,
+  referenceDate?: Date,
+): {
+  phaseName: string
+  phaseColor: string
+  weekNumber: number
+  weekId: string
+  startDate: string
+  endDate: string
+  workouts: Array<{
+    id: string
+    date: string
+    type: string
+    status: string
+    name?: string | null
+    objective?: string | null
+    distance_km?: number | null
+    pace_seconds_per_km?: number | null
+    cancelled: boolean
+    [key: string]: unknown
+  }>
+} | null {
+  const today = isoLocal(referenceDate ?? new Date())
+
+  for (const phase of phases) {
+    for (const week of phase.weeks ?? []) {
+      const start = week.start_date
+      const end = week.end_date
+      if (!start || !end) continue
+      if (today >= start && today <= end) {
+        return {
+          phaseName: phase.name,
+          phaseColor: phase.color,
+          weekNumber: week.number,
+          weekId: week.id,
+          startDate: start,
+          endDate: end,
+          workouts: week.workouts ?? [],
+        }
+      }
+    }
+  }
+  return null
+}
+
+/** Generate an array of 7 ISO date strings for Mon→Sun of a given week. */
+export function weekDaysISO(mondayISO: string): string[] {
+  const base = new Date(`${mondayISO}T12:00:00`)
+  if (Number.isNaN(base.getTime())) return []
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(base)
+    d.setDate(base.getDate() + i)
+    return isoLocal(d)
+  })
 }
