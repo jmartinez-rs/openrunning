@@ -30,9 +30,9 @@ export function ActivityRow({ activity }: ActivityRowProps) {
 
   // Select icon and badge colors based on activity type
   let Icon = Footprints
-  let iconBgClass = "bg-emerald-500/15 text-emerald-400"
+  let iconBgClass = "bg-primary/15 text-primary"
   let badgeText = "Strava"
-  let badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+  let badgeClass = "bg-primary/10 text-primary border-primary/20"
 
   if (strengthActivity) {
     Icon = Dumbbell
@@ -54,9 +54,9 @@ export function ActivityRow({ activity }: ActivityRowProps) {
     sportType.includes("caminata")
   ) {
     Icon = PersonStanding
-    iconBgClass = "bg-amber-500/15 text-amber-400"
+    iconBgClass = "bg-primary/15 text-primary"
     badgeText = "Caminata"
-    badgeClass = "bg-amber-500/10 text-amber-400 border-amber-500/20"
+    badgeClass = "bg-primary/10 text-primary border-primary/20"
   } else if (sportType.includes("swim") || sportType.includes("natacion")) {
     Icon = Waves
     iconBgClass = "bg-blue-500/15 text-blue-400"
@@ -67,10 +67,10 @@ export function ActivityRow({ activity }: ActivityRowProps) {
     activity.source_type === "fit_upload"
   ) {
     badgeText = "Archivo GPS"
-    badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+    badgeClass = "bg-primary/10 text-primary border-primary/20"
   } else if (activity.source_type === "manual") {
     badgeText = "Manual"
-    badgeClass = "bg-slate-500/10 text-slate-400 border-slate-500/20"
+    badgeClass = "bg-white/5 text-muted-foreground border-white/10"
   }
 
   // Build metrics string joined by ' · '
@@ -108,7 +108,7 @@ export function ActivityRow({ activity }: ActivityRowProps) {
     <Link
       to="/activities/$activityId"
       params={{ activityId: activity.id }}
-      className="group flex items-center gap-3.5 rounded-2xl border border-slate-800/80 bg-slate-900/60 px-4 py-3.5 transition-all duration-150 hover:border-slate-700 hover:bg-slate-800/60"
+      className="group flex items-center gap-3.5 rounded-2xl border border-border/80 bg-card/60 px-4 py-3.5 transition-all duration-150 hover:border-border hover:bg-surface-container-high/60"
     >
       {/* Icon Badge */}
       <div
@@ -123,11 +123,13 @@ export function ActivityRow({ activity }: ActivityRowProps) {
       {/* Main Info */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <h3 className="truncate text-base font-semibold text-slate-100 group-hover:text-emerald-400 transition-colors">
+          <h3 className="truncate text-base font-semibold text-foreground group-hover:text-primary transition-colors">
             {activity.name || "Actividad sin nombre"}
           </h3>
         </div>
-        <div className="mt-0.5 truncate text-xs text-slate-400">{subtitle}</div>
+        <div className="mt-0.5 truncate text-xs text-muted-foreground">
+          {subtitle}
+        </div>
       </div>
 
       {/* Badge & Chevron */}
@@ -140,7 +142,7 @@ export function ActivityRow({ activity }: ActivityRowProps) {
         >
           {badgeText}
         </span>
-        <ChevronRight className="size-4 text-slate-500 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-slate-300" />
+        <ChevronRight className="size-4 text-on-surface-variant transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
       </div>
     </Link>
   )

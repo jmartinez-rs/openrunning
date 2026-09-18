@@ -9,6 +9,7 @@ import {
 } from "@/components/Settings/SettingsSection"
 import { WeeklyGoals } from "@/components/Settings/WeeklyGoals"
 import { WeeklyPlan } from "@/components/Settings/WeeklyPlan"
+import { useTheme } from "@/components/theme-provider"
 import ChangePassword from "@/components/UserSettings/ChangePassword"
 import DeleteAccount from "@/components/UserSettings/DeleteAccount"
 import UserInformation from "@/components/UserSettings/UserInformation"
@@ -27,8 +28,8 @@ export const Route = createFileRoute("/_layout/settings")({
 
 function UserSettings() {
   const { user: currentUser } = useAuth()
+  const { theme, setTheme } = useTheme()
   const [unitSystem, setUnitSystem] = useState<"metric" | "imperial">("metric")
-  const [theme, setTheme] = useState<"dark" | "light">("dark")
 
   if (!currentUser) {
     return null
@@ -36,12 +37,12 @@ function UserSettings() {
 
   return (
     <div className="col-span-12 flex flex-col gap-6 pb-12">
-      {/* Header section — OpenGym style */}
-      <div className="border-b border-slate-800/80 pb-4">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">
+      {/* Header section — Kinetic Volt style */}
+      <div className="border-b border-border/80 pb-4">
+        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
           Configuración
         </h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="mt-1 text-sm text-muted-foreground">
           Gestioná tu perfil, preferencias del sistema, integraciones y
           objetivos.
         </p>
@@ -63,15 +64,15 @@ function UserSettings() {
       >
         <SettingsRow
           icon={Globe}
-          iconBg="bg-blue-500/15"
-          iconColor="text-blue-400"
+          iconBg="bg-primary/10"
+          iconColor="text-primary"
           title="Idioma principal"
           value="Español (AR)"
         />
         <SettingsRow
           icon={Scale}
-          iconBg="bg-teal-500/15"
-          iconColor="text-teal-400"
+          iconBg="bg-primary/10"
+          iconColor="text-primary"
           title="Unidades de medida"
         >
           <SettingsSegmented
@@ -85,8 +86,8 @@ function UserSettings() {
         </SettingsRow>
         <SettingsRow
           icon={Moon}
-          iconBg="bg-purple-500/15"
-          iconColor="text-purple-400"
+          iconBg="bg-primary/10"
+          iconColor="text-primary"
           title="Apariencia"
         >
           <SettingsSegmented
@@ -94,8 +95,8 @@ function UserSettings() {
               { value: "dark", label: "Oscuro" },
               { value: "light", label: "Claro" },
             ]}
-            value={theme}
-            onChange={setTheme}
+            value={theme === "system" ? "dark" : theme}
+            onChange={(value) => setTheme(value)}
           />
         </SettingsRow>
       </SettingsSection>

@@ -58,24 +58,24 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <div className="border border-slate-800 rounded-2xl bg-slate-900/50 overflow-hidden transition-all">
+    <div className="border border-border rounded-2xl bg-card/50 overflow-hidden transition-all">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-4 bg-slate-900 hover:bg-slate-800/80 transition-colors focus:outline-none"
+        className="w-full flex items-center justify-between p-4 bg-card hover:bg-surface-container-high/80 transition-colors focus:outline-none"
       >
         <div className="flex items-center gap-2">
-          <Icon className="size-4 text-orange-500" />
+          <Icon className="size-4 text-primary" />
           <span className="font-bold text-white tracking-tight">{title}</span>
         </div>
         {open ? (
-          <ChevronUp className="size-4 text-slate-400" />
+          <ChevronUp className="size-4 text-muted-foreground" />
         ) : (
-          <ChevronDown className="size-4 text-slate-400" />
+          <ChevronDown className="size-4 text-muted-foreground" />
         )}
       </button>
       {open && (
-        <div className="p-4 border-t border-slate-800 bg-slate-950 flex flex-col gap-4 animate-in slide-in-from-top-2 duration-300">
+        <div className="p-4 border-t border-border bg-surface-container-lowest flex flex-col gap-4 animate-in slide-in-from-top-2 duration-300">
           {children}
         </div>
       )}
@@ -283,12 +283,12 @@ export function RaceFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto bg-slate-900 border-slate-800 text-white sm:rounded-2xl p-0 gap-0">
-        <DialogHeader className="p-6 border-b border-slate-800 sticky top-0 bg-slate-900/90 backdrop-blur-md z-10">
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto bg-card border-border text-white sm:rounded-2xl p-0 gap-0">
+        <DialogHeader className="p-6 border-b border-border sticky top-0 bg-card/90 backdrop-blur-md z-10">
           <DialogTitle className="text-xl font-black text-white tracking-tight">
             {race ? "Editar Carrera" : "Añadir Carrera"}
           </DialogTitle>
-          <DialogDescription className="text-sm text-slate-400">
+          <DialogDescription className="text-sm text-muted-foreground">
             Estructura los detalles, metas y logística de tu evento.
           </DialogDescription>
         </DialogHeader>
@@ -302,11 +302,11 @@ export function RaceFormDialog({
             onToggle={() => toggleSection("esencial")}
           >
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Nombre de la Carrera
               </Label>
               <Input
-                className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                className="bg-background border-border text-white focus-visible:ring-primary/50 rounded-xl"
                 value={eventName}
                 onChange={(e) => setEventName(e.target.value)}
                 placeholder="Buscador predictivo o texto libre (Ej: NB 15K)"
@@ -315,12 +315,12 @@ export function RaceFormDialog({
 
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Distancia Oficial (km)
                 </Label>
                 <div className="flex gap-2">
                   <select
-                    className="w-24 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    className="w-24 rounded-xl border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                     value={distanceKm}
                     onChange={(e) => setDistanceKm(e.target.value)}
                   >
@@ -332,7 +332,7 @@ export function RaceFormDialog({
                     <option value="42.2">42K (Maratón)</option>
                   </select>
                   <Input
-                    className="flex-1 bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                    className="flex-1 bg-background border-border text-white focus-visible:ring-primary/50 rounded-xl"
                     type="number"
                     step="0.1"
                     value={distanceKm}
@@ -343,11 +343,11 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Ubicación
                 </Label>
                 <Input
-                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  className="bg-background border-border text-white focus-visible:ring-primary/50 rounded-xl"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Ciudad, País"
@@ -355,11 +355,11 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Fecha
                 </Label>
                 <Input
-                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  className="bg-background border-border text-white focus-visible:ring-primary/50 rounded-xl"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
@@ -367,11 +367,11 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Tipo de Superficie
                 </Label>
                 <select
-                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                   value={surfaceType || ""}
                   onChange={(e) => setSurfaceType(e.target.value as any)}
                 >
@@ -384,11 +384,11 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Perfil de Altimetría
                 </Label>
                 <select
-                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                   value={elevationProfile || ""}
                   onChange={(e) => setElevationProfile(e.target.value as any)}
                 >
@@ -409,11 +409,11 @@ export function RaceFormDialog({
             onToggle={() => toggleSection("prioridad")}
           >
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Prioridad de la Carrera
               </Label>
               <select
-                className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                 value={priority || ""}
                 onChange={(e) => setPriority(e.target.value as any)}
               >
@@ -431,18 +431,18 @@ export function RaceFormDialog({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Vincular a Plan de Entrenamiento
               </Label>
               <select
-                className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                 value={linkToPlan ? "yes" : "no"}
                 onChange={(e) => setLinkToPlan(e.target.value === "yes")}
               >
                 <option value="no">Sin plan asociado (por defecto)</option>
                 <option value="yes">Sí, crear/integrar al plan actual</option>
               </select>
-              <span className="text-xs text-slate-500 mt-1">
+              <span className="text-xs text-on-surface-variant mt-1">
                 La integración con el calendario ajustará los días de descarga
                 (*tapering*).
               </span>
@@ -458,11 +458,11 @@ export function RaceFormDialog({
           >
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Tipo de Meta
                 </Label>
                 <select
-                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                   value={goalType || ""}
                   onChange={(e) => setGoalType(e.target.value as any)}
                 >
@@ -479,22 +479,22 @@ export function RaceFormDialog({
               {goalType === "tiempo" && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                       Tiempo Objetivo
                     </Label>
                     <Input
-                      className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                      className="bg-background border-border text-white focus-visible:ring-primary/50 rounded-xl"
                       value={targetTime}
                       onChange={(e) => setTargetTime(e.target.value)}
                       placeholder="01:14:30"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                       Ritmo Promedio Proyectado
                     </Label>
                     <Input
-                      className="bg-slate-950 border-slate-800 text-slate-400 focus-visible:ring-orange-500/50 rounded-xl cursor-not-allowed font-medium"
+                      className="bg-background border-border text-muted-foreground focus-visible:ring-primary/50 rounded-xl cursor-not-allowed font-medium"
                       value={targetPace ? `${targetPace} /km` : "--:-- /km"}
                       readOnly
                     />
@@ -503,11 +503,11 @@ export function RaceFormDialog({
               )}
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Calzado a utilizar
                 </Label>
                 <select
-                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                   value={shoeId}
                   onChange={(e) => {
                     userPickedShoe.current = true
@@ -534,22 +534,22 @@ export function RaceFormDialog({
           >
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Horario de Largada
                 </Label>
                 <Input
-                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  className="bg-background border-border text-white focus-visible:ring-primary/50 rounded-xl"
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Estado de Inscripción
                 </Label>
                 <select
-                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                   value={status || ""}
                   onChange={(e) => setStatus(e.target.value as any)}
                 >
@@ -561,22 +561,22 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Dorsal / Bib Number
                 </Label>
                 <Input
-                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  className="bg-background border-border text-white focus-visible:ring-primary/50 rounded-xl"
                   value={bibNumber}
                   onChange={(e) => setBibNumber(e.target.value)}
                   placeholder="Ej: A-1024"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Corral / Cajón de salida
                 </Label>
                 <Input
-                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  className="bg-background border-border text-white focus-visible:ring-primary/50 rounded-xl"
                   value={corral}
                   onChange={(e) => setCorral(e.target.value)}
                   placeholder="Ej: Cajón Verde"
@@ -584,11 +584,11 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Lugar y Fecha de Retiro de Kit
                 </Label>
                 <Input
-                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  className="bg-background border-border text-white focus-visible:ring-primary/50 rounded-xl"
                   value={kitRetrievalInfo}
                   onChange={(e) => setKitRetrievalInfo(e.target.value)}
                   placeholder="Ej: Expo Running, Viernes 14hs"
@@ -596,11 +596,11 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Web oficial o Comprobante (URL)
                 </Label>
                 <Input
-                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  className="bg-background border-border text-white focus-visible:ring-primary/50 rounded-xl"
                   value={webLink}
                   onChange={(e) => setWebLink(e.target.value)}
                   placeholder="https://..."
@@ -608,11 +608,11 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Estrategia: Splits (Opcional)
                 </Label>
                 <textarea
-                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white min-h-[60px]"
+                  className="rounded-xl border border-border bg-surface-container-lowest px-3 py-2 text-sm text-white min-h-[60px]"
                   value={splitsStrategy}
                   onChange={(e) => setSplitsStrategy(e.target.value)}
                   placeholder="Ej: km 1-5 suave, km 6-12 ritmo crucero..."
@@ -620,11 +620,11 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Estrategia: Nutrición (Opcional)
                 </Label>
                 <textarea
-                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white min-h-[60px]"
+                  className="rounded-xl border border-border bg-surface-container-lowest px-3 py-2 text-sm text-white min-h-[60px]"
                   value={nutritionPlan}
                   onChange={(e) => setNutritionPlan(e.target.value)}
                   placeholder="Ej: Geles en km 10, 20 y 30."
@@ -642,33 +642,33 @@ export function RaceFormDialog({
           >
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Tiempo Oficial
                 </Label>
                 <Input
-                  className="bg-slate-950 border-slate-800 text-white rounded-xl"
+                  className="bg-background border-border text-white rounded-xl"
                   value={officialTime}
                   onChange={(e) => setOfficialTime(e.target.value)}
                   placeholder="01:15:00"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Tiempo Neto (Chip)
                 </Label>
                 <Input
-                  className="bg-slate-950 border-slate-800 text-white rounded-xl"
+                  className="bg-background border-border text-white rounded-xl"
                   value={chipTime}
                   onChange={(e) => setChipTime(e.target.value)}
                   placeholder="01:14:45"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Puesto General
                 </Label>
                 <Input
-                  className="bg-slate-950 border-slate-800 text-white rounded-xl"
+                  className="bg-background border-border text-white rounded-xl"
                   type="number"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
@@ -676,11 +676,11 @@ export function RaceFormDialog({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Categoría
                 </Label>
                 <Input
-                  className="bg-slate-950 border-slate-800 text-white rounded-xl"
+                  className="bg-background border-border text-white rounded-xl"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   placeholder="Ej: M40"
@@ -688,11 +688,11 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2 mt-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Actividad de Strava vinculada
                 </Label>
                 <select
-                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                   value={activityId}
                   onChange={(e) => {
                     const nextActivityId = e.target.value
@@ -717,11 +717,11 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Bitácora y Notas Personales
                 </Label>
                 <textarea
-                  className="flex min-h-[80px] w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white shadow-sm"
+                  className="flex min-h-[80px] w-full rounded-xl border border-border bg-surface-container-lowest px-3 py-2 text-sm text-white shadow-sm"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="¿Cómo te sentiste? ¿Clima? Lecciones aprendidas..."
@@ -729,14 +729,14 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                   <Camera className="size-3" /> Fotos del Evento
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {photos.map((url, index) => (
                     <div
                       key={index}
-                      className="relative h-20 w-20 overflow-hidden rounded-xl border border-slate-800"
+                      className="relative h-20 w-20 overflow-hidden rounded-xl border border-border"
                     >
                       <img
                         src={url}
@@ -756,7 +756,7 @@ export function RaceFormDialog({
                       </button>
                     </div>
                   ))}
-                  <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/50 text-slate-500 hover:bg-slate-800 transition-colors">
+                  <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-xl border border-dashed border-border bg-card/50 text-on-surface-variant hover:bg-surface-container-high transition-colors">
                     {uploading ? (
                       <Loader2 className="size-5 animate-spin" />
                     ) : (
@@ -775,18 +775,18 @@ export function RaceFormDialog({
           </Section>
         </div>
 
-        <div className="p-6 border-t border-slate-800 bg-slate-900 sticky bottom-0 z-10 flex gap-3 justify-end rounded-b-2xl">
+        <div className="p-6 border-t border-border bg-card sticky bottom-0 z-10 flex gap-3 justify-end rounded-b-2xl">
           <Button
             type="button"
             variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="rounded-xl text-slate-300 hover:text-white"
+            className="rounded-xl text-foreground hover:text-white"
           >
             Cancelar / Descartar
           </Button>
           <Button
             type="button"
-            className="rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold shadow-lg shadow-orange-500/20"
+            className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-card shadow-primary/20"
             disabled={mutation.isPending || !eventName || !distanceKm || !date}
             onClick={() => mutation.mutate()}
           >

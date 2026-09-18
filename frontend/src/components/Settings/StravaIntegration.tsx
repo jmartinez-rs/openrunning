@@ -105,11 +105,11 @@ export function StravaIntegration() {
       >
         <div className="flex items-center gap-2 flex-wrap">
           {statusQuery.isLoading ? (
-            <Loader2 className="size-4 animate-spin text-slate-500" />
+            <Loader2 className="size-4 animate-spin text-on-surface-variant" />
           ) : (
             <>
               {connected && (
-                <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+                <span className="rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
                   Conectado
                 </span>
               )}
@@ -135,7 +135,7 @@ export function StravaIntegration() {
                     size="sm"
                     disabled={testMutation.isPending}
                     onClick={() => testMutation.mutate()}
-                    className="h-8 rounded-xl border-slate-800 text-xs text-slate-300"
+                    className="h-8 rounded-xl border-border text-xs text-muted-foreground"
                   >
                     {testMutation.isPending && (
                       <Loader2 className="mr-1 size-3 animate-spin" />
@@ -146,7 +146,7 @@ export function StravaIntegration() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-8 rounded-xl text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                    className="h-8 rounded-xl text-xs text-destructive hover:bg-red-500/10 hover:text-destructive"
                     disabled={disconnectMutation.isPending}
                     onClick={() => disconnectMutation.mutate()}
                   >
@@ -162,7 +162,7 @@ export function StravaIntegration() {
             variant="ghost"
             size="sm"
             onClick={() => setShowManualForm(!showManualForm)}
-            className="h-8 px-2 text-xs text-slate-400 hover:text-slate-200"
+            className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
           >
             {showManualForm ? "Ocultar Campos" : "Credenciales API"}
           </Button>
@@ -170,13 +170,13 @@ export function StravaIntegration() {
       </SettingsRow>
 
       {(!connected || showManualForm) && (
-        <div className="p-4 bg-slate-950/60 border-t border-slate-800/60 space-y-4">
+        <div className="p-4 bg-surface-container-lowest/60 border-t border-border/60 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
                 Credenciales de Aplicación Strava API
               </h4>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 Ingresá tus credenciales de Strava Developer para vincular y
                 sincronizar la app.
               </p>
@@ -200,7 +200,7 @@ export function StravaIntegration() {
               <ExternalLink className="size-3.5 shrink-0" />
               Paso Requerido para Autorización de Carreras
             </p>
-            <p className="text-[11px] text-slate-300 leading-relaxed">
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
               Luego de guardar tu <strong>Client ID</strong> y{" "}
               <strong>Client Secret</strong>, hacé clic en el botón naranja{" "}
               <strong>"Conectar con OAuth"</strong> para autorizar en Strava el
@@ -211,50 +211,50 @@ export function StravaIntegration() {
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs text-slate-300 font-semibold">
+                <label className="text-xs text-muted-foreground font-semibold">
                   Client ID *
                 </label>
                 <Input
                   value={clientId}
                   onChange={(e) => setClientId(e.target.value)}
                   placeholder="Ej: 123456"
-                  className="h-9 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200 focus:border-orange-500"
+                  className="h-9 rounded-xl border-border bg-card text-xs text-foreground focus:border-orange-500"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-slate-300 font-semibold">
+                <label className="text-xs text-muted-foreground font-semibold">
                   Client Secret *
                 </label>
                 <PasswordInput
                   value={clientSecret}
                   onChange={(e) => setClientSecret(e.target.value)}
                   placeholder="Secreto de aplicación"
-                  className="h-9 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200 focus:border-orange-500"
+                  className="h-9 rounded-xl border-border bg-card text-xs text-foreground focus:border-orange-500"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs text-slate-400 font-medium">
+                <label className="text-xs text-muted-foreground font-medium">
                   Access Token (opcional)
                 </label>
                 <PasswordInput
                   value={accessToken}
                   onChange={(e) => setAccessToken(e.target.value)}
                   placeholder="Access Token de la API"
-                  className="h-9 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200 focus:border-orange-500"
+                  className="h-9 rounded-xl border-border bg-card text-xs text-foreground focus:border-orange-500"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-slate-400 font-medium">
+                <label className="text-xs text-muted-foreground font-medium">
                   Refresh Token (opcional)
                 </label>
                 <PasswordInput
                   value={refreshToken}
                   onChange={(e) => setRefreshToken(e.target.value)}
                   placeholder="Refresh Token de la API"
-                  className="h-9 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200 focus:border-orange-500"
+                  className="h-9 rounded-xl border-border bg-card text-xs text-foreground focus:border-orange-500"
                 />
               </div>
             </div>

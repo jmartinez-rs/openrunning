@@ -57,21 +57,21 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
     if (val <= 5)
       return {
         text: "Z2 Cómodo / Rodaje",
-        color: "text-emerald-400 bg-emerald-500/10",
+        color: "text-primary bg-primary/10",
       }
     if (val <= 7)
       return {
         text: "Z3 Tempo / Ritmo Cruzero",
-        color: "text-amber-400 bg-amber-500/10",
+        color: "text-primary bg-primary/10",
       }
     if (val <= 9)
       return {
         text: "Z4 Umbral / Series",
-        color: "text-orange-400 bg-orange-500/10",
+        color: "text-primary bg-primary/10",
       }
     return {
       text: "Z5 Esfuerzo Máximo / Carrera",
-      color: "text-red-400 bg-red-500/10",
+      color: "text-destructive bg-destructive/10",
     }
   }
 
@@ -92,17 +92,17 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+      <div className="w-full max-w-lg bg-card border border-border rounded-t-3xl sm:rounded-3xl p-5 shadow-card max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+        <div className="flex items-center justify-between pb-3 border-b border-border">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400">
+            <div className="p-2 rounded-xl bg-primary/15 text-primary">
               <Activity className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base font-bold text-white">
                 Registrar Carrera Manual
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 Sin necesidad de reloj GPS ni Strava
               </p>
             </div>
@@ -110,7 +110,7 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-xl bg-surface-container-high text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -119,14 +119,14 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {/* Date Picker */}
           <div>
-            <label className="text-xs font-medium text-slate-400 mb-1 block">
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">
               Fecha de entrenamiento
             </label>
             <input
               type="date"
               value={dateStr}
               onChange={(e) => setDateStr(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-medium focus:outline-none focus:border-emerald-500"
+              className="w-full bg-surface-container-high border border-border rounded-xl px-3 py-2 text-sm text-white font-medium focus:outline-none focus:border-primary"
             />
           </div>
 
@@ -152,20 +152,22 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
           </div>
 
           {/* Calculated Pace Preview */}
-          <div className="flex items-center justify-between bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
-            <div className="text-xs text-slate-400 font-medium">
+          <div className="flex items-center justify-between bg-surface-container-high/60 border border-border/60 rounded-xl p-3">
+            <div className="text-xs text-muted-foreground font-medium">
               Ritmo Medio Calculado
             </div>
-            <div className="text-base font-extrabold text-emerald-400">
+            <div className="text-base font-extrabold text-primary">
               {formatPace(paceSecondsPerKm)}{" "}
-              <span className="text-xs font-normal text-slate-400">/km</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                /km
+              </span>
             </div>
           </div>
 
           {/* RPE Stepper & Badge */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-medium text-slate-400">
+              <label className="text-xs font-medium text-muted-foreground">
                 Esfuerzo Percibido (RPE 1-10)
               </label>
               <span
@@ -187,14 +189,13 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
 
           {/* Shoe Selector */}
           <div>
-            <label className="text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
-              <Footprints className="size-3.5 text-emerald-400" /> Calzado
-              utilizado
+            <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
+              <Footprints className="size-3.5 text-primary" /> Calzado utilizado
             </label>
             <select
               value={shoeId}
               onChange={(e) => setShoeId(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+              className="w-full bg-surface-container-high border border-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-primary"
             >
               <option value="">Sin calzado asignado</option>
               {activeShoes.map((shoe: ShoePublic) => (
@@ -207,7 +208,7 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
 
           {/* Notes */}
           <div>
-            <label className="text-xs font-medium text-slate-400 mb-1 block">
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">
               Notas y Sensaciones
             </label>
             <textarea
@@ -215,14 +216,14 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Clima, terreno, sensaciones físicas..."
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 resize-none"
+              className="w-full bg-surface-container-high border border-border rounded-xl p-3 text-sm text-white placeholder:text-on-surface-variant focus:outline-none focus:border-primary resize-none"
             />
           </div>
 
           {/* Submit button */}
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold text-sm hover:bg-emerald-400 active:scale-98 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 cursor-pointer"
+            className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 active:scale-98 transition-all flex items-center justify-center gap-2 shadow-card shadow-primary/20 cursor-pointer"
           >
             <Check className="w-5 h-5 stroke-[3]" />
             Guardar Carrera

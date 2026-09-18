@@ -88,17 +88,17 @@ export function QuickCreateActivityDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl border-slate-800 bg-slate-950 p-6 text-slate-100">
+      <DialogContent className="sm:max-w-md rounded-2xl border-border bg-background p-6 text-foreground">
         <DialogHeader className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-orange-500/15 text-orange-400">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
               <Footprints className="size-5" />
             </div>
             <DialogTitle className="text-xl font-bold">
               Registrar Carrera Manual
             </DialogTitle>
           </div>
-          <DialogDescription className="text-xs text-slate-400">
+          <DialogDescription className="text-xs text-muted-foreground">
             Ingresá los datos de tu sesión de running para incluirla en tus
             estadísticas.
           </DialogDescription>
@@ -106,7 +106,7 @@ export function QuickCreateActivityDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="act-name" className="text-xs text-slate-300">
+            <Label htmlFor="act-name" className="text-xs text-muted-foreground">
               Nombre de la actividad
             </Label>
             <Input
@@ -114,13 +114,16 @@ export function QuickCreateActivityDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Carrera matutina, Fondito 10k"
-              className="h-9 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200"
+              className="h-9 rounded-xl border-border bg-card text-xs text-foreground"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="act-dist" className="text-xs text-slate-300">
+              <Label
+                htmlFor="act-dist"
+                className="text-xs text-muted-foreground"
+              >
                 Distancia (km)
               </Label>
               <Input
@@ -131,11 +134,14 @@ export function QuickCreateActivityDialog({
                 value={distanceKm}
                 onChange={(e) => setDistanceKm(e.target.value)}
                 placeholder="5.0"
-                className="h-9 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200"
+                className="h-9 rounded-xl border-border bg-card text-xs text-foreground"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="act-dur" className="text-xs text-slate-300">
+              <Label
+                htmlFor="act-dur"
+                className="text-xs text-muted-foreground"
+              >
                 Duración (minutos)
               </Label>
               <Input
@@ -145,14 +151,14 @@ export function QuickCreateActivityDialog({
                 value={durationMin}
                 onChange={(e) => setDurationMin(e.target.value)}
                 placeholder="25"
-                className="h-9 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200"
+                className="h-9 rounded-xl border-border bg-card text-xs text-foreground"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="act-hr" className="text-xs text-slate-300">
+              <Label htmlFor="act-hr" className="text-xs text-muted-foreground">
                 Frecuencia Cardíaca (ppm)
               </Label>
               <Input
@@ -163,14 +169,14 @@ export function QuickCreateActivityDialog({
                 value={avgHr}
                 onChange={(e) => setAvgHr(e.target.value)}
                 placeholder="Opcional: 145"
-                className="h-9 rounded-xl border-slate-800 bg-slate-900 text-xs text-slate-200"
+                className="h-9 rounded-xl border-border bg-card text-xs text-foreground"
               />
             </div>
-            <div className="flex flex-col justify-end p-2.5 rounded-xl border border-slate-800/80 bg-slate-900/60 text-center">
-              <span className="text-[10px] uppercase font-medium text-slate-400">
+            <div className="flex flex-col justify-end p-2.5 rounded-xl border border-border/80 bg-card/60 text-center">
+              <span className="text-[10px] uppercase font-medium text-muted-foreground">
                 Ritmo Calculado
               </span>
-              <span className="text-sm font-bold text-emerald-400">
+              <span className="text-sm font-bold text-primary">
                 {formatPace(paceSecPerKm)}
               </span>
             </div>
@@ -182,7 +188,7 @@ export function QuickCreateActivityDialog({
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="rounded-xl border-slate-800 text-xs text-slate-300"
+              className="rounded-xl border-border text-xs text-muted-foreground"
             >
               Cancelar
             </Button>
@@ -190,7 +196,7 @@ export function QuickCreateActivityDialog({
               type="submit"
               size="sm"
               disabled={mutation.isPending}
-              className="rounded-xl bg-emerald-500 text-slate-950 font-semibold text-xs hover:bg-emerald-400"
+              className="rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90"
             >
               {mutation.isPending && (
                 <Loader2 className="mr-1.5 size-3.5 animate-spin" />

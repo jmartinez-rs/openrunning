@@ -76,8 +76,8 @@ const ChangePassword = () => {
             <FormItem className="space-y-0">
               <SettingsRow
                 icon={KeyRound}
-                iconBg="bg-amber-500/15"
-                iconColor="text-amber-400"
+                iconBg="bg-primary/15"
+                iconColor="text-primary"
                 title="Contraseña actual"
                 subtitle="Requerida para autorizar el cambio"
               >
@@ -87,11 +87,11 @@ const ChangePassword = () => {
                     placeholder="••••••••"
                     aria-invalid={fieldState.invalid}
                     {...field}
-                    className="h-8 w-44 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+                    className="h-8 w-44 rounded-xl border-border bg-background text-xs text-foreground"
                   />
                 </FormControl>
               </SettingsRow>
-              <FormMessage className="text-xs text-red-400 px-4 pt-1" />
+              <FormMessage className="text-xs text-destructive px-4 pt-1" />
             </FormItem>
           )}
         />
@@ -103,8 +103,8 @@ const ChangePassword = () => {
             <FormItem className="space-y-0">
               <SettingsRow
                 icon={Lock}
-                iconBg="bg-indigo-500/15"
-                iconColor="text-indigo-400"
+                iconBg="bg-primary/15"
+                iconColor="text-primary"
                 title="Nueva contraseña"
                 subtitle="Mínimo 8 caracteres"
               >
@@ -114,11 +114,11 @@ const ChangePassword = () => {
                     placeholder="••••••••"
                     aria-invalid={fieldState.invalid}
                     {...field}
-                    className="h-8 w-44 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+                    className="h-8 w-44 rounded-xl border-border bg-background text-xs text-foreground"
                   />
                 </FormControl>
               </SettingsRow>
-              <FormMessage className="text-xs text-red-400 px-4 pt-1" />
+              <FormMessage className="text-xs text-destructive px-4 pt-1" />
             </FormItem>
           )}
         />
@@ -130,8 +130,8 @@ const ChangePassword = () => {
             <FormItem className="space-y-0">
               <SettingsRow
                 icon={ShieldCheck}
-                iconBg="bg-purple-500/15"
-                iconColor="text-purple-400"
+                iconBg="bg-primary/15"
+                iconColor="text-primary"
                 title="Confirmar nueva contraseña"
                 subtitle="Repetí la nueva clave"
               >
@@ -141,11 +141,11 @@ const ChangePassword = () => {
                     placeholder="••••••••"
                     aria-invalid={fieldState.invalid}
                     {...field}
-                    className="h-8 w-44 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+                    className="h-8 w-44 rounded-xl border-border bg-background text-xs text-foreground"
                   />
                 </FormControl>
               </SettingsRow>
-              <FormMessage className="text-xs text-red-400 px-4 pt-1" />
+              <FormMessage className="text-xs text-destructive px-4 pt-1" />
             </FormItem>
           )}
         />
@@ -155,7 +155,7 @@ const ChangePassword = () => {
             type="submit"
             size="sm"
             loading={mutation.isPending}
-            className="rounded-xl bg-emerald-500 text-slate-950 font-semibold text-xs hover:bg-emerald-400"
+            className="rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90"
           >
             Actualizar contraseña
           </LoadingButton>

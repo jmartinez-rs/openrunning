@@ -58,8 +58,8 @@ export function WeeklyGoals() {
     <div className="space-y-2">
       <SettingsRow
         icon={Footprints}
-        iconBg="bg-emerald-500/15"
-        iconColor="text-emerald-400"
+        iconBg="bg-primary/15"
+        iconColor="text-primary"
         title="Distancia semanal objetivo"
         subtitle="Kilómetros de carrera planeados por semana"
       >
@@ -67,50 +67,52 @@ export function WeeklyGoals() {
           <Input
             type="number"
             step="0.1"
-            className="w-24 h-8 rounded-xl border-slate-800 bg-slate-950 text-xs text-center text-slate-200"
+            className="w-24 h-8 rounded-xl border-border bg-background text-xs text-center text-foreground"
             value={targetKm}
             onChange={(e) => setTargetKm(e.target.value)}
             placeholder="Ej: 30"
           />
-          <span className="text-xs text-slate-400 font-medium">km</span>
+          <span className="text-xs text-muted-foreground font-medium">km</span>
         </div>
       </SettingsRow>
 
       <SettingsRow
         icon={Dumbbell}
-        iconBg="bg-purple-500/15"
-        iconColor="text-purple-400"
+        iconBg="bg-primary/15"
+        iconColor="text-primary"
         title="Días de gimnasio objetivo"
         subtitle="Sesiones de fuerza semanales"
       >
         <div className="flex items-center gap-1.5">
           <Input
             type="number"
-            className="w-24 h-8 rounded-xl border-slate-800 bg-slate-950 text-xs text-center text-slate-200"
+            className="w-24 h-8 rounded-xl border-border bg-background text-xs text-center text-foreground"
             value={targetGymDays}
             onChange={(e) => setTargetGymDays(e.target.value)}
             placeholder="Ej: 3"
           />
-          <span className="text-xs text-slate-400 font-medium">días</span>
+          <span className="text-xs text-muted-foreground font-medium">
+            días
+          </span>
         </div>
       </SettingsRow>
 
       <SettingsRow
         icon={HeartPulse}
-        iconBg="bg-rose-500/15"
-        iconColor="text-rose-400"
+        iconBg="bg-destructive/15"
+        iconColor="text-destructive"
         title="Minutos de cardio objetivo"
         subtitle="Tiempo total de cardio acumulado por semana"
       >
         <div className="flex items-center gap-1.5">
           <Input
             type="number"
-            className="w-24 h-8 rounded-xl border-slate-800 bg-slate-950 text-xs text-center text-slate-200"
+            className="w-24 h-8 rounded-xl border-border bg-background text-xs text-center text-foreground"
             value={targetCardioMinutes}
             onChange={(e) => setTargetCardioMinutes(e.target.value)}
             placeholder="Ej: 150"
           />
-          <span className="text-xs text-slate-400 font-medium">min</span>
+          <span className="text-xs text-muted-foreground font-medium">min</span>
         </div>
       </SettingsRow>
 
@@ -120,7 +122,7 @@ export function WeeklyGoals() {
           size="sm"
           disabled={mutation.isPending}
           onClick={() => mutation.mutate()}
-          className="rounded-xl bg-emerald-500 text-slate-950 font-semibold text-xs hover:bg-emerald-400"
+          className="rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90"
         >
           {mutation.isPending && (
             <Loader2 className="mr-1.5 size-3.5 animate-spin" />

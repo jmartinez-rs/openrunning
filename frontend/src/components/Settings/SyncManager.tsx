@@ -49,8 +49,8 @@ export function SyncManager() {
   return (
     <SettingsRow
       icon={RefreshCw}
-      iconBg="bg-blue-500/15"
-      iconColor="text-blue-400"
+      iconBg="bg-primary/15"
+      iconColor="text-primary"
       title="Sincronizar ahora"
       subtitle="Ejecutar importación inmediata de actividades"
     >
@@ -61,7 +61,7 @@ export function SyncManager() {
           size="sm"
           disabled={syncing}
           onClick={() => stravaSync.mutate()}
-          className="h-8 rounded-xl border-slate-800 text-xs text-slate-300"
+          className="h-8 rounded-xl border-border text-xs text-muted-foreground"
         >
           {stravaSync.isPending ? (
             <Loader2 className="mr-1.5 size-3.5 animate-spin" />
@@ -76,7 +76,7 @@ export function SyncManager() {
           size="sm"
           disabled={syncing}
           onClick={() => hevySync.mutate()}
-          className="h-8 rounded-xl border-slate-800 text-xs text-slate-300"
+          className="h-8 rounded-xl border-border text-xs text-muted-foreground"
         >
           {hevySync.isPending ? (
             <Loader2 className="mr-1.5 size-3.5 animate-spin" />

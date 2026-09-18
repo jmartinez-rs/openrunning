@@ -155,6 +155,17 @@
   }
 }
 
+/* ── Stripe pattern (progress bars, Kinetic Volt) ─────────────────────── */
+.stripe-pattern {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 4px,
+    rgba(0, 0, 0, 0.12) 4px,
+    rgba(0, 0, 0, 0.12) 8px
+  );
+}
+
 /* ── Running Heatmap (ported from OpenGym) ─────────────────────────── */
 .hm-wrap {
   overflow-x: auto;
@@ -174,7 +185,7 @@
   flex: none;
   width: 14px;
   font-size: 11px;
-  color: #94a3b8;
+  color: #A1A1AA;
   white-space: nowrap;
   overflow: visible;
   font-weight: 500;
@@ -192,7 +203,7 @@
 .hm-days span {
   height: 11px;
   font-size: 10px;
-  color: #94a3b8;
+  color: #A1A1AA;
   line-height: 11px;
   font-weight: 500;
 }
@@ -209,7 +220,7 @@
   width: 11px;
   height: 11px;
   border-radius: 3px;
-  background: #1e293b;
+  background: #262626;
   border: 1px solid rgba(255, 255, 255, 0.03);
   flex: none;
   cursor: default;
@@ -243,7 +254,7 @@
   justify-content: flex-end;
   margin-top: 10px;
   font-size: 11px;
-  color: #94a3b8;
+  color: #A1A1AA;
   font-weight: 500;
 }
 .hm-legend .hm-c {

@@ -29,12 +29,12 @@ function StatItem({
   value: string
 }) {
   return (
-    <div className="bg-slate-950/60 border border-slate-800/60 rounded-xl p-2.5 flex items-center gap-2.5">
+    <div className="bg-surface-container-lowest/60 border border-border/60 rounded-xl p-2.5 flex items-center gap-2.5">
       <div className="p-2 rounded-lg bg-purple-500/15 text-purple-400 shrink-0">
         {icon}
       </div>
       <div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
           {label}
         </p>
         <p className="text-xs sm:text-sm font-extrabold text-white tracking-tight">
@@ -63,8 +63,8 @@ export function ActivitySummary({
       : 0
 
   return (
-    <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-5">
-      <div className="flex items-center gap-2 pb-1 border-b border-slate-800/80">
+    <div className="bg-card/80 border border-border rounded-2xl p-4 sm:p-5 shadow-card space-y-5">
+      <div className="flex items-center gap-2 pb-1 border-b border-border/80">
         <Activity className="w-4 h-4 text-purple-400" />
         <h2 className="text-sm font-bold text-white tracking-tight">
           Resumen de Sesión
@@ -95,27 +95,27 @@ export function ActivitySummary({
       </div>
 
       {/* Visual Muscle Map Container */}
-      <div className="p-3 bg-slate-950/60 border border-slate-800/60 rounded-xl flex justify-center overflow-hidden">
+      <div className="p-3 bg-surface-container-lowest/60 border border-border/60 rounded-xl flex justify-center overflow-hidden">
         <MuscleMap distribution={slugDistribution} />
       </div>
 
       {/* Muscle distribution bars */}
       {sortedMuscles.length > 0 ? (
         <div className="space-y-2.5">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             Distribución por Músculo
           </p>
           {sortedMuscles.map(([slug, value]) => (
             <div key={slug} className="space-y-1">
               <div className="flex items-center justify-between text-xs font-medium">
-                <span className="font-semibold text-slate-300">
+                <span className="font-semibold text-muted-foreground">
                   {SLUG_LABELS[slug] ?? slug}
                 </span>
-                <span className="font-bold text-purple-400 font-mono">
+                <span className="font-bold text-purple-400 font-display">
                   {formatSets(value)} series
                 </span>
               </div>
-              <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800/50">
+              <div className="w-full h-2 bg-surface-container-lowest rounded-full overflow-hidden p-0.5 border border-border/50">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-400 transition-all duration-500"
                   style={{
@@ -127,7 +127,7 @@ export function ActivitySummary({
           ))}
         </div>
       ) : (
-        <p className="text-xs text-slate-400 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           Sin distribución muscular disponible.
         </p>
       )}

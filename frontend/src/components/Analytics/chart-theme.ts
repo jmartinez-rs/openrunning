@@ -1,35 +1,36 @@
 /**
- * Tema de charts para OpenRunning — Recharts & Dark Slate.
+ * Tema de charts para OpenRunning — Recharts & Kinetic Volt.
+ * Colores de dominio alineados con tokens/source/tokens.json.
  */
 export const DOMAIN_COLORS = {
   cardio: "#EAFC5F",
-  strength: "#A3E635",
-  success: "#EAFC5F",
-  race: "#F59E0B",
-  pace: "#EAFC5F",
-  active: "#A3E635",
+  strength: "#FFFFFF",
+  success: "#dbed52",
+  race: "#EAFC5F",
+  pace: "#c6c6c7",
+  active: "#EAFC5F",
 } as const
 
 export type DomainColorKey = keyof typeof DOMAIN_COLORS
 
 export const AXIS_TICK_STYLE = {
-  fill: "#94a3b8",
+  fill: "#A1A1AA",
   fontSize: 11,
   fontWeight: 500,
 } as const
 
 export const AXIS_LABEL_STYLE = {
-  fill: "#94a3b8",
+  fill: "#A1A1AA",
   fontSize: 11,
   fontWeight: 600,
 } as const
 
 export const TOOLTIP_CONTENT_STYLE = {
-  backgroundColor: "#0f172a",
-  borderColor: "#1e293b",
+  backgroundColor: "#1E1E1E",
+  borderColor: "#262626",
   borderRadius: "12px",
   boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
-  color: "#f8fafc",
+  color: "#FFFFFF",
   fontSize: "12px",
   fontWeight: "500",
 }

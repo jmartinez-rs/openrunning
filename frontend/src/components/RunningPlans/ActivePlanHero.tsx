@@ -40,14 +40,12 @@ function ProgressBar({
   return (
     <div className="flex flex-col gap-1.5 w-full">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
           Progreso general del plan
         </span>
-        <span className="text-[11px] font-bold text-emerald-400">
-          {percent}%
-        </span>
+        <span className="text-[11px] font-bold text-primary">{percent}%</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
         <div className="flex h-full">
           <div
             className="h-full rounded-l-full bg-primary transition-all duration-500"
@@ -177,8 +175,8 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
               className={cn(
                 "px-5 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all",
                 weekOffset === -1
-                  ? "bg-slate-800 text-white shadow-sm"
-                  : "text-slate-400 hover:text-slate-200",
+                  ? "bg-surface-container-high text-white shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
               )}
               onClick={(e) => {
                 e.preventDefault()
@@ -196,7 +194,7 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
             >
               {status.label}
             </Badge>
-            <div className="size-10 flex items-center justify-center rounded-2xl bg-slate-900 border border-slate-800 text-emerald-400 group-hover:bg-emerald-500/10 transition-colors">
+            <div className="size-10 flex items-center justify-center rounded-2xl bg-card border border-border text-primary group-hover:bg-primary/10 transition-colors">
               <ArrowRight className="size-5" />
             </div>
           </div>
@@ -205,8 +203,8 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
         {/* Big Metric Area */}
         <div className="flex items-end justify-between relative mt-2">
           <div className="flex flex-col gap-1 z-10">
-            <div className="flex items-center gap-1.5 text-slate-400">
-              <MapPin className="size-4 text-emerald-400" />
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <MapPin className="size-4 text-primary" />
               <span className="text-sm font-semibold">
                 Distancia total planeada
               </span>
@@ -291,7 +289,7 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
         {/* Bar Chart Section */}
         <div className="mt-2 z-10">
           {detailQuery.isLoading ? (
-            <Skeleton className="h-32 w-full rounded-2xl bg-slate-800/80" />
+            <Skeleton className="h-32 w-full rounded-2xl bg-surface-container-high/80" />
           ) : (
             <WeekVolumeChart
               mondayISO={weekMondayISO}
@@ -319,17 +317,6 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
           </span>
         </div>
       </div>
-      <style>{`
-        .stripe-pattern {
-          background-image: repeating-linear-gradient(
-            -45deg,
-            transparent,
-            transparent 4px,
-            rgba(0, 0, 0, 0.1) 4px,
-            rgba(0, 0, 0, 0.1) 8px
-          );
-        }
-      `}</style>
     </Link>
   )
 }

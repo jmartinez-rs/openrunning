@@ -133,14 +133,14 @@ function ToolsView() {
       {/* Page Title */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Calculator className="size-5" />
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight">
             Calculadoras de Running
           </h1>
         </div>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-muted-foreground">
           Herramientas matemáticas para estimar ritmos de entrenamiento (VDOT),
           pronosticar marcas y calcular zonas cardíacas.
         </p>
@@ -148,31 +148,31 @@ function ToolsView() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-slate-900 border border-slate-800 p-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-card border border-border p-1 rounded-xl">
           <TabsTrigger
             value="vdot"
-            className="flex items-center gap-2 data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 font-semibold rounded-lg text-xs md:text-sm"
+            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
           >
             <Sparkles className="size-4 shrink-0" />
             <span>VDOT & Ritmos</span>
           </TabsTrigger>
           <TabsTrigger
             value="riegel"
-            className="flex items-center gap-2 data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 font-semibold rounded-lg text-xs md:text-sm"
+            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
           >
             <Trophy className="size-4 shrink-0" />
             <span>Predictor</span>
           </TabsTrigger>
           <TabsTrigger
             value="hr"
-            className="flex items-center gap-2 data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 font-semibold rounded-lg text-xs md:text-sm"
+            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
           >
             <HeartPulse className="size-4 shrink-0" />
             <span>Zonas FC</span>
           </TabsTrigger>
           <TabsTrigger
             value="converter"
-            className="flex items-center gap-2 data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 font-semibold rounded-lg text-xs md:text-sm"
+            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
           >
             <ArrowRightLeft className="size-4 shrink-0" />
             <span>Conversor</span>
@@ -183,13 +183,13 @@ function ToolsView() {
         <TabsContent value="vdot" className="space-y-6 pt-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Form Column */}
-            <Card className="lg:col-span-5 bg-slate-900/90 border-slate-800 text-slate-100">
+            <Card className="lg:col-span-5 bg-card/90 border-border text-foreground">
               <CardHeader>
-                <CardTitle className="text-lg font-bold flex items-center gap-2 text-emerald-400">
+                <CardTitle className="text-lg font-bold flex items-center gap-2 text-primary">
                   <Flame className="size-5" />
                   Rendimiento Reciente
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
+                <CardDescription className="text-xs text-muted-foreground">
                   Ingresá el tiempo de tu mejor marca reciente para obtener tu
                   VDOT (Jack Daniels) y ritmos exactos.
                 </CardDescription>
@@ -198,7 +198,7 @@ function ToolsView() {
                 <div className="space-y-2">
                   <Label
                     htmlFor="vdot-dist"
-                    className="text-xs font-semibold text-slate-300"
+                    className="text-xs font-semibold text-muted-foreground"
                   >
                     Distancia de la marca
                   </Label>
@@ -208,7 +208,7 @@ function ToolsView() {
                     onChange={(e) =>
                       setVdotDistanceMeters(Number(e.target.value))
                     }
-                    className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     {STANDARD_DISTANCES.map((d) => (
                       <option key={d.meters} value={d.meters}>
@@ -219,12 +219,12 @@ function ToolsView() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-slate-300">
+                  <Label className="text-xs font-semibold text-muted-foreground">
                     Tiempo Logrado (Horas : Minutos : Segundos)
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold">
                         Horas
                       </span>
                       <Input
@@ -237,11 +237,11 @@ function ToolsView() {
                             Math.max(0, parseInt(e.target.value, 10) || 0),
                           )
                         }
-                        className="bg-slate-950 border-slate-800 text-white font-mono text-center"
+                        className="bg-background border-border text-white font-display text-center"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold">
                         Minutos
                       </span>
                       <Input
@@ -254,11 +254,11 @@ function ToolsView() {
                             Math.max(0, parseInt(e.target.value, 10) || 0),
                           )
                         }
-                        className="bg-slate-950 border-slate-800 text-white font-mono text-center"
+                        className="bg-background border-border text-white font-display text-center"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold">
                         Segundos
                       </span>
                       <Input
@@ -271,137 +271,137 @@ function ToolsView() {
                             Math.max(0, parseInt(e.target.value, 10) || 0),
                           )
                         }
-                        className="bg-slate-950 border-slate-800 text-white font-mono text-center"
+                        className="bg-background border-border text-white font-display text-center"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between mt-4">
+                <div className="p-4 rounded-xl bg-surface-container-lowest border border-border flex items-center justify-between mt-4">
                   <div>
-                    <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">
+                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider">
                       Puntaje VDOT Estimado
                     </span>
-                    <div className="text-3xl font-black text-emerald-400 tracking-tight">
+                    <div className="text-3xl font-black text-primary tracking-tight">
                       {calculatedVdot > 0 ? calculatedVdot : "--"}
                     </div>
                   </div>
-                  <Sparkles className="size-8 text-emerald-500/40" />
+                  <Sparkles className="size-8 text-primary/40" />
                 </div>
               </CardContent>
             </Card>
 
             {/* Results Column */}
-            <Card className="lg:col-span-7 bg-slate-900/90 border-slate-800 text-slate-100">
+            <Card className="lg:col-span-7 bg-card/90 border-border text-foreground">
               <CardHeader>
                 <CardTitle className="text-lg font-bold text-white flex items-center justify-between">
                   <span>Ritmos de Entrenamiento Sugeridos</span>
-                  <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                  <span className="text-xs font-display text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-full">
                     VDOT {calculatedVdot}
                   </span>
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
+                <CardDescription className="text-xs text-muted-foreground">
                   Rangos de ritmo por kilómetro basados en la metodología de
                   Jack Daniels para optimizar cada sesión.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-border/80 flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-emerald-500" />
+                    <div className="text-xs font-bold text-[#4d5a1a] flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-[#4d5a1a]" />
                       Easy / Rodaje Suave (Z2)
                     </div>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-muted-foreground">
                       Desarrollo aeróbico base y recuperación.
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-base font-black font-mono text-white">
+                    <span className="text-base font-black font-display text-white">
                       {trainingPaces.easyMin} – {trainingPaces.easyMax}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       min/km
                     </span>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-border/80 flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <div className="text-xs font-bold text-teal-400 flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-teal-500" />
+                    <div className="text-xs font-bold text-[#6a8220] flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-[#6a8220]" />
                       Marathon / Maratón (M)
                     </div>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-muted-foreground">
                       Ritmo objetivo sostenido para 42K.
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-base font-black font-mono text-white">
+                    <span className="text-base font-black font-display text-white">
                       {trainingPaces.marathon}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       min/km
                     </span>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-border/80 flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-amber-500" />
+                    <div className="text-xs font-bold text-[#a9cc33] flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-[#a9cc33]" />
                       Threshold / Umbral Lactato (T)
                     </div>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-muted-foreground">
                       Ritmo de tempo cómodo pero controlado.
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-base font-black font-mono text-white">
+                    <span className="text-base font-black font-display text-white">
                       {trainingPaces.threshold}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       min/km
                     </span>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-border/80 flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <div className="text-xs font-bold text-orange-400 flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-orange-500" />
+                    <div className="text-xs font-bold text-[#EAFC5F] flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-[#EAFC5F]" />
                       Interval / Series VO2 Max (I)
                     </div>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-muted-foreground">
                       Series duras de 3 a 5 minutos (98-100% FC máx).
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-base font-black font-mono text-white">
+                    <span className="text-base font-black font-display text-white">
                       {trainingPaces.interval}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       min/km
                     </span>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-border/80 flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <div className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-rose-500" />
+                    <div className="text-xs font-bold text-[#EF4444] flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-[#EF4444]" />
                       Repetition / Velocidad (R)
                     </div>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-muted-foreground">
                       Repeticiones cortas (200m - 400m) para economía de
                       carrera.
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-base font-black font-mono text-white">
+                    <span className="text-base font-black font-display text-white">
                       {trainingPaces.repetition}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       min/km
                     </span>
                   </div>
@@ -414,13 +414,13 @@ function ToolsView() {
         {/* ── TAB 2: Predictor de Carrera ── */}
         <TabsContent value="riegel" className="space-y-6 pt-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <Card className="lg:col-span-5 bg-slate-900/90 border-slate-800 text-slate-100">
+            <Card className="lg:col-span-5 bg-card/90 border-border text-foreground">
               <CardHeader>
-                <CardTitle className="text-lg font-bold flex items-center gap-2 text-emerald-400">
+                <CardTitle className="text-lg font-bold flex items-center gap-2 text-primary">
                   <Trophy className="size-5" />
                   Carrera de Referencia
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
+                <CardDescription className="text-xs text-muted-foreground">
                   Utilizá una carrera reciente para proyectar tiempos en otras
                   distancias competitivas (Fórmula de Riegel).
                 </CardDescription>
@@ -429,7 +429,7 @@ function ToolsView() {
                 <div className="space-y-2">
                   <Label
                     htmlFor="riegel-dist"
-                    className="text-xs font-semibold text-slate-300"
+                    className="text-xs font-semibold text-muted-foreground"
                   >
                     Distancia base
                   </Label>
@@ -439,7 +439,7 @@ function ToolsView() {
                     onChange={(e) =>
                       setRiegelDistanceMeters(Number(e.target.value))
                     }
-                    className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     {STANDARD_DISTANCES.map((d) => (
                       <option key={d.meters} value={d.meters}>
@@ -450,12 +450,12 @@ function ToolsView() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-slate-300">
+                  <Label className="text-xs font-semibold text-muted-foreground">
                     Tiempo Realizado
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold">
                         Horas
                       </span>
                       <Input
@@ -468,11 +468,11 @@ function ToolsView() {
                             Math.max(0, parseInt(e.target.value, 10) || 0),
                           )
                         }
-                        className="bg-slate-950 border-slate-800 text-white font-mono text-center"
+                        className="bg-background border-border text-white font-display text-center"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold">
                         Minutos
                       </span>
                       <Input
@@ -485,11 +485,11 @@ function ToolsView() {
                             Math.max(0, parseInt(e.target.value, 10) || 0),
                           )
                         }
-                        className="bg-slate-950 border-slate-800 text-white font-mono text-center"
+                        className="bg-background border-border text-white font-display text-center"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold">
                         Segundos
                       </span>
                       <Input
@@ -502,14 +502,14 @@ function ToolsView() {
                             Math.max(0, parseInt(e.target.value, 10) || 0),
                           )
                         }
-                        className="bg-slate-950 border-slate-800 text-white font-mono text-center"
+                        className="bg-background border-border text-white font-display text-center"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 flex items-start gap-2.5">
-                  <Info className="size-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="p-3 rounded-xl bg-background/60 border border-border text-xs text-muted-foreground flex items-start gap-2.5">
+                  <Info className="size-4 text-primary shrink-0 mt-0.5" />
                   <span>
                     Fórmula de Peter Riegel ($T_2 = T_1 \times (D_2 / D_1)^
                     {1.06}$), asume una preparación aeróbica adecuada para la
@@ -519,12 +519,12 @@ function ToolsView() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-7 bg-slate-900/90 border-slate-800 text-slate-100">
+            <Card className="lg:col-span-7 bg-card/90 border-border text-foreground">
               <CardHeader>
                 <CardTitle className="text-lg font-bold text-white">
                   Proyecciones Equivalentes
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
+                <CardDescription className="text-xs text-muted-foreground">
                   Tiempos objetivo estimados para distancias estándar de
                   carrera.
                 </CardDescription>
@@ -533,22 +533,22 @@ function ToolsView() {
                 {riegelProjections.map((proj) => (
                   <div
                     key={proj.meters}
-                    className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between hover:border-slate-700 transition-colors"
+                    className="p-3.5 rounded-xl bg-surface-container-lowest border border-border flex items-center justify-between hover:border-border transition-colors"
                   >
                     <div>
                       <span className="text-sm font-bold text-white block">
                         {proj.label}
                       </span>
-                      <span className="text-xs text-slate-400 font-mono">
+                      <span className="text-xs text-muted-foreground font-display">
                         {proj.speedKmh} km/h
                       </span>
                     </div>
 
                     <div className="text-right">
-                      <div className="text-base font-black font-mono text-emerald-400">
+                      <div className="text-base font-black font-display text-primary">
                         {proj.timeFormatted}
                       </div>
-                      <div className="text-xs text-slate-400 font-mono">
+                      <div className="text-xs text-muted-foreground font-display">
                         {proj.paceFormatted} min/km
                       </div>
                     </div>
@@ -562,13 +562,13 @@ function ToolsView() {
         {/* ── TAB 3: Zonas de Frecuencia Cardíaca ── */}
         <TabsContent value="hr" className="space-y-6 pt-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <Card className="lg:col-span-5 bg-slate-900/90 border-slate-800 text-slate-100">
+            <Card className="lg:col-span-5 bg-card/90 border-border text-foreground">
               <CardHeader>
-                <CardTitle className="text-lg font-bold flex items-center gap-2 text-emerald-400">
+                <CardTitle className="text-lg font-bold flex items-center gap-2 text-primary">
                   <HeartPulse className="size-5" />
                   Parámetros Cardíacos
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
+                <CardDescription className="text-xs text-muted-foreground">
                   Configurá tu FC máxima y de reposo para calcular tus 5 zonas
                   según la fórmula de Karvonen.
                 </CardDescription>
@@ -577,7 +577,7 @@ function ToolsView() {
                 <div className="space-y-2">
                   <Label
                     htmlFor="max-hr"
-                    className="text-xs font-semibold text-slate-300"
+                    className="text-xs font-semibold text-muted-foreground"
                   >
                     Frecuencia Cardíaca Máxima (bpm)
                   </Label>
@@ -590,9 +590,9 @@ function ToolsView() {
                     onChange={(e) =>
                       setMaxHr(parseInt(e.target.value, 10) || 180)
                     }
-                    className="bg-slate-950 border-slate-800 text-white font-mono text-lg font-bold"
+                    className="bg-background border-border text-white font-display text-lg font-bold"
                   />
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-muted-foreground">
                     Sugerencia: Medida en un test de esfuerzo o serie de sprint
                     agudo.
                   </p>
@@ -601,7 +601,7 @@ function ToolsView() {
                 <div className="space-y-2">
                   <Label
                     htmlFor="rest-hr"
-                    className="text-xs font-semibold text-slate-300"
+                    className="text-xs font-semibold text-muted-foreground"
                   >
                     Frecuencia Cardíaca en Reposo (bpm)
                   </Label>
@@ -614,9 +614,9 @@ function ToolsView() {
                     onChange={(e) =>
                       setRestHr(parseInt(e.target.value, 10) || 0)
                     }
-                    className="bg-slate-950 border-slate-800 text-white font-mono text-lg font-bold"
+                    className="bg-background border-border text-white font-display text-lg font-bold"
                   />
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-muted-foreground">
                     Medida al despertar (dejar en 0 para cálculo estándar por FC
                     máx).
                   </p>
@@ -624,112 +624,112 @@ function ToolsView() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-7 bg-slate-900/90 border-slate-800 text-slate-100">
+            <Card className="lg:col-span-7 bg-card/90 border-border text-foreground">
               <CardHeader>
                 <CardTitle className="text-lg font-bold text-white">
                   Tus 5 Zonas de Frecuencia Cardíaca
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
+                <CardDescription className="text-xs text-muted-foreground">
                   Utilizá estas zonas para controlar la intensidad durante los
                   rodajes y series.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {/* Z1 */}
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-border flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-teal-400 uppercase tracking-wide block">
+                    <span className="text-xs font-bold text-[#6a8220] uppercase tracking-wide block">
                       Z1 · Recuperación Activa (50-60%)
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted-foreground">
                       Trote suave de regeneración y calentamiento.
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-black font-mono text-white">
+                    <span className="text-lg font-black font-display text-white">
                       {hrZones.z1Recovery[0]} – {hrZones.z1Recovery[1]}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       bpm
                     </span>
                   </div>
                 </div>
 
                 {/* Z2 */}
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-primary/30 bg-primary/5 flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide block">
+                    <span className="text-xs font-bold text-[#4d5a1a] uppercase tracking-wide block">
                       Z2 · Aeróbico / Rodaje Base (60-70%)
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted-foreground">
                       Zona principal de construcción aeróbica y quemagrasa.
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-black font-mono text-emerald-400">
+                    <span className="text-lg font-black font-display text-primary">
                       {hrZones.z2Aerobic[0]} – {hrZones.z2Aerobic[1]}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       bpm
                     </span>
                   </div>
                 </div>
 
                 {/* Z3 */}
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-border flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-amber-400 uppercase tracking-wide block">
+                    <span className="text-xs font-bold text-[#a9cc33] uppercase tracking-wide block">
                       Z3 · Tempo / Ritmo Maratón (70-80%)
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted-foreground">
                       Desarrollo de eficiencia cardiovascular sostenida.
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-black font-mono text-white">
+                    <span className="text-lg font-black font-display text-white">
                       {hrZones.z3Tempo[0]} – {hrZones.z3Tempo[1]}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       bpm
                     </span>
                   </div>
                 </div>
 
                 {/* Z4 */}
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-border flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-orange-400 uppercase tracking-wide block">
+                    <span className="text-xs font-bold text-[#EAFC5F] uppercase tracking-wide block">
                       Z4 · Umbral Lactato (80-90%)
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted-foreground">
                       Ritmo de carrera 10K / 21K duro. Tolerancia al lactato.
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-black font-mono text-white">
+                    <span className="text-lg font-black font-display text-white">
                       {hrZones.z4Threshold[0]} – {hrZones.z4Threshold[1]}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       bpm
                     </span>
                   </div>
                 </div>
 
                 {/* Z5 */}
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-border flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-rose-400 uppercase tracking-wide block">
+                    <span className="text-xs font-bold text-[#EF4444] uppercase tracking-wide block">
                       Z5 · Anaeróbico / VO2 Max (90-100%)
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted-foreground">
                       Esfuerzo máximo en series cortas y sprints finales.
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-black font-mono text-white">
+                    <span className="text-lg font-black font-display text-white">
                       {hrZones.z5Anaerobic[0]} – {hrZones.z5Anaerobic[1]}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       bpm
                     </span>
                   </div>
@@ -742,25 +742,25 @@ function ToolsView() {
         {/* ── TAB 4: Conversor de Ritmo & Velocidad ── */}
         <TabsContent value="converter" className="space-y-6 pt-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <Card className="lg:col-span-5 bg-slate-900/90 border-slate-800 text-slate-100">
+            <Card className="lg:col-span-5 bg-card/90 border-border text-foreground">
               <CardHeader>
-                <CardTitle className="text-lg font-bold flex items-center gap-2 text-emerald-400">
+                <CardTitle className="text-lg font-bold flex items-center gap-2 text-primary">
                   <Gauge className="size-5" />
                   Conversor Bidireccional
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
+                <CardDescription className="text-xs text-muted-foreground">
                   Ingresá el ritmo en min/km para obtener la velocidad en km/h y
                   ritmo por milla.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-slate-300">
+                  <Label className="text-xs font-semibold text-muted-foreground">
                     Ritmo (Minutos : Segundos por KM)
                   </Label>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold">
                         Minutos
                       </span>
                       <Input
@@ -773,11 +773,11 @@ function ToolsView() {
                             Math.max(1, parseInt(e.target.value, 10) || 0),
                           )
                         }
-                        className="bg-slate-950 border-slate-800 text-white font-mono text-center text-lg font-bold"
+                        className="bg-background border-border text-white font-display text-center text-lg font-bold"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold">
                         Segundos
                       </span>
                       <Input
@@ -790,33 +790,33 @@ function ToolsView() {
                             Math.max(0, parseInt(e.target.value, 10) || 0),
                           )
                         }
-                        className="bg-slate-950 border-slate-800 text-white font-mono text-center text-lg font-bold"
+                        className="bg-background border-border text-white font-display text-center text-lg font-bold"
                       />
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">
+                  <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-border text-center">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold block">
                       Velocidad
                     </span>
-                    <span className="text-2xl font-black font-mono text-emerald-400">
+                    <span className="text-2xl font-black font-display text-primary">
                       {converterKmh}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       km/h
                     </span>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">
+                  <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-border text-center">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold block">
                       Ritmo Milla
                     </span>
-                    <span className="text-2xl font-black font-mono text-emerald-400">
+                    <span className="text-2xl font-black font-display text-primary">
                       {converterPaceMile}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">
+                    <span className="text-[10px] text-muted-foreground block font-medium">
                       min/mi
                     </span>
                   </div>
@@ -824,20 +824,20 @@ function ToolsView() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-7 bg-slate-900/90 border-slate-800 text-slate-100">
+            <Card className="lg:col-span-7 bg-card/90 border-border text-foreground">
               <CardHeader>
                 <CardTitle className="text-lg font-bold text-white">
                   Tabla de Referencia Rápida
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
+                <CardDescription className="text-xs text-muted-foreground">
                   Equivalencias habituales entre ritmos de paso (min/km) y
                   velocidad de cinta/reloj (km/h).
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-300 font-mono">
-                    <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                  <table className="w-full text-left text-xs text-muted-foreground font-display">
+                    <thead className="bg-surface-container-lowest text-muted-foreground uppercase text-[10px] border-b border-border">
                       <tr>
                         <th className="py-2.5 px-3">Ritmo (min/km)</th>
                         <th className="py-2.5 px-3">Velocidad (km/h)</th>
@@ -846,7 +846,7 @@ function ToolsView() {
                         <th className="py-2.5 px-3">10K Time</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60 bg-slate-950/40">
+                    <tbody className="divide-y divide-border/60 bg-background/40">
                       {[
                         { min: 3, sec: 30 },
                         { min: 4, sec: 0 },
@@ -862,20 +862,23 @@ function ToolsView() {
                         const t5k = formatTime(secPerKm * 5)
                         const t10k = formatTime(secPerKm * 10)
                         return (
-                          <tr key={secPerKm} className="hover:bg-slate-800/40">
-                            <td className="py-2.5 px-3 font-bold text-emerald-400">
+                          <tr
+                            key={secPerKm}
+                            className="hover:bg-surface-container-high/40"
+                          >
+                            <td className="py-2.5 px-3 font-bold text-primary">
                               {formatPace(secPerKm)}
                             </td>
                             <td className="py-2.5 px-3 text-white">
                               {kmh} km/h
                             </td>
-                            <td className="py-2.5 px-3 text-slate-400">
+                            <td className="py-2.5 px-3 text-muted-foreground">
                               {milePace}
                             </td>
-                            <td className="py-2.5 px-3 text-slate-400">
+                            <td className="py-2.5 px-3 text-muted-foreground">
                               {t5k}
                             </td>
-                            <td className="py-2.5 px-3 text-slate-400">
+                            <td className="py-2.5 px-3 text-muted-foreground">
                               {t10k}
                             </td>
                           </tr>

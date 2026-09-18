@@ -53,7 +53,7 @@ export function PBWall({ completedRaces, onOpenMemoryModal }: PBWallProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <Flame className="size-5 text-orange-500" />
+        <Flame className="size-5 text-primary" />
         <h3 className="text-lg font-bold text-white tracking-tight">
           Mejores Marcas (PB Wall)
         </h3>
@@ -63,7 +63,7 @@ export function PBWall({ completedRaces, onOpenMemoryModal }: PBWallProps) {
           <div
             key={pb.distanceLabel}
             onClick={() => onOpenMemoryModal(pb.race)}
-            className="flex-none w-[260px] snap-center rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-5 shadow-xl relative overflow-hidden cursor-pointer hover:border-orange-500/50 transition-colors"
+            className="flex-none w-[260px] snap-center rounded-2xl bg-gradient-to-br from-card to-surface-container-lowest border border-border p-5 shadow-card relative overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
           >
             {/* Background decoration */}
             <div className="absolute -right-4 -top-4 opacity-[0.03] text-9xl font-black italic select-none">
@@ -72,10 +72,10 @@ export function PBWall({ completedRaces, onOpenMemoryModal }: PBWallProps) {
 
             <div className="relative z-10 flex flex-col h-full justify-between gap-4">
               <div className="flex justify-between items-start">
-                <div className="rounded-lg bg-orange-500/20 px-2.5 py-1 text-xs font-black text-orange-400">
+                <div className="rounded-lg bg-primary/20 px-2.5 py-1 text-xs font-black text-primary">
                   {pb.distanceLabel} PB
                 </div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
                   {pb.race.date.slice(0, 4)}
                 </div>
               </div>
@@ -84,13 +84,13 @@ export function PBWall({ completedRaces, onOpenMemoryModal }: PBWallProps) {
                 <div className="text-3xl font-black text-white tabular-nums tracking-tighter">
                   {formatRaceTime(pb.race.official_time_seconds)}
                 </div>
-                <div className="mt-1 text-xs font-semibold text-slate-400">
+                <div className="mt-1 text-xs font-semibold text-muted-foreground">
                   Ritmo: {formatRacePace(pb.race.official_pace_seconds_per_km)}
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800/80">
-                <div className="text-xs font-bold text-slate-300 truncate">
+              <div className="pt-3 border-t border-border/80">
+                <div className="text-xs font-bold text-foreground truncate">
                   {pb.race.event_name}
                 </div>
               </div>

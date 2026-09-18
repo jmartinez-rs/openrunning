@@ -14,7 +14,7 @@ function OpenRunningMark({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 font-bold text-slate-950 shadow-lg shadow-emerald-500/20",
+        "flex shrink-0 items-center justify-center rounded-2xl bg-primary font-bold text-primary-foreground shadow-glow",
         className,
       )}
       aria-hidden="true"
@@ -45,10 +45,10 @@ export function Logo({
                 "block group-data-[collapsible=icon]:hidden",
             )}
           >
-            Open<span className="text-emerald-400">Running</span>
+            Open<span className="text-primary">Running</span>
           </span>
           {showSubtitle && (
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-400/80">
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary/80">
               Running & Performance OS
             </span>
           )}

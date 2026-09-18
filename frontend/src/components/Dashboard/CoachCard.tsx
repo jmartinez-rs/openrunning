@@ -1,11 +1,11 @@
-import React from "react";
-import { Sparkles, ChevronRight } from "lucide-react";
+import { ChevronRight, Sparkles } from "lucide-react"
+import type React from "react"
 
 interface CoachCardProps {
-  title: string;
-  subtitle?: string;
-  hasProposal?: boolean;
-  onReview: () => void;
+  title: string
+  subtitle?: string
+  hasProposal?: boolean
+  onReview: () => void
 }
 
 export const CoachCard: React.FC<CoachCardProps> = ({
@@ -29,7 +29,11 @@ export const CoachCard: React.FC<CoachCardProps> = ({
               AI Coach
             </div>
             <div className="text-sm font-bold text-white truncate">{title}</div>
-            {subtitle && <div className="text-xs text-muted-foreground truncate">{subtitle}</div>}
+            {subtitle && (
+              <div className="text-xs text-muted-foreground truncate">
+                {subtitle}
+              </div>
+            )}
           </div>
         </div>
 
@@ -42,5 +46,5 @@ export const CoachCard: React.FC<CoachCardProps> = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}

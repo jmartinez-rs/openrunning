@@ -140,11 +140,11 @@ function Shoes() {
             <h1 className="text-2xl font-black text-white tracking-tight">
               Shoe Locker · Mi Calzado
             </h1>
-            <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 gap-1 text-[11px] font-bold">
+            <Badge className="bg-primary/15 text-primary border-primary/30 gap-1 text-[11px] font-bold">
               <Sparkles className="size-3" /> Rotación Inteligente
             </Badge>
           </div>
-          <p className="text-xs text-slate-400 font-medium mt-0.5">
+          <p className="text-xs text-muted-foreground font-medium mt-0.5">
             Seguimiento de amortiguación, desgaste de espuma EVA/PEBA y
             recomendación por sesión.
           </p>
@@ -153,20 +153,20 @@ function Shoes() {
           <Button
             type="button"
             variant="outline"
-            className="bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl text-xs font-semibold"
+            className="bg-card border-border text-muted-foreground hover:text-white hover:bg-surface-container-high rounded-xl text-xs font-semibold"
             disabled={importMutation.isPending}
             onClick={() => importMutation.mutate()}
           >
             {importMutation.isPending ? (
-              <Loader2 className="mr-2 size-4 animate-spin text-emerald-400" />
+              <Loader2 className="mr-2 size-4 animate-spin text-primary" />
             ) : (
-              <Download className="mr-2 size-4 text-emerald-400" />
+              <Download className="mr-2 size-4 text-primary" />
             )}
             Importar Strava Gear
           </Button>
           <Button
             type="button"
-            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 rounded-xl cursor-pointer text-xs"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-card shadow-primary/20 rounded-xl cursor-pointer text-xs"
             onClick={() => setFormOpen(true)}
           >
             <Plus className="mr-2 size-4 stroke-[3]" /> Registrar zapatilla
@@ -175,64 +175,70 @@ function Shoes() {
       </div>
 
       {/* ── Locker Summary Banner ──────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-emerald-500/30 shadow-xl">
-        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60">
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-            <Footprints className="size-3.5 text-emerald-400" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-gradient-to-br from-card via-card to-primary/10 border border-primary/30 shadow-card">
+        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-surface-container-high/60 border border-border/60">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+            <Footprints className="size-3.5 text-primary" />
             Pares Activos
           </div>
           <span className="text-xl font-extrabold text-white">
             {lockerSummary.activeCount}{" "}
-            <span className="text-xs font-normal text-slate-400">pares</span>
+            <span className="text-xs font-normal text-muted-foreground">
+              pares
+            </span>
           </span>
         </div>
 
-        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60">
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-            <TrendingUp className="size-3.5 text-emerald-400" />
+        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-surface-container-high/60 border border-border/60">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+            <TrendingUp className="size-3.5 text-primary" />
             Km Acumulados
           </div>
-          <span className="text-xl font-extrabold text-emerald-400">
+          <span className="text-xl font-extrabold text-primary">
             {lockerSummary.totalKmTracked}{" "}
-            <span className="text-xs font-normal text-slate-400">km</span>
+            <span className="text-xs font-normal text-muted-foreground">
+              km
+            </span>
           </span>
         </div>
 
-        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60">
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-            <HeartPulse className="size-3.5 text-emerald-400" />
+        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-surface-container-high/60 border border-border/60">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+            <HeartPulse className="size-3.5 text-primary" />
             Salud Promedio Espuma
           </div>
-          <span className="text-xl font-extrabold text-teal-400">
+          <span className="text-xl font-extrabold text-primary">
             {lockerSummary.avgHealthPercent}%
           </span>
         </div>
 
-        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60">
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-            <Archive className="size-3.5 text-slate-500" />
+        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-surface-container-high/60 border border-border/60">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+            <Archive className="size-3.5 text-on-surface-variant" />
             Pares Retirados
           </div>
-          <span className="text-xl font-extrabold text-slate-300">
+          <span className="text-xl font-extrabold text-foreground">
             {lockerSummary.retiredCount}{" "}
-            <span className="text-xs font-normal text-slate-400">pares</span>
+            <span className="text-xs font-normal text-muted-foreground">
+              pares
+            </span>
           </span>
         </div>
       </div>
 
       {/* ── Tabs & Category Filters ────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-2">
+        <div className="flex items-center justify-between border-b border-border pb-3 flex-wrap gap-2">
           {/* Active vs Retired Tabs */}
-          <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-900 border border-slate-800">
+          <div className="flex items-center gap-2 p-1 rounded-xl bg-card border border-border">
             <button
               type="button"
               onClick={() => setActiveTab("active")}
               className={cn(
                 "px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 activeTab === "active"
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-xs"
-                  : "text-slate-400 hover:text-white",
+                  ? "bg-primary/20 text-primary border border-primary/40 shadow-xs"
+                  : "text-muted-foreground hover:text-white",
               )}
             >
               En Rotación ({activeShoes.length})
@@ -243,15 +249,15 @@ function Shoes() {
               className={cn(
                 "px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 activeTab === "retired"
-                  ? "bg-slate-800 text-white border border-slate-700 shadow-xs"
-                  : "text-slate-400 hover:text-white",
+                  ? "bg-surface-container-high text-white border border-border shadow-xs"
+                  : "text-muted-foreground hover:text-white",
               )}
             >
               Retiradas ({retiredShoes.length})
             </button>
           </div>
 
-          <span className="text-xs font-semibold text-slate-400">
+          <span className="text-xs font-semibold text-muted-foreground">
             Mostrando {displayShoes.length}{" "}
             {displayShoes.length === 1 ? "zapatilla" : "zapatillas"}
           </span>
@@ -267,8 +273,8 @@ function Shoes() {
               className={cn(
                 "rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer border",
                 category === filter.value
-                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/60 shadow-xs"
-                  : "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white",
+                  ? "bg-primary/20 text-primary border-primary/60 shadow-xs"
+                  : "bg-card border-border text-muted-foreground hover:bg-surface-container-high hover:text-white",
               )}
             >
               {filter.label}
@@ -283,33 +289,33 @@ function Shoes() {
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton
               key={i}
-              className="h-56 w-full rounded-2xl bg-slate-800/80"
+              className="h-56 w-full rounded-2xl bg-surface-container-high/80"
             />
           ))}
         </div>
       ) : shoesQuery.isError ? (
-        <div className="flex flex-col items-center gap-4 py-16 text-center bg-slate-900 border border-slate-800 rounded-3xl p-8">
-          <div className="rounded-2xl bg-slate-800/80 p-4">
-            <RefreshCw className="size-8 text-emerald-400" />
+        <div className="flex flex-col items-center gap-4 py-16 text-center bg-card border border-border rounded-3xl p-8">
+          <div className="rounded-2xl bg-surface-container-high/80 p-4">
+            <RefreshCw className="size-8 text-primary" />
           </div>
           <h3 className="text-lg font-bold text-white">
             No pudimos cargar tus zapatillas
           </h3>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted-foreground">
             Verificá que la conexión al servidor esté disponible.
           </p>
           <Button
             type="button"
             variant="outline"
-            className="mt-2 bg-slate-800 border-slate-700 text-slate-300 hover:text-white rounded-xl"
+            className="mt-2 bg-surface-container-high border-border text-muted-foreground hover:text-white rounded-xl"
             onClick={() => shoesQuery.refetch()}
           >
             <RefreshCw className="mr-2 size-4" /> Reintentar
           </Button>
         </div>
       ) : displayShoes.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 py-16 text-center bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl">
-          <div className="rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 p-4">
+        <div className="flex flex-col items-center gap-4 py-16 text-center bg-card border border-border rounded-3xl p-8 shadow-card">
+          <div className="rounded-2xl bg-primary/15 text-primary border border-primary/30 p-4">
             <Footprints className="size-8" />
           </div>
           <h3 className="text-lg font-bold text-white">
@@ -317,7 +323,7 @@ function Shoes() {
               ? "Todavía no tenés zapatillas activas en rotación"
               : "No hay zapatillas en el archivo de retiradas"}
           </h3>
-          <p className="text-xs text-slate-400 max-w-sm">
+          <p className="text-xs text-muted-foreground max-w-sm">
             {activeTab === "active"
               ? "Agregá tu primera zapatilla o importá tu equipamiento desde Strava Gear para calcular la salud de la espuma."
               : "Las zapatillas que marques como inactivas aparecerán aquí."}
@@ -325,7 +331,7 @@ function Shoes() {
           {activeTab === "active" && (
             <Button
               type="button"
-              className="mt-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 rounded-xl cursor-pointer"
+              className="mt-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-card shadow-primary/20 rounded-xl cursor-pointer"
               onClick={() => setFormOpen(true)}
             >
               <Plus className="mr-2 size-4 stroke-[3]" /> Registrar primera
@@ -344,7 +350,7 @@ function Shoes() {
                   variant="ghost"
                   size="icon-sm"
                   aria-label="Editar zapatilla"
-                  className="size-8 rounded-xl bg-slate-800/90 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 shadow-md cursor-pointer"
+                  className="size-8 rounded-xl bg-surface-container-high/90 border border-border text-muted-foreground hover:text-white hover:bg-surface-container-highest shadow-md cursor-pointer"
                   onClick={(event) => {
                     event.preventDefault()
                     setEditing(shoe)
@@ -358,7 +364,7 @@ function Shoes() {
                   variant="ghost"
                   size="icon-sm"
                   aria-label="Eliminar zapatilla"
-                  className="size-8 rounded-xl bg-slate-800/90 border border-slate-700 text-red-400 hover:text-red-300 hover:bg-slate-700 shadow-md cursor-pointer"
+                  className="size-8 rounded-xl bg-surface-container-high/90 border border-border text-destructive hover:text-destructive hover:bg-surface-container-highest shadow-md cursor-pointer"
                   disabled={deleteMutation.isPending}
                   onClick={(event) => {
                     event.preventDefault()

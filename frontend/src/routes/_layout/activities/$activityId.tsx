@@ -66,12 +66,12 @@ function ShoeSelector({
 
   if (shoesQuery.isLoading) {
     return (
-      <div className="flex items-center justify-between gap-3 p-3.5 bg-slate-900/80 border border-slate-800 rounded-2xl">
+      <div className="flex items-center justify-between gap-3 p-3.5 bg-card/80 border border-border rounded-2xl">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-slate-800 text-slate-400">
+          <div className="p-2 rounded-xl bg-surface-container-high text-muted-foreground">
             <Footprints className="w-4 h-4" />
           </div>
-          <span className="text-xs font-semibold text-slate-400">
+          <span className="text-xs font-semibold text-muted-foreground">
             Cargando zapatillas...
           </span>
         </div>
@@ -81,12 +81,12 @@ function ShoeSelector({
 
   if (shoes.length === 0) {
     return (
-      <div className="flex items-center justify-between gap-3 p-3.5 bg-slate-900/80 border border-slate-800 rounded-2xl">
+      <div className="flex items-center justify-between gap-3 p-3.5 bg-card/80 border border-border rounded-2xl">
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-xl bg-orange-500/15 text-orange-400">
             <Footprints className="w-4 h-4" />
           </div>
-          <span className="text-xs font-medium text-slate-400">
+          <span className="text-xs font-medium text-muted-foreground">
             Sin calzado disponible.{" "}
             <Link
               to="/shoes"
@@ -101,7 +101,7 @@ function ShoeSelector({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-slate-900/80 border border-slate-800 rounded-2xl">
+    <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-card/80 border border-border rounded-2xl">
       <div className="flex items-center gap-2.5">
         <div className="p-2 rounded-xl bg-orange-500/15 text-orange-400">
           <Footprints className="w-4 h-4" />
@@ -110,14 +110,14 @@ function ShoeSelector({
           <p className="text-xs font-bold text-white tracking-tight">
             Calzado de la sesión
           </p>
-          <p className="text-[11px] font-medium text-slate-400">
+          <p className="text-[11px] font-medium text-muted-foreground">
             Asigná las zapatillas usadas
           </p>
         </div>
       </div>
 
       <select
-        className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs font-semibold focus:outline-none focus:border-orange-500/50 cursor-pointer disabled:opacity-50 transition-colors"
+        className="px-3 py-1.5 rounded-xl bg-background border border-border text-foreground text-xs font-semibold focus:outline-none focus:border-primary/50 cursor-pointer disabled:opacity-50 transition-colors"
         value={shoeId ?? ""}
         disabled={assignMutation.isPending}
         onChange={(e) => assignMutation.mutate(e.target.value)}
@@ -171,8 +171,8 @@ function ActivityDetail() {
   if (query.isLoading) {
     return (
       <div className="col-span-12 flex flex-col gap-6 pb-20">
-        <Skeleton className="h-10 w-48 rounded-xl bg-slate-800" />
-        <Skeleton className="h-96 w-full rounded-2xl bg-slate-800" />
+        <Skeleton className="h-10 w-48 rounded-xl bg-surface-container-high" />
+        <Skeleton className="h-96 w-full rounded-2xl bg-surface-container-high" />
       </div>
     )
   }
@@ -180,19 +180,19 @@ function ActivityDetail() {
   if (query.isError || !query.data) {
     return (
       <div className="col-span-12 flex flex-col items-center justify-center gap-4 py-20 text-center">
-        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400">
-          <Footprints className="w-8 h-8 text-slate-500" />
+        <div className="p-4 rounded-2xl bg-card border border-border text-muted-foreground">
+          <Footprints className="w-8 h-8 text-on-surface-variant" />
         </div>
         <h3 className="text-xl font-bold text-white">
           No se pudo cargar la actividad
         </h3>
-        <p className="text-xs text-slate-400 max-w-sm">
+        <p className="text-xs text-muted-foreground max-w-sm">
           La actividad no existe o hubo un error al obtener la información desde
           el servidor.
         </p>
         <Link
           to="/activities"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-white text-xs font-semibold transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Volver a actividades
         </Link>
@@ -215,7 +215,7 @@ function ActivityDetail() {
         <div className="flex items-start sm:items-center gap-3">
           <Link
             to="/activities"
-            className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors shrink-0"
+            className="p-2.5 rounded-xl bg-card border border-border text-muted-foreground hover:text-white transition-colors shrink-0"
             aria-label="Volver"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -244,19 +244,19 @@ function ActivityDetail() {
                 )}
               </span>
             </div>
-            <div className="flex items-center gap-3 text-xs font-medium text-slate-400 flex-wrap">
+            <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                <Calendar className="w-3.5 h-3.5 text-on-surface-variant" />
                 {formatDate(activity.timestamp)} ·{" "}
                 {formatTime(activity.timestamp)}
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                <Clock className="w-3.5 h-3.5 text-on-surface-variant" />
                 {formatDuration(activity.duration_seconds)}
               </span>
               <span>•</span>
-              <span className="inline-flex items-center gap-1 text-emerald-400">
+              <span className="inline-flex items-center gap-1 text-primary">
                 <Check className="w-3.5 h-3.5" /> Sincronizado
               </span>
             </div>
@@ -266,9 +266,9 @@ function ActivityDetail() {
         {isStrava && (
           <button
             onClick={() => setFormOpen(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors text-xs font-bold w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-white hover:bg-surface-container-high transition-colors text-xs font-bold w-full sm:w-auto"
           >
-            <Trophy className="w-4 h-4 text-orange-400" /> Marcar como carrera
+            <Trophy className="w-4 h-4 text-primary" /> Marcar como carrera
           </button>
         )}
       </div>
@@ -295,7 +295,7 @@ function ActivityDetail() {
           ) : activity.strength ? (
             <StrengthDetail strength={activity.strength} records={records} />
           ) : (
-            <div className="p-8 bg-slate-900/80 border border-slate-800 rounded-2xl text-center text-slate-400 text-xs font-medium">
+            <div className="p-8 bg-card/80 border border-border rounded-2xl text-center text-muted-foreground text-xs font-medium">
               Sin métricas cargadas para esta sesión.
             </div>
           )}

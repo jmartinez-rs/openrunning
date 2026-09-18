@@ -1,21 +1,21 @@
-import React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import type React from "react"
 
 export interface DayStatus {
-  dateIso: string;
-  dayName: string;
-  dayNumber: number;
-  isToday: boolean;
-  status: "done" | "plan" | "ovr" | "rest" | "empty";
-  workoutTitle?: string;
+  dateIso: string
+  dayName: string
+  dayNumber: number
+  isToday: boolean
+  status: "done" | "plan" | "ovr" | "rest" | "empty"
+  workoutTitle?: string
 }
 
 interface WeekStripProps {
-  days: DayStatus[];
-  weekLabel: string;
-  onPrevWeek: () => void;
-  onNextWeek: () => void;
-  onSelectDay: (day: DayStatus) => void;
+  days: DayStatus[]
+  weekLabel: string
+  onPrevWeek: () => void
+  onNextWeek: () => void
+  onSelectDay: (day: DayStatus) => void
 }
 
 export const WeekStrip: React.FC<WeekStripProps> = ({
@@ -32,7 +32,7 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
         <button
           type="button"
           onClick={onPrevWeek}
-          className="p-1.5 rounded-lg bg-slate-800/80 text-slate-300 hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
+          className="p-1.5 rounded-lg bg-surface-container-high/80 text-muted-foreground hover:bg-surface-container-highest active:scale-95 transition-all cursor-pointer"
           aria-label="Previous week"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -45,7 +45,7 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
         <button
           type="button"
           onClick={onNextWeek}
-          className="p-1.5 rounded-lg bg-slate-800/80 text-slate-300 hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
+          className="p-1.5 rounded-lg bg-surface-container-high/80 text-muted-foreground hover:bg-surface-container-highest active:scale-95 transition-all cursor-pointer"
           aria-label="Next week"
         >
           <ChevronRight className="w-5 h-5" />
@@ -55,10 +55,11 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
       {/* 7-day strip */}
       <div className="grid grid-cols-7 gap-1.5 text-center">
         {days.map((day) => {
-          let dotColor = "bg-transparent";
-          if (day.status === "done") dotColor = "bg-primary shadow-sm shadow-glow";
-          else if (day.status === "plan") dotColor = "bg-primary/70";
-          else if (day.status === "ovr") dotColor = "bg-amber-400";
+          let dotColor = "bg-transparent"
+          if (day.status === "done")
+            dotColor = "bg-primary shadow-sm shadow-glow"
+          else if (day.status === "plan") dotColor = "bg-primary/70"
+          else if (day.status === "ovr") dotColor = "bg-amber-400"
 
           return (
             <button
@@ -79,9 +80,9 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
               </span>
               <span className={`w-2 h-2 rounded-full mt-0.5 ${dotColor}`} />
             </button>
-          );
+          )
         })}
       </div>
     </div>
-  );
-};
+  )
+}

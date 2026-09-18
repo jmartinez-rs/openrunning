@@ -1,18 +1,17 @@
-import { useState, useMemo } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings } from "lucide-react";
-import useAuth from "@/hooks/useAuth";
-import { AnalyticsService, SyncService } from "@/client";
-
-import { WeekStrip, DayStatus } from "@/components/Dashboard/WeekStrip";
-import { TodayRow } from "@/components/Dashboard/TodayRow";
-import { StravaSyncBar } from "@/components/Dashboard/StravaSyncBar";
-import { TargetRaceCard } from "@/components/Dashboard/TargetRaceCard";
-import { StreakCard } from "@/components/Dashboard/StreakCard";
-import { VolumeCard } from "@/components/Dashboard/VolumeCard";
-import { CoachCard } from "@/components/Dashboard/CoachCard";
-import { ManualRunSheet } from "@/components/Sheets/ManualRunSheet";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { Settings } from "lucide-react"
+import { useMemo, useState } from "react"
+import { AnalyticsService, SyncService } from "@/client"
+import { CoachCard } from "@/components/Dashboard/CoachCard"
+import { StravaSyncBar } from "@/components/Dashboard/StravaSyncBar"
+import { StreakCard } from "@/components/Dashboard/StreakCard"
+import { TargetRaceCard } from "@/components/Dashboard/TargetRaceCard"
+import { TodayRow } from "@/components/Dashboard/TodayRow"
+import { VolumeCard } from "@/components/Dashboard/VolumeCard"
+import { type DayStatus, WeekStrip } from "@/components/Dashboard/WeekStrip"
+import { ManualRunSheet } from "@/components/Sheets/ManualRunSheet"
+import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/")({
   component: OpenRunningDashboard,
@@ -23,72 +22,72 @@ export const Route = createFileRoute("/_layout/")({
       },
     ],
   }),
-});
+})
 
 function getMonday(d: Date): Date {
-  const date = new Date(d);
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  date.setDate(diff);
-  date.setHours(12, 0, 0, 0);
-  return date;
+  const date = new Date(d)
+  const day = date.getDay()
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1)
+  date.setDate(diff)
+  date.setHours(12, 0, 0, 0)
+  return date
 }
 
 function formatDateIso(d: Date): string {
-  return d.toISOString().split("T")[0];
+  return d.toISOString().split("T")[0]
 }
 
-const DAYS_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const DAYS_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 
 function OpenRunningDashboard() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [isManualSheetOpen, setIsManualSheetOpen] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0)
+  const [isManualSheetOpen, setIsManualSheetOpen] = useState(false)
 
   const baseMonday = useMemo(() => {
-    const today = new Date();
-    const monday = getMonday(today);
-    monday.setDate(monday.getDate() + weekOffset * 7);
-    return monday;
-  }, [weekOffset]);
+    const today = new Date()
+    const monday = getMonday(today)
+    monday.setDate(monday.getDate() + weekOffset * 7)
+    return monday
+  }, [weekOffset])
 
-  const weekStartIso = formatDateIso(baseMonday);
+  const weekStartIso = formatDateIso(baseMonday)
 
   const dashboardQuery = useQuery({
     queryKey: ["dashboard", weekStartIso],
     queryFn: () => AnalyticsService.readDashboard({ weekStart: weekStartIso }),
-  });
+  })
 
-  const dashboard = dashboardQuery.data;
+  const dashboard = dashboardQuery.data
 
   const syncMutation = useMutation({
     mutationFn: () => SyncService.triggerSync({ provider: "strava" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
     },
-  });
+  })
 
-  const todayIso = formatDateIso(new Date());
+  const todayIso = formatDateIso(new Date())
 
   // Generate 7 day statuses for WeekStrip
   const days: DayStatus[] = useMemo(() => {
-    const result: DayStatus[] = [];
-    const timeline = dashboard?.timeline || [];
-    const timelineMap = new Map(timeline.map((d) => [d.date, d]));
+    const result: DayStatus[] = []
+    const timeline = dashboard?.timeline || []
+    const timelineMap = new Map(timeline.map((d) => [d.date, d]))
 
     for (let i = 0; i < 7; i++) {
-      const current = new Date(baseMonday);
-      current.setDate(baseMonday.getDate() + i);
-      const iso = formatDateIso(current);
-      const isToday = iso === todayIso;
-      const dayData = timelineMap.get(iso);
+      const current = new Date(baseMonday)
+      current.setDate(baseMonday.getDate() + i)
+      const iso = formatDateIso(current)
+      const isToday = iso === todayIso
+      const dayData = timelineMap.get(iso)
 
-      let status: DayStatus["status"] = "empty";
-      if (dayData && dayData.activities && dayData.activities.length > 0) {
-        status = "done";
+      let status: DayStatus["status"] = "empty"
+      if (dayData?.activities && dayData.activities.length > 0) {
+        status = "done"
       }
 
       result.push({
@@ -98,76 +97,93 @@ function OpenRunningDashboard() {
         isToday,
         status,
         workoutTitle: dayData?.activities?.[0]?.name || undefined,
-      });
+      })
     }
-    return result;
-  }, [baseMonday, dashboard, todayIso]);
+    return result
+  }, [baseMonday, dashboard, todayIso])
 
   const weekLabel = useMemo(() => {
-    if (weekOffset === 0) return "Esta semana";
-    const sunday = new Date(baseMonday);
-    sunday.setDate(baseMonday.getDate() + 6);
-    return `${baseMonday.getDate()} ${baseMonday.toLocaleDateString("es-AR", { month: "short" })} – ${sunday.getDate()} ${sunday.toLocaleDateString("es-AR", { month: "short" })}`;
-  }, [baseMonday, weekOffset]);
+    if (weekOffset === 0) return "Esta semana"
+    const sunday = new Date(baseMonday)
+    sunday.setDate(baseMonday.getDate() + 6)
+    return `${baseMonday.getDate()} ${baseMonday.toLocaleDateString("es-AR", { month: "short" })} – ${sunday.getDate()} ${sunday.toLocaleDateString("es-AR", { month: "short" })}`
+  }, [baseMonday, weekOffset])
 
-  const kpis = dashboard?.kpis;
-  const currentKm = (kpis?.cardio_distance_meters || 0) / 1000;
-  const targetKm = dashboard?.previous_kpis ? Math.max(10, Math.round(dashboard.previous_kpis.cardio_distance_meters / 1000) + 5) : 50.0;
+  const kpis = dashboard?.kpis
+  const currentKm = (kpis?.cardio_distance_meters || 0) / 1000
+  const targetKm = dashboard?.previous_kpis
+    ? Math.max(
+        10,
+        Math.round(dashboard.previous_kpis.cardio_distance_meters / 1000) + 5,
+      )
+    : 50.0
 
   const formatPace = (secondsPerKm?: number | null) => {
-    if (!secondsPerKm) return undefined;
-    const mins = Math.floor(secondsPerKm / 60);
-    const secs = Math.floor(secondsPerKm % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-  const avgPaceText = formatPace(kpis?.cardio_avg_pace_seconds_per_km);
+    if (!secondsPerKm) return undefined
+    const mins = Math.floor(secondsPerKm / 60)
+    const secs = Math.floor(secondsPerKm % 60)
+    return `${mins}:${secs.toString().padStart(2, "0")}`
+  }
+  const avgPaceText = formatPace(kpis?.cardio_avg_pace_seconds_per_km)
 
-  const upcomingRace = dashboard?.upcoming_race;
+  const upcomingRace = dashboard?.upcoming_race
   const daysToRace = upcomingRace
     ? Math.max(
         0,
         Math.ceil(
-          (new Date(upcomingRace.date).getTime() - new Date().getTime()) /
-            (1000 * 60 * 60 * 24)
-        )
+          (new Date(upcomingRace.date).getTime() - Date.now()) /
+            (1000 * 60 * 60 * 24),
+        ),
       )
-    : 0;
+    : 0
 
-  const targetTimeText = undefined;
-  const targetPaceText = undefined;
+  const targetTimeText = undefined
+  const targetPaceText = undefined
 
   // 1. Strava Sync State
-  const stravaSyncState = dashboard?.sync_state?.find(s => s.provider === "strava");
-  let lastSyncText = "Strava sin configurar";
+  const stravaSyncState = dashboard?.sync_state?.find(
+    (s) => s.provider === "strava",
+  )
+  let lastSyncText = "Strava sin configurar"
   if (stravaSyncState) {
     if (stravaSyncState.last_run_at) {
-       const diffMin = Math.floor((new Date().getTime() - new Date(stravaSyncState.last_run_at).getTime()) / 60000);
-       if (diffMin < 1) lastSyncText = "Strava sincronizado · recién";
-       else if (diffMin < 60) lastSyncText = `Strava sincronizado · hace ${diffMin} min`;
-       else if (diffMin < 1440) lastSyncText = `Strava sincronizado · hace ${Math.floor(diffMin/60)} h`;
-       else lastSyncText = `Strava sincronizado · hace ${Math.floor(diffMin/1440)} d`;
+      const diffMin = Math.floor(
+        (Date.now() - new Date(stravaSyncState.last_run_at).getTime()) / 60000,
+      )
+      if (diffMin < 1) lastSyncText = "Strava sincronizado · recién"
+      else if (diffMin < 60)
+        lastSyncText = `Strava sincronizado · hace ${diffMin} min`
+      else if (diffMin < 1440)
+        lastSyncText = `Strava sincronizado · hace ${Math.floor(diffMin / 60)} h`
+      else
+        lastSyncText = `Strava sincronizado · hace ${Math.floor(diffMin / 1440)} d`
     } else {
-       lastSyncText = "Strava conectado (sin sincro)";
+      lastSyncText = "Strava conectado (sin sincro)"
     }
   }
 
   // 2. Today logic
-  const todayData = dashboard?.timeline?.find(d => d.date === todayIso);
-  const todayActivities = todayData?.activities || [];
-  const hasCompletedActivity = todayActivities.length > 0;
-  
-  let todayTitle = "Día Libre / Recuperación";
-  let todayWorkoutType: "easy_run" | "intervals" | "tempo" | "long_run" | "rest" = "rest";
+  const todayData = dashboard?.timeline?.find((d) => d.date === todayIso)
+  const todayActivities = todayData?.activities || []
+  const hasCompletedActivity = todayActivities.length > 0
+
+  let todayTitle = "Día Libre / Recuperación"
+  let todayWorkoutType:
+    | "easy_run"
+    | "intervals"
+    | "tempo"
+    | "long_run"
+    | "rest" = "rest"
 
   if (hasCompletedActivity) {
-    todayTitle = todayActivities[0].name || "Actividad completada";
-    todayWorkoutType = "easy_run";
+    todayTitle = todayActivities[0].name || "Actividad completada"
+    todayWorkoutType = "easy_run"
   }
 
   const handleManualRunSubmit = async (_data: any) => {
     // Refresh dashboard on submit
-    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-  };
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+  }
 
   return (
     <div className="col-span-12 flex flex-col gap-6 pb-20">
@@ -232,11 +248,15 @@ function OpenRunningDashboard() {
       <TargetRaceCard
         raceName={upcomingRace?.event_name}
         daysRemaining={upcomingRace ? daysToRace : undefined}
-        dateText={upcomingRace ? new Date(upcomingRace.date).toLocaleDateString("es-AR", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        }) : undefined}
+        dateText={
+          upcomingRace
+            ? new Date(upcomingRace.date).toLocaleDateString("es-AR", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })
+            : undefined
+        }
         distanceKm={upcomingRace?.distance_km}
         targetTimeText={targetTimeText}
         targetPaceText={targetPaceText}
@@ -266,5 +286,5 @@ function OpenRunningDashboard() {
         onSubmit={handleManualRunSubmit}
       />
     </div>
-  );
+  )
 }

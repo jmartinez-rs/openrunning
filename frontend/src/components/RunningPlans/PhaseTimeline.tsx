@@ -23,10 +23,10 @@ export function PhaseTimeline({
   const totalWeeks = Math.max(...phases.map((p) => p.end_week ?? 1), 1)
 
   return (
-    <div className="flex flex-col gap-3.5 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl backdrop-blur-sm">
+    <div className="flex flex-col gap-3.5 rounded-2xl border border-border bg-card/90 p-4 shadow-card backdrop-blur-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+          <div className="flex size-7 items-center justify-center rounded-xl bg-primary/15 text-primary border border-primary/30">
             <Layers className="size-4" />
           </div>
           <h3 className="text-sm font-bold text-white">
@@ -38,7 +38,7 @@ export function PhaseTimeline({
           <button
             type="button"
             onClick={() => onSelectPhase(null)}
-            className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+            className="text-xs font-bold text-primary hover:text-primary transition-colors"
           >
             Ver todas las semanas
           </button>
@@ -46,7 +46,7 @@ export function PhaseTimeline({
       </div>
 
       {/* Visual Phase Progress Bar */}
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-800 border border-slate-700/60 p-0.5">
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface-container-high border border-border/60 p-0.5">
         {phases.map((phase) => {
           const phaseWeeks = phase.end_week - phase.start_week + 1 || 1
           const widthPct = (phaseWeeks / totalWeeks) * 100
@@ -67,7 +67,7 @@ export function PhaseTimeline({
                 "group relative h-full cursor-pointer transition-all duration-200 hover:brightness-125 rounded-sm",
                 phaseColor.bar,
                 isCurrentPhase &&
-                  "ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-900 z-10",
+                  "ring-2 ring-primary ring-offset-1 ring-offset-card z-10",
                 selectedPhaseId && !isSelected && "opacity-35",
               )}
               style={{ width: `${widthPct}%` }}
@@ -84,8 +84,8 @@ export function PhaseTimeline({
           className={cn(
             "inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer border",
             selectedPhaseId === null
-              ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-sm"
-              : "bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white",
+              ? "bg-primary/20 text-primary border-primary/50 shadow-sm"
+              : "bg-surface-container-high/80 text-muted-foreground border-border hover:bg-surface-container-high hover:text-white",
           )}
         >
           Todas las Fases
@@ -108,9 +108,9 @@ export function PhaseTimeline({
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer border",
                 isSelected
-                  ? "bg-emerald-500 text-slate-950 border-emerald-400 shadow-md"
+                  ? "bg-primary text-primary-foreground border-primary shadow-md"
                   : cn(
-                      "bg-slate-800/80 border-slate-700 hover:bg-slate-800 hover:border-slate-600 text-slate-200",
+                      "bg-surface-container-high/80 border-border hover:bg-surface-container-high hover:border-border text-foreground",
                     ),
               )}
             >
@@ -122,7 +122,7 @@ export function PhaseTimeline({
                 (S{phase.start_week}-{phase.end_week})
               </span>
               {isCurrentPhase && (
-                <Badge className="ml-1 border-emerald-500/40 bg-emerald-500/20 px-1.5 py-0 text-[10px] text-emerald-400 font-extrabold">
+                <Badge className="ml-1 border-primary/40 bg-primary/20 px-1.5 py-0 text-[10px] text-primary font-extrabold">
                   Actual
                 </Badge>
               )}

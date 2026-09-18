@@ -84,16 +84,16 @@ export function WeekStrip({
             className={cn(
               "flex flex-col items-center gap-1 rounded-xl px-1 py-2.5 transition-all border",
               isToday &&
-                "bg-emerald-500/20 border-emerald-500/50 ring-1 ring-emerald-500/30 shadow-xs",
+                "bg-primary/20 border-primary/50 ring-1 ring-primary/30 shadow-xs",
               !isToday &&
-                "bg-slate-800/60 border-slate-700/60 hover:bg-slate-800",
+                "bg-surface-container-high/60 border-border/60 hover:bg-surface-container-high",
             )}
           >
             {/* Day name */}
             <span
               className={cn(
                 "text-[10px] font-bold uppercase tracking-wider",
-                isToday ? "text-emerald-400" : "text-slate-400",
+                isToday ? "text-primary" : "text-muted-foreground",
               )}
             >
               {dayName}
@@ -104,7 +104,7 @@ export function WeekStrip({
               <span
                 className={cn(
                   "text-xs font-bold",
-                  isToday ? "text-white" : "text-slate-300",
+                  isToday ? "text-white" : "text-muted-foreground",
                 )}
               >
                 {dayNum}
@@ -117,21 +117,22 @@ export function WeekStrip({
                 className={cn(
                   "flex size-7 items-center justify-center rounded-xl text-xs transition-all border shadow-xs",
                   isCancelled &&
-                    "bg-slate-800/80 border-slate-700 text-slate-500 line-through opacity-60",
-                  isMissed && "bg-red-500/15 border-red-500/30 text-red-400",
+                    "bg-surface-container-high/80 border-border text-on-surface-variant line-through opacity-60",
+                  isMissed &&
+                    "bg-destructive/15 border-destructive/30 text-destructive",
                   isCompleted &&
-                    "bg-emerald-500/20 border-emerald-500/40 text-emerald-400 font-bold",
+                    "bg-primary/20 border-primary/40 text-primary font-bold",
                   !isCompleted &&
                     !isMissed &&
                     !isCancelled &&
-                    "bg-slate-800 border-slate-700 text-slate-300",
+                    "bg-surface-container-high border-border text-muted-foreground",
                 )}
               >
                 {meta.emoji}
               </div>
             ) : (
               <div className="flex size-7 items-center justify-center">
-                <div className="size-1.5 rounded-full bg-slate-700/80" />
+                <div className="size-1.5 rounded-full bg-surface-container-highest/80" />
               </div>
             )}
 
@@ -141,10 +142,10 @@ export function WeekStrip({
                 className={cn(
                   "max-w-full truncate text-center text-[10px] font-bold leading-tight",
                   isCompleted
-                    ? "text-emerald-400"
+                    ? "text-primary"
                     : isMissed
-                      ? "text-red-400"
-                      : "text-slate-400",
+                      ? "text-destructive"
+                      : "text-muted-foreground",
                 )}
               >
                 {shortLabel(workout)}

@@ -28,9 +28,9 @@ export function ShoeCard({
 
   return (
     <Link to="/shoes/$shoeId" params={{ shoeId: shoe.id }}>
-      <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-xl transition-all duration-200 hover:border-emerald-500/40 hover:bg-slate-900/90 cursor-pointer">
+      <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-card transition-all duration-200 hover:border-primary/40 hover:bg-card/90 cursor-pointer">
         {/* Photo / Color Header Avatar */}
-        <div className="relative h-32 w-full overflow-hidden rounded-xl bg-slate-800/80">
+        <div className="relative h-32 w-full overflow-hidden rounded-xl bg-surface-container-high/80">
           {shoe.photo_url ? (
             <img
               src={shoe.photo_url}
@@ -43,11 +43,11 @@ export function ShoeCard({
               style={
                 shoe.color
                   ? {
-                      background: `linear-gradient(135deg, ${shoe.color} 25%, #0f172a 100%)`,
+                      background: `linear-gradient(135deg, ${shoe.color} 25%, #0e0e0e 100%)`,
                     }
                   : {
                       background:
-                        "linear-gradient(135deg, #1e293b 0%, #064e3b 100%)",
+                        "linear-gradient(135deg, #262626 0%, #0e0e0e 100%)",
                     }
               }
             >
@@ -67,7 +67,7 @@ export function ShoeCard({
             </Badge>
 
             {shoe.strava_gear_id && (
-              <Badge className="bg-slate-900/80 text-slate-300 border-slate-700 text-[10px] font-bold backdrop-blur-xs">
+              <Badge className="bg-card/80 text-muted-foreground border-border text-[10px] font-bold backdrop-blur-xs">
                 Strava Gear
               </Badge>
             )}
@@ -89,10 +89,10 @@ export function ShoeCard({
         {/* Shoe Info Body */}
         <div className="flex flex-col gap-3 pt-3">
           <div className="min-w-0">
-            <h3 className="truncate text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
+            <h3 className="truncate text-base font-bold text-white group-hover:text-primary transition-colors">
               {shoe.name}
             </h3>
-            <p className="truncate text-xs font-medium text-slate-400 mt-0.5">
+            <p className="truncate text-xs font-medium text-muted-foreground mt-0.5">
               {[shoe.brand, shoe.model].filter(Boolean).join(" · ") ||
                 "Sin especificación de modelo"}
             </p>
@@ -101,7 +101,7 @@ export function ShoeCard({
           {/* Wear Progress Bar */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-400">
+              <span className="font-semibold text-muted-foreground">
                 Vida útil de espuma
               </span>
               <span className="font-bold text-white">
@@ -109,7 +109,7 @@ export function ShoeCard({
               </span>
             </div>
 
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800 border border-slate-700/50 p-0.5">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-high border border-border/50 p-0.5">
               <div
                 className={cn(
                   "h-full rounded-full bg-gradient-to-r transition-all duration-500",
@@ -124,15 +124,15 @@ export function ShoeCard({
                 className={cn(
                   "font-bold",
                   health.status === "optimal"
-                    ? "text-emerald-400"
+                    ? "text-primary"
                     : health.status === "warning"
-                      ? "text-amber-400"
-                      : "text-red-400",
+                      ? "text-primary"
+                      : "text-destructive",
                 )}
               >
                 ● {health.statusLabel}
               </span>
-              <span className="text-slate-400 font-medium">
+              <span className="text-muted-foreground font-medium">
                 Quedan ~{health.remainingKm} km
               </span>
             </div>
@@ -140,7 +140,7 @@ export function ShoeCard({
 
           {/* Rotation alert if applicable */}
           {rotationAlert.needsRest && (
-            <div className="flex items-center gap-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 p-2 text-[11px] font-semibold text-amber-400">
+            <div className="flex items-center gap-1.5 rounded-xl bg-primary/10 border border-primary/30 p-2 text-[11px] font-semibold text-primary">
               <AlertTriangle className="size-3.5 shrink-0" />
               <span className="truncate">
                 Rotación sugerida por entreno reciente
@@ -149,20 +149,22 @@ export function ShoeCard({
           )}
 
           {/* Stats Footer */}
-          <div className="flex items-center justify-between border-t border-slate-800 pt-2.5 text-xs text-slate-400 font-medium">
-            <span className="flex items-center gap-1 text-slate-300">
-              <Footprints className="size-3.5 text-slate-500" />
+          <div className="flex items-center justify-between border-t border-border pt-2.5 text-xs text-muted-foreground font-medium">
+            <span className="flex items-center gap-1 text-foreground">
+              <Footprints className="size-3.5 text-on-surface-variant" />
               {stats?.sessions ?? 0}{" "}
               {stats?.sessions === 1 ? "sesión" : "sesiones"}
             </span>
 
             {stats?.avg_pace_seconds_per_km ? (
-              <span className="flex items-center gap-1 text-emerald-400 font-extrabold">
+              <span className="flex items-center gap-1 text-primary font-extrabold">
                 <Gauge className="size-3.5" />
                 {formatPace(stats.avg_pace_seconds_per_km)}
               </span>
             ) : (
-              <span className="text-slate-500 text-[11px]">Sin entrenos</span>
+              <span className="text-on-surface-variant text-[11px]">
+                Sin entrenos
+              </span>
             )}
           </div>
         </div>

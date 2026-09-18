@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_layout")({
 
 function Layout() {
   return (
-    <div className="relative w-full min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500 selection:text-slate-950">
+    <div className="relative w-full min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
       <TopNavbar />
 
       <main className="w-full pt-20 pb-24 md:pb-12">

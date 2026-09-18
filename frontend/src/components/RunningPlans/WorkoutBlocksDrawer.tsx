@@ -188,8 +188,8 @@ export function WorkoutBlocksDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md bg-slate-900 border-l border-slate-800 text-white shadow-2xl">
-        <SheetHeader className="border-b border-slate-800 p-5 bg-slate-900">
+      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md bg-card border-l border-border text-white shadow-card">
+        <SheetHeader className="border-b border-border p-5 bg-card">
           <SheetTitle className="flex items-center gap-2 pr-6 text-white font-bold">
             <span
               className={cn(
@@ -206,10 +206,10 @@ export function WorkoutBlocksDrawer({
                 WORKOUT_TYPE_META[workout.type].label}
             </span>
           </SheetTitle>
-          <div className="pr-6 text-xs text-slate-400 mt-1">
+          <div className="pr-6 text-xs text-muted-foreground mt-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 font-medium text-slate-300">
-                <CalendarDays className="size-3.5 text-slate-500" />
+              <span className="inline-flex items-center gap-1.5 font-medium text-muted-foreground">
+                <CalendarDays className="size-3.5 text-on-surface-variant" />
                 {formatShortDate(workout.date)}
               </span>
               <Badge
@@ -221,14 +221,14 @@ export function WorkoutBlocksDrawer({
               {workout.status_override != null ? (
                 <Badge
                   variant="outline"
-                  className="text-slate-400 border-slate-700"
+                  className="text-muted-foreground border-border"
                 >
                   Estado manual
                 </Badge>
               ) : null}
             </div>
             {phaseName ? (
-              <span className="mt-1.5 block font-medium text-slate-400">
+              <span className="mt-1.5 block font-medium text-muted-foreground">
                 Fase {phaseName}
                 {weekNumber ? ` · Semana ${weekNumber}` : ""}
               </span>
@@ -240,22 +240,22 @@ export function WorkoutBlocksDrawer({
           <div className="flex flex-col gap-5">
             {/* Runna Shoe Recommendation Banner */}
             {activeShoes.length > 0 ? (
-              <div className="flex flex-col gap-2 rounded-xl bg-slate-800/40 border border-slate-800 p-3.5">
+              <div className="flex flex-col gap-2 rounded-xl bg-surface-container-high/40 border border-border p-3.5">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1.5">
-                    <Footprints className="size-3.5 text-emerald-400" />
+                  <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+                    <Footprints className="size-3.5 text-primary" />
                     Calzado sugerido para hoy
                   </h4>
                   {recommendedShoe ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
                       <Sparkles className="size-3" /> Recomendación Runna
                     </span>
                   ) : null}
                 </div>
 
                 {recommendedShoe ? (
-                  <div className="flex items-center gap-3 bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/60">
-                    <div className="size-10 rounded-lg bg-slate-800 flex items-center justify-center font-bold text-xs text-white shrink-0 overflow-hidden border border-slate-700">
+                  <div className="flex items-center gap-3 bg-card/80 p-2.5 rounded-xl border border-border/60">
+                    <div className="size-10 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-xs text-white shrink-0 overflow-hidden border border-border">
                       {recommendedShoe.photo_url ? (
                         <img
                           src={recommendedShoe.photo_url}
@@ -263,7 +263,7 @@ export function WorkoutBlocksDrawer({
                           className="size-full object-cover"
                         />
                       ) : (
-                        <Footprints className="size-5 text-emerald-400" />
+                        <Footprints className="size-5 text-primary" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -271,7 +271,7 @@ export function WorkoutBlocksDrawer({
                         {recommendedShoe.name ||
                           `${recommendedShoe.brand} ${recommendedShoe.model}`}
                       </p>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="text-[11px] text-muted-foreground">
                         Categoría:{" "}
                         {SHOE_CATEGORIES.find(
                           (c) => c.value === recommendedShoe.category,
@@ -280,7 +280,7 @@ export function WorkoutBlocksDrawer({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     Asigna categorías en el <strong>Shoe Locker</strong> para
                     recibir la recomendación ideal según la intensidad del
                     entreno.
@@ -290,8 +290,8 @@ export function WorkoutBlocksDrawer({
             ) : null}
 
             {workout.objective ? (
-              <div className="flex flex-col gap-1 rounded-xl bg-slate-800/40 border border-slate-800 p-3">
-                <h4 className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+              <div className="flex flex-col gap-1 rounded-xl bg-surface-container-high/40 border border-border p-3">
+                <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                   Objetivo Principal
                 </h4>
                 <p className="text-sm font-semibold text-white">
@@ -301,38 +301,38 @@ export function WorkoutBlocksDrawer({
             ) : null}
 
             {workout.description ? (
-              <div className="flex flex-col gap-1 rounded-xl bg-slate-800/40 border border-slate-800 p-3">
-                <h4 className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+              <div className="flex flex-col gap-1 rounded-xl bg-surface-container-high/40 border border-border p-3">
+                <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                   Descripción / Instrucciones
                 </h4>
-                <p className="text-xs whitespace-pre-wrap text-slate-300">
+                <p className="text-xs whitespace-pre-wrap text-muted-foreground">
                   {workout.description}
                 </p>
               </div>
             ) : null}
 
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl border border-slate-800 bg-slate-800/60 p-3">
-                <p className="text-[10px] uppercase font-bold text-slate-400">
+              <div className="rounded-xl border border-border bg-surface-container-high/60 p-3">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">
                   Distancia
                 </p>
                 <p className="text-sm font-extrabold text-white">
                   {formatDistance(summaryDistance)}
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-800 bg-slate-800/60 p-3">
-                <p className="text-[10px] uppercase font-bold text-slate-400">
+              <div className="rounded-xl border border-border bg-surface-container-high/60 p-3">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">
                   Duración
                 </p>
                 <p className="text-sm font-extrabold text-white">
                   {formatDuration(workout.duration_seconds)}
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-800 bg-slate-800/60 p-3">
-                <p className="text-[10px] uppercase font-bold text-slate-400">
+              <div className="rounded-xl border border-border bg-surface-container-high/60 p-3">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground">
                   Ritmo Medio
                 </p>
-                <p className="text-sm font-extrabold text-emerald-400">
+                <p className="text-sm font-extrabold text-primary">
                   {formatPace(workout.pace_seconds_per_km)}
                 </p>
               </div>
@@ -342,7 +342,7 @@ export function WorkoutBlocksDrawer({
               <div className="flex flex-col gap-3">
                 <h3 className="text-sm font-bold text-white flex items-center justify-between">
                   <span>Estructura de Bloques</span>
-                  <span className="text-xs font-semibold text-slate-400">
+                  <span className="text-xs font-semibold text-muted-foreground">
                     {blocks.length} bloques
                   </span>
                 </h3>
@@ -350,18 +350,18 @@ export function WorkoutBlocksDrawer({
                   {blocks.map((block) => (
                     <div
                       key={block.id}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-800/40 px-3.5 py-2.5"
+                      className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-container-high/40 px-3.5 py-2.5"
                     >
                       <div>
                         <p className="text-xs font-bold text-white">
                           {BLOCK_TYPE_META[block.block_type].label}
                         </p>
-                        <p className="text-xs text-slate-400 mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           {buildBlockPreview(block)}
                         </p>
                       </div>
                       {block.repeats > 1 ? (
-                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 font-bold">
+                        <Badge className="bg-primary/20 text-primary border-primary/40 font-bold">
                           ×{block.repeats}
                         </Badge>
                       ) : null}
@@ -371,49 +371,55 @@ export function WorkoutBlocksDrawer({
                 <div className="-mx-1 overflow-x-auto px-1">
                   <Table className="min-w-[32rem]">
                     <TableHeader>
-                      <TableRow className="border-slate-800">
-                        <TableHead className="text-slate-400">Bloque</TableHead>
-                        <TableHead className="w-16 text-slate-400">
+                      <TableRow className="border-border">
+                        <TableHead className="text-muted-foreground">
+                          Bloque
+                        </TableHead>
+                        <TableHead className="w-16 text-muted-foreground">
                           Reps
                         </TableHead>
-                        <TableHead className="text-slate-400">
+                        <TableHead className="text-muted-foreground">
                           Distancia
                         </TableHead>
-                        <TableHead className="text-slate-400">
+                        <TableHead className="text-muted-foreground">
                           Duración
                         </TableHead>
-                        <TableHead className="text-slate-400">Ritmo</TableHead>
-                        <TableHead className="text-slate-400">
+                        <TableHead className="text-muted-foreground">
+                          Ritmo
+                        </TableHead>
+                        <TableHead className="text-muted-foreground">
                           Recuperación
                         </TableHead>
-                        <TableHead className="text-slate-400">Notas</TableHead>
+                        <TableHead className="text-muted-foreground">
+                          Notas
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {blocks.map((block) => (
                         <TableRow
                           key={block.id}
-                          className="hover:bg-slate-800/60 border-slate-800/80"
+                          className="hover:bg-surface-container-high/60 border-border/80"
                         >
                           <TableCell className="font-bold text-white">
                             {BLOCK_TYPE_META[block.block_type].label}
                           </TableCell>
-                          <TableCell className="text-slate-300">
+                          <TableCell className="text-muted-foreground">
                             {block.repeats}
                           </TableCell>
-                          <TableCell className="text-slate-300">
+                          <TableCell className="text-muted-foreground">
                             {formatBlockDistance(block.distance_m)}
                           </TableCell>
-                          <TableCell className="text-slate-300">
+                          <TableCell className="text-muted-foreground">
                             {formatDuration(block.duration_seconds)}
                           </TableCell>
-                          <TableCell className="text-emerald-400 font-semibold">
+                          <TableCell className="text-primary font-semibold">
                             {formatPaceRange(block)}
                           </TableCell>
-                          <TableCell className="text-slate-300">
+                          <TableCell className="text-muted-foreground">
                             {formatRecovery(block)}
                           </TableCell>
-                          <TableCell className="text-slate-400">
+                          <TableCell className="text-muted-foreground">
                             {block.notes ?? "—"}
                           </TableCell>
                         </TableRow>
@@ -425,8 +431,8 @@ export function WorkoutBlocksDrawer({
             ) : null}
 
             {workout.status === "completed" && matched ? (
-              <div className="flex flex-col gap-2 rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-3.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+              <div className="flex flex-col gap-2 rounded-xl border border-primary/40 bg-primary/20 p-3.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
                   <CheckCircle2 className="size-4" />
                   Completada con Strava
                 </div>
@@ -434,7 +440,7 @@ export function WorkoutBlocksDrawer({
                   <p className="text-sm font-bold text-white">
                     {matched.name ?? "Actividad"}
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     {formatDistance((matched.distance_meters ?? 0) / 1000)} ·{" "}
                     {formatDuration(matched.duration_seconds)}
                   </p>
@@ -444,7 +450,7 @@ export function WorkoutBlocksDrawer({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="mt-1 w-fit bg-slate-800 border-slate-700 text-slate-300 hover:text-white"
+                    className="mt-1 w-fit bg-surface-container-high border-border text-muted-foreground hover:text-white"
                     asChild
                   >
                     <Link
@@ -460,12 +466,12 @@ export function WorkoutBlocksDrawer({
           </div>
         </div>
 
-        <SheetFooter className="border-t border-slate-800 p-4 bg-slate-900">
+        <SheetFooter className="border-t border-border p-4 bg-card">
           <div className="flex flex-wrap items-center gap-3 w-full">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <Label
                 htmlFor="workout-status"
-                className="shrink-0 text-xs font-semibold text-slate-300"
+                className="shrink-0 text-xs font-semibold text-muted-foreground"
               >
                 Estado
               </Label>
@@ -478,14 +484,14 @@ export function WorkoutBlocksDrawer({
               >
                 <SelectTrigger
                   id="workout-status"
-                  className="min-w-0 flex-1 bg-slate-800 border-slate-700 text-white rounded-xl"
+                  className="min-w-0 flex-1 bg-surface-container-high border-border text-white rounded-xl"
                 >
                   {statusMutation.isPending ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : null}
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                <SelectContent className="bg-card border-border text-white">
                   <SelectItem value="auto">Automático</SelectItem>
                   <SelectItem value="completed">
                     {WORKOUT_STATUS_META.completed.label}
@@ -503,7 +509,7 @@ export function WorkoutBlocksDrawer({
               type="button"
               disabled={duplicateMutation.isPending}
               onClick={() => duplicateMutation.mutate()}
-              className="bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white font-semibold rounded-xl cursor-pointer"
+              className="bg-surface-container-high border border-border text-muted-foreground hover:bg-surface-container-highest hover:text-white font-semibold rounded-xl cursor-pointer"
             >
               {duplicateMutation.isPending ? (
                 <Loader2 className="mr-2 size-4 animate-spin" />

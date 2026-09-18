@@ -63,20 +63,20 @@ export function IntegrationCard({
     <div className="space-y-2">
       <SettingsRow
         icon={connected ? PlugZap : Plug}
-        iconBg={connected ? "bg-emerald-500/15" : "bg-slate-800/80"}
-        iconColor={connected ? "text-emerald-400" : "text-slate-400"}
+        iconBg={connected ? "bg-primary/15" : "bg-surface-container-high/80"}
+        iconColor={connected ? "text-primary" : "text-muted-foreground"}
         title={title}
         subtitle={description}
         value={
           statusQuery.isLoading ? (
-            <Loader2 className="size-4 animate-spin text-slate-500" />
+            <Loader2 className="size-4 animate-spin text-on-surface-variant" />
           ) : (
             <span
               className={cn(
                 "rounded-md border px-2 py-0.5 text-xs font-semibold",
                 connected
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                  : "border-slate-800 bg-slate-900 text-slate-400",
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground",
               )}
             >
               {connected ? "Conectado" : "Desconectado"}
@@ -85,7 +85,7 @@ export function IntegrationCard({
         }
       />
 
-      <div className="px-4 py-3 space-y-3 bg-slate-950/40">
+      <div className="px-4 py-3 space-y-3 bg-surface-container-lowest/40">
         {children}
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -95,7 +95,7 @@ export function IntegrationCard({
             size="sm"
             disabled={testMutation.isPending}
             onClick={() => testMutation.mutate()}
-            className="rounded-xl border-slate-800 text-xs text-slate-300"
+            className="rounded-xl border-border text-xs text-muted-foreground"
           >
             {testMutation.isPending && (
               <Loader2 className="mr-1.5 size-3.5 animate-spin" />
@@ -107,7 +107,7 @@ export function IntegrationCard({
               type="button"
               variant="ghost"
               size="sm"
-              className="rounded-xl text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              className="rounded-xl text-xs text-destructive hover:bg-red-500/10 hover:text-destructive"
               disabled={disconnectMutation.isPending}
               onClick={() => disconnectMutation.mutate()}
             >

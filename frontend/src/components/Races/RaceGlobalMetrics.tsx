@@ -16,12 +16,10 @@ function MetricCard({
   icon: React.ReactNode
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl bg-slate-900/80 border border-slate-800 p-5 shadow-lg">
-      <div className="rounded-xl bg-orange-500/15 p-3 text-orange-400">
-        {icon}
-      </div>
+    <div className="flex items-center gap-4 rounded-2xl bg-card/80 border border-border p-5 shadow-card">
+      <div className="rounded-xl bg-primary/15 p-3 text-primary">{icon}</div>
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
           {title}
         </p>
         <div className="mt-1 text-2xl font-black text-white tracking-tight">
@@ -72,15 +70,15 @@ export function RaceGlobalMetrics({ completedRaces }: RaceGlobalMetricsProps) {
           value={
             <>
               {totalKm % 1 === 0 ? totalKm.toFixed(0) : totalKm.toFixed(1)}
-              <span className="text-sm ml-1 text-slate-400 font-medium">
+              <span className="text-sm ml-1 text-muted-foreground font-medium">
                 km
               </span>
             </>
           }
           icon={<MapIcon className="size-6" />}
         />
-        <div className="flex flex-col justify-center rounded-2xl bg-slate-900/80 border border-slate-800 p-4 shadow-lg h-full">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-1">
+        <div className="flex flex-col justify-center rounded-2xl bg-card/80 border border-border p-4 shadow-card h-full">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">
             Medallero
           </p>
           <div className="flex flex-wrap gap-2">
@@ -89,13 +87,13 @@ export function RaceGlobalMetrics({ completedRaces }: RaceGlobalMetricsProps) {
               .map(([label, count]) => (
                 <span
                   key={label}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800/80 px-2.5 py-1 text-xs font-semibold text-slate-200"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-surface-container-high/80 px-2.5 py-1 text-xs font-semibold text-foreground"
                 >
-                  <span className="text-orange-400">{count}x</span> {label}
+                  <span className="text-primary">{count}x</span> {label}
                 </span>
               ))}
             {totalRaces === 0 && (
-              <span className="text-xs font-medium text-slate-500">
+              <span className="text-xs font-medium text-on-surface-variant">
                 Sin medallas aún
               </span>
             )}

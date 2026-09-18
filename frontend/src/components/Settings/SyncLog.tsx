@@ -24,11 +24,13 @@ export function SyncLog() {
     return (
       <SettingsRow
         icon={History}
-        iconBg="bg-slate-800/80"
-        iconColor="text-slate-400"
+        iconBg="bg-surface-container-high/80"
+        iconColor="text-muted-foreground"
         title="Última sincronización"
         subtitle="Cargando historial..."
-        value={<Loader2 className="size-4 animate-spin text-slate-500" />}
+        value={
+          <Loader2 className="size-4 animate-spin text-on-surface-variant" />
+        }
       />
     )
   }
@@ -39,8 +41,8 @@ export function SyncLog() {
     return (
       <SettingsRow
         icon={History}
-        iconBg="bg-slate-800/80"
-        iconColor="text-slate-400"
+        iconBg="bg-surface-container-high/80"
+        iconColor="text-muted-foreground"
         title="Última sincronización"
         subtitle="Sin registros aún"
       />
@@ -57,8 +59,8 @@ export function SyncLog() {
   return (
     <SettingsRow
       icon={History}
-      iconBg="bg-slate-800/80"
-      iconColor="text-slate-300"
+      iconBg="bg-surface-container-high/80"
+      iconColor="text-muted-foreground"
       title="Última sincronización"
       subtitle={subtitle}
       value={

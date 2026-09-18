@@ -70,7 +70,7 @@ export function WeekVolumeChart({
         return (
           <div key={dateISO} className="flex flex-col items-center gap-2">
             {/* Top Label (Distance) */}
-            <div className="h-4 text-[10px] font-bold text-slate-400">
+            <div className="h-4 text-[10px] font-bold text-muted-foreground">
               {hasWorkout ? `${distance}km` : ""}
             </div>
 
@@ -78,11 +78,11 @@ export function WeekVolumeChart({
             <div className="flex flex-col-reverse gap-[2px] h-24 w-full px-1">
               {Array.from({ length: TOTAL_SEGMENTS }).map((_, i) => {
                 const isActive = i < activeSegments
-                let bgColor = "bg-slate-800"
+                let bgColor = "bg-surface-container-high"
                 if (isActive) {
-                  if (isCompleted) bgColor = "bg-emerald-500"
-                  else if (isMissed) bgColor = "bg-red-500"
-                  else bgColor = "bg-emerald-400/70" // planned
+                  if (isCompleted) bgColor = "bg-primary"
+                  else if (isMissed) bgColor = "bg-destructive"
+                  else bgColor = "bg-primary/70" // planned
                 }
 
                 return (
@@ -101,7 +101,7 @@ export function WeekVolumeChart({
             <div
               className={cn(
                 "text-[10px] font-bold uppercase tracking-wider mt-1",
-                isToday ? "text-emerald-400" : "text-slate-500",
+                isToday ? "text-primary" : "text-on-surface-variant",
               )}
             >
               {dayName}

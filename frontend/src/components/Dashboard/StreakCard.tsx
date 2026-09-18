@@ -1,11 +1,11 @@
-import React from "react";
-import { Flame, Calendar } from "lucide-react";
+import { Calendar, Flame } from "lucide-react"
+import type React from "react"
 
 interface StreakCardProps {
-  streakWeeks: number;
-  completedSessions: number;
-  plannedSessions: number;
-  onOpenCalendar: () => void;
+  streakWeeks: number
+  completedSessions: number
+  plannedSessions: number
+  onOpenCalendar: () => void
 }
 
 export const StreakCard: React.FC<StreakCardProps> = ({
@@ -35,7 +35,9 @@ export const StreakCard: React.FC<StreakCardProps> = ({
               ) : (
                 <>
                   <span>Racha Semanal</span>
-                  <span className="text-sm text-muted-foreground font-normal ml-1">0</span>
+                  <span className="text-sm text-muted-foreground font-normal ml-1">
+                    0
+                  </span>
                 </>
               )}
             </div>
@@ -48,5 +50,5 @@ export const StreakCard: React.FC<StreakCardProps> = ({
         <Calendar className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
       </div>
     </div>
-  );
-};
+  )
+}

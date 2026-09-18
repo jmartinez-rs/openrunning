@@ -67,7 +67,8 @@ export function shoeCategoryMeta(value: string): ShoeCategoryOption {
       label: "Entrenamiento",
       shortLabel: "Entrenamiento",
       description: "Zapatillas de uso general",
-      badgeClass: "bg-slate-800 text-slate-300 border-slate-700",
+      badgeClass:
+        "bg-surface-container-high text-muted-foreground border-border",
       recommendedTypes: [],
     }
   )

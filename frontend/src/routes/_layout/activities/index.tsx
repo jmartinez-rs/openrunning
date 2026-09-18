@@ -206,12 +206,12 @@ function ActivitiesHistory() {
   return (
     <div className="col-span-12 flex flex-col gap-6 pb-8">
       {/* Header section — styled after OpenGym .hdr */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/80">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
             Historial
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             {query.isLoading
               ? "Cargando actividades…"
               : `${totalCount} ${totalCount === 1 ? "actividad registrada" : "actividades registradas"}`}
@@ -219,7 +219,7 @@ function ActivitiesHistory() {
         </div>
 
         {/* Upload Button */}
-        <label className="cursor-pointer self-start sm:self-auto font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2 rounded-xl inline-flex items-center gap-2 text-sm shadow-md transition-all active:scale-95">
+        <label className="cursor-pointer self-start sm:self-auto font-semibold bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl inline-flex items-center gap-2 text-sm shadow-md transition-all active:scale-95">
           {isUploading ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
@@ -252,8 +252,8 @@ function ActivitiesHistory() {
                 onClick={() => selectTab(tab.id)}
                 className={
                   sourceType === tab.id
-                    ? "rounded-full border border-emerald-400 text-emerald-400 font-semibold px-5 py-1.5 text-xs sm:text-sm shadow-sm transition-all"
-                    : "rounded-full border border-slate-700 bg-transparent px-5 py-1.5 text-xs sm:text-sm text-slate-400 font-medium transition-colors hover:text-slate-200"
+                    ? "rounded-full border border-primary text-primary font-semibold px-5 py-1.5 text-xs sm:text-sm shadow-sm transition-all"
+                    : "rounded-full border border-border bg-transparent px-5 py-1.5 text-xs sm:text-sm text-muted-foreground font-medium transition-colors hover:text-foreground"
                 }
               >
                 {tab.label}
@@ -265,9 +265,9 @@ function ActivitiesHistory() {
           {showAllActivities && (
             <div className="flex items-center gap-2 flex-1 max-w-sm">
               <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-on-surface-variant" />
                 <Input
-                  className="w-full rounded-xl border border-slate-800/80 bg-slate-900/60 pl-9 pr-3 py-1.5 text-sm placeholder:text-slate-500 text-slate-200 focus:border-emerald-500/50"
+                  className="w-full rounded-xl border border-border/80 bg-card/60 pl-9 pr-3 py-1.5 text-sm placeholder:text-on-surface-variant text-foreground focus:border-primary/50"
                   placeholder="Buscar por nombre…"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -276,7 +276,7 @@ function ActivitiesHistory() {
                   <button
                     type="button"
                     onClick={() => setSearchTerm("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-muted-foreground"
                   >
                     <X className="size-3.5" />
                   </button>
@@ -290,8 +290,8 @@ function ActivitiesHistory() {
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                 className={
                   showAdvancedFilters || fromDate || toDate
-                    ? "rounded-xl border-emerald-500/40 bg-emerald-500/10 text-emerald-400 text-xs gap-1.5"
-                    : "rounded-xl border-slate-800 bg-slate-900/60 text-slate-400 text-xs gap-1.5 hover:text-slate-200"
+                    ? "rounded-xl border-primary/40 bg-primary/10 text-primary text-xs gap-1.5"
+                    : "rounded-xl border-border bg-card/60 text-muted-foreground text-xs gap-1.5 hover:text-foreground"
                 }
               >
                 <Filter className="size-3.5" />
@@ -303,21 +303,21 @@ function ActivitiesHistory() {
 
         {/* Collapsible Date Filters */}
         {showAllActivities && showAdvancedFilters && (
-          <div className="flex flex-wrap items-center gap-3 p-3.5 rounded-2xl border border-slate-800/80 bg-slate-900/40 animate-in fade-in slide-in-from-top-2 duration-150">
-            <span className="text-xs font-medium text-slate-400">
+          <div className="flex flex-wrap items-center gap-3 p-3.5 rounded-2xl border border-border/80 bg-card/40 animate-in fade-in slide-in-from-top-2 duration-150">
+            <span className="text-xs font-medium text-muted-foreground">
               Rango de fechas:
             </span>
             <div className="flex items-center gap-2">
               <Input
                 type="date"
-                className="w-36 rounded-xl border-slate-800 bg-slate-900/80 text-xs text-slate-200"
+                className="w-36 rounded-xl border-border bg-card/80 text-xs text-foreground"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
               />
-              <span className="text-xs text-slate-500">–</span>
+              <span className="text-xs text-on-surface-variant">–</span>
               <Input
                 type="date"
-                className="w-36 rounded-xl border-slate-800 bg-slate-900/80 text-xs text-slate-200"
+                className="w-36 rounded-xl border-border bg-card/80 text-xs text-foreground"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
               />
@@ -325,7 +325,7 @@ function ActivitiesHistory() {
             <Button
               type="button"
               size="sm"
-              className="rounded-xl bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400 text-xs"
+              className="rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 text-xs"
               onClick={applyFilters}
             >
               Aplicar
@@ -335,7 +335,7 @@ function ActivitiesHistory() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="rounded-xl text-xs text-slate-400 hover:text-slate-200"
+                className="rounded-xl text-xs text-muted-foreground hover:text-foreground"
                 onClick={clearFilters}
               >
                 Limpiar todo
@@ -349,34 +349,31 @@ function ActivitiesHistory() {
       {query.isLoading ? (
         <div className="space-y-2.5">
           {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton
-              className="h-16 w-full rounded-2xl bg-slate-900/60"
-              key={i}
-            />
+            <Skeleton className="h-16 w-full rounded-2xl bg-card/60" key={i} />
           ))}
         </div>
       ) : query.isError ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center border border-slate-800/80 rounded-2xl bg-slate-900/40">
-          <RefreshCw className="size-8 text-emerald-400 animate-pulse" />
-          <h3 className="text-base font-semibold text-slate-200">
+        <div className="flex flex-col items-center gap-3 py-16 text-center border border-border/80 rounded-2xl bg-card/40">
+          <RefreshCw className="size-8 text-primary animate-pulse" />
+          <h3 className="text-base font-semibold text-foreground">
             No se pudo cargar el historial
           </h3>
-          <p className="text-xs text-slate-400 max-w-sm">
+          <p className="text-xs text-muted-foreground max-w-sm">
             Verificá la conexión con el servidor e intentá nuevamente.
           </p>
           <Button
             variant="outline"
             size="sm"
             onClick={() => query.refetch()}
-            className="mt-1 rounded-xl border-slate-800 text-xs"
+            className="mt-1 rounded-xl border-border text-xs"
           >
             Reintentar
           </Button>
         </div>
       ) : filteredActivities.length === 0 ? (
         /* Empty State — OpenGym style .empty */
-        <div className="flex flex-col items-center justify-center gap-3 py-16 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/20">
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-900 border border-slate-800 text-slate-500">
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-center border border-dashed border-border rounded-2xl bg-card/20">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-card border border-border text-on-surface-variant">
             {hasFilters ? (
               <SearchX className="size-7" />
             ) : (
@@ -384,12 +381,12 @@ function ActivitiesHistory() {
             )}
           </div>
           <div>
-            <h3 className="text-base font-semibold text-slate-200">
+            <h3 className="text-base font-semibold text-foreground">
               {hasFilters
                 ? "Sin resultados para los filtros seleccionados"
                 : "Aún no hay actividades registradas"}
             </h3>
-            <p className="mt-1 text-xs text-slate-400 max-w-sm">
+            <p className="mt-1 text-xs text-muted-foreground max-w-sm">
               {hasFilters
                 ? "Probá ajustar la búsqueda, las fechas o el tipo de actividad."
                 : "Sincronizá tu cuenta de Strava o Hevy, o importá un archivo .fit/.gpx."}
@@ -400,7 +397,7 @@ function ActivitiesHistory() {
               variant="outline"
               size="sm"
               onClick={clearFilters}
-              className="mt-2 rounded-xl border-slate-800 text-xs text-slate-300"
+              className="mt-2 rounded-xl border-border text-xs text-muted-foreground"
             >
               Restablecer filtros
             </Button>
@@ -412,13 +409,13 @@ function ActivitiesHistory() {
           {/* Last Workouts Horizontal Carousel */}
           <div className="overflow-hidden">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-slate-200">
+              <h2 className="text-xl font-bold text-foreground">
                 Últimas actividades
               </h2>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10"
+                className="text-primary hover:text-primary hover:bg-primary/10"
                 onClick={() => setShowAllActivities(true)}
               >
                 Ver todas
@@ -426,7 +423,7 @@ function ActivitiesHistory() {
             </div>
             <div className="relative">
               {/* Decorative timeline line */}
-              <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-slate-800 -translate-y-1/2 z-0" />
+              <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-surface-container-high -translate-y-1/2 z-0" />
 
               <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 pt-2 px-2 scrollbar-hide relative z-10">
                 {filteredActivities.slice(0, 10).map((activity, index) => (
@@ -440,7 +437,7 @@ function ActivitiesHistory() {
 
           {/* Volume Chart */}
           <div>
-            <h2 className="text-xl font-bold text-slate-200 mb-4">
+            <h2 className="text-xl font-bold text-foreground mb-4">
               Volumen mensual
             </h2>
             <ChartCard
@@ -460,7 +457,7 @@ function ActivitiesHistory() {
                       <CartesianGrid
                         vertical={false}
                         strokeDasharray="3 3"
-                        stroke="#1e293b"
+                        stroke="#262626"
                       />
                       <XAxis
                         dataKey="name"
@@ -478,7 +475,7 @@ function ActivitiesHistory() {
                         }
                       />
                       <Tooltip
-                        cursor={{ fill: "#0f172a", opacity: 0.4 }}
+                        cursor={{ fill: "#0e0e0e", opacity: 0.4 }}
                         contentStyle={TOOLTIP_CONTENT_STYLE}
                         formatter={(value: any) => {
                           const numValue = Number(value) || 0
@@ -504,7 +501,7 @@ function ActivitiesHistory() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-slate-400 hover:text-slate-200 px-2"
+              className="text-muted-foreground hover:text-foreground px-2"
               onClick={() => setShowAllActivities(false)}
             >
               <ArrowLeft className="size-4 mr-2" />
@@ -520,7 +517,7 @@ function ActivitiesHistory() {
           </div>
 
           {/* Pagination Footer */}
-          <div className="flex items-center justify-between pt-4 mt-6 border-t border-slate-800/60 text-xs text-slate-400">
+          <div className="flex items-center justify-between pt-4 mt-6 border-t border-border/60 text-xs text-muted-foreground">
             <span>
               Mostrando {skip + 1}–{Math.min(skip + PAGE_SIZE, totalCount)} de{" "}
               {totalCount} actividades
@@ -532,7 +529,7 @@ function ActivitiesHistory() {
                 size="sm"
                 disabled={skip === 0}
                 onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}
-                className="h-8 rounded-xl border-slate-800 text-xs text-slate-300 disabled:opacity-40"
+                className="h-8 rounded-xl border-border text-xs text-muted-foreground disabled:opacity-40"
               >
                 <ChevronLeft className="size-3.5 mr-1" />
                 Anterior
@@ -543,7 +540,7 @@ function ActivitiesHistory() {
                 size="sm"
                 disabled={skip + PAGE_SIZE >= totalCount}
                 onClick={() => setSkip(skip + PAGE_SIZE)}
-                className="h-8 rounded-xl border-slate-800 text-xs text-slate-300 disabled:opacity-40"
+                className="h-8 rounded-xl border-border text-xs text-muted-foreground disabled:opacity-40"
               >
                 Siguiente
                 <ChevronRight className="size-3.5 ml-1" />

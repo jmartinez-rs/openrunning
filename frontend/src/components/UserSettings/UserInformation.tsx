@@ -76,8 +76,8 @@ const UserInformation = () => {
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
       <SettingsRow
         icon={User}
-        iconBg="bg-emerald-500/15"
-        iconColor="text-emerald-400"
+        iconBg="bg-primary/15"
+        iconColor="text-primary"
         title="Nombre completo"
         subtitle="Nombre visible en la plataforma"
       >
@@ -85,10 +85,10 @@ const UserInformation = () => {
           <Input
             type="text"
             {...form.register("full_name")}
-            className="h-8 w-44 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+            className="h-8 w-44 rounded-xl border-border bg-background text-xs text-foreground"
           />
         ) : (
-          <span className="text-xs font-semibold text-slate-200">
+          <span className="text-xs font-semibold text-foreground">
             {currentUser?.full_name || "N/A"}
           </span>
         )}
@@ -96,8 +96,8 @@ const UserInformation = () => {
 
       <SettingsRow
         icon={Mail}
-        iconBg="bg-blue-500/15"
-        iconColor="text-blue-400"
+        iconBg="bg-primary/15"
+        iconColor="text-primary"
         title="Correo electrónico"
         subtitle="Dirección de email para acceder a la cuenta"
       >
@@ -105,10 +105,10 @@ const UserInformation = () => {
           <Input
             type="email"
             {...form.register("email")}
-            className="h-8 w-44 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+            className="h-8 w-44 rounded-xl border-border bg-background text-xs text-foreground"
           />
         ) : (
-          <span className="text-xs font-semibold text-slate-200">
+          <span className="text-xs font-semibold text-foreground">
             {currentUser?.email}
           </span>
         )}
@@ -122,7 +122,7 @@ const UserInformation = () => {
               size="sm"
               loading={mutation.isPending}
               disabled={!form.formState.isDirty}
-              className="rounded-xl bg-emerald-500 text-slate-950 font-semibold text-xs hover:bg-emerald-400"
+              className="rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90"
             >
               Guardar
             </LoadingButton>
@@ -132,7 +132,7 @@ const UserInformation = () => {
               size="sm"
               onClick={onCancel}
               disabled={mutation.isPending}
-              className="rounded-xl border-slate-800 text-xs text-slate-300"
+              className="rounded-xl border-border text-xs text-muted-foreground"
             >
               Cancelar
             </Button>
@@ -143,7 +143,7 @@ const UserInformation = () => {
             variant="outline"
             size="sm"
             onClick={toggleEditMode}
-            className="rounded-xl border-slate-800 text-xs text-slate-300"
+            className="rounded-xl border-border text-xs text-muted-foreground"
           >
             Editar perfil
           </Button>

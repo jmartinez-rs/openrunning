@@ -1,11 +1,11 @@
-import React from "react";
-import { RefreshCw, Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react"
+import type React from "react"
 
 interface StravaSyncBarProps {
-  lastSyncText: string;
-  isSyncing: boolean;
-  onSyncStrava: () => void;
-  onOpenManualRun: () => void;
+  lastSyncText: string
+  isSyncing: boolean
+  onSyncStrava: () => void
+  onOpenManualRun: () => void
 }
 
 export const StravaSyncBar: React.FC<StravaSyncBarProps> = ({
@@ -19,11 +19,13 @@ export const StravaSyncBar: React.FC<StravaSyncBarProps> = ({
       {/* Sync Status Badge */}
       <div className="flex items-center gap-2">
         <span className="relative flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
         </span>
-        <span className="text-xs font-medium text-slate-300">
-          {isSyncing ? "Sincronizando con Strava..." : lastSyncText || "Strava conectado"}
+        <span className="text-xs font-medium text-muted-foreground">
+          {isSyncing
+            ? "Sincronizando con Strava..."
+            : lastSyncText || "Strava conectado"}
         </span>
       </div>
 
@@ -35,7 +37,9 @@ export const StravaSyncBar: React.FC<StravaSyncBarProps> = ({
           disabled={isSyncing}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/20 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`}
+          />
           <span>Sync Strava</span>
         </button>
 
@@ -49,5 +53,5 @@ export const StravaSyncBar: React.FC<StravaSyncBarProps> = ({
         </button>
       </div>
     </div>
-  );
-};
+  )
+}

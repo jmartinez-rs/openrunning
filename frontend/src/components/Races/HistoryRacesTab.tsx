@@ -40,21 +40,21 @@ export function HistoryRacesTab({
       )}
 
       <div className="flex flex-col gap-6">
-        <div className="flex items-end justify-between border-b border-slate-800/80 pb-2">
+        <div className="flex items-end justify-between border-b border-border/80 pb-2">
           <h2 className="text-xl font-black text-white tracking-tight">
             Baúl y Medallero
           </h2>
-          <span className="text-xs font-medium text-slate-400">
+          <span className="text-xs font-medium text-muted-foreground">
             {completed.length} {completed.length === 1 ? "carrera" : "carreras"}
           </span>
         </div>
 
         {completed.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/50 px-4 py-16 text-center">
+          <div className="rounded-2xl border border-dashed border-border bg-card/50 px-4 py-16 text-center">
             <h3 className="text-lg font-bold text-white mb-2">
               Aún no hay carreras completadas
             </h3>
-            <p className="text-sm text-slate-400 max-w-sm mx-auto">
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
               Cuando termines una carrera oficial, aparecerá aquí en tu vitrina
               de medallas.
             </p>

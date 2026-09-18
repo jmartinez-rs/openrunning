@@ -93,36 +93,36 @@ export function MobileTabBar() {
       icon: Flame,
       title: "Planes de Entrenamiento",
       path: "/routines",
-      color: "text-amber-400",
-      bg: "bg-amber-500/15",
+      color: "text-primary",
+      bg: "bg-primary/15",
     },
     {
       icon: Trophy,
       title: "Carreras & Objetivos",
       path: "/races",
-      color: "text-yellow-400",
-      bg: "bg-yellow-500/15",
+      color: "text-primary",
+      bg: "bg-primary/15",
     },
     {
       icon: Footprints,
       title: "Gestión de Calzado",
       path: "/shoes",
-      color: "text-cyan-400",
-      bg: "bg-cyan-500/15",
+      color: "text-primary",
+      bg: "bg-primary/15",
     },
     {
       icon: Calculator,
       title: "Calculadoras & Herramientas",
       path: "/tools",
-      color: "text-blue-400",
-      bg: "bg-blue-500/15",
+      color: "text-primary",
+      bg: "bg-primary/15",
     },
     {
       icon: Settings2,
       title: "Configuración del Sistema",
       path: "/settings",
-      color: "text-purple-400",
-      bg: "bg-purple-500/15",
+      color: "text-primary",
+      bg: "bg-primary/15",
     },
   ]
 
@@ -218,20 +218,20 @@ export function MobileTabBar() {
       <Sheet open={newActionOpen} onOpenChange={setNewActionOpen}>
         <SheetContent
           side="bottom"
-          className="rounded-t-3xl border-slate-800 bg-slate-950 p-4 pb-8 max-w-lg mx-auto"
+          className="rounded-t-3xl border-border bg-background p-4 pb-8 max-w-lg mx-auto"
         >
-          <SheetHeader className="p-0 pb-3 border-b border-slate-800/80">
-            <SheetTitle className="text-lg font-bold text-slate-100">
+          <SheetHeader className="p-0 pb-3 border-b border-border/80">
+            <SheetTitle className="text-lg font-bold text-foreground">
               Registrar / Importar Actividad
             </SheetTitle>
           </SheetHeader>
 
-          <div className="mt-3 divide-y divide-slate-800/60 rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden">
+          <div className="mt-3 divide-y divide-border/60 rounded-2xl border border-border/80 bg-card/60 overflow-hidden">
             {/* Option 1: Registrar Carrera Manual */}
             <SettingsRow
               icon={Footprints}
-              iconBg="bg-orange-500/15"
-              iconColor="text-orange-400"
+              iconBg="bg-primary/15"
+              iconColor="text-primary"
               title="Registrar Carrera Manual"
               subtitle="Cargar nombre, fecha, distancia y tiempo"
               accessory="chevron"
@@ -245,8 +245,8 @@ export function MobileTabBar() {
             <label className="block cursor-pointer">
               <SettingsRow
                 icon={Upload}
-                iconBg="bg-emerald-500/15"
-                iconColor="text-emerald-400"
+                iconBg="bg-primary/15"
+                iconColor="text-primary"
                 title="Importar Archivo .FIT / .GPX"
                 subtitle="Cargar archivo GPS registrado desde tu reloj"
                 accessory="chevron"
@@ -263,8 +263,8 @@ export function MobileTabBar() {
             {/* Option 3: Sincronizar Strava & Hevy */}
             <SettingsRow
               icon={RefreshCw}
-              iconBg="bg-blue-500/15"
-              iconColor="text-blue-400"
+              iconBg="bg-primary/15"
+              iconColor="text-primary"
               title="Sincronizar Strava & Hevy"
               subtitle="Forzar importación inmediata desde tus cuentas"
               accessory="chevron"
@@ -284,15 +284,15 @@ export function MobileTabBar() {
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent
           side="bottom"
-          className="rounded-t-3xl border-slate-800 bg-slate-950 p-4 pb-8 max-w-lg mx-auto"
+          className="rounded-t-3xl border-border bg-background p-4 pb-8 max-w-lg mx-auto"
         >
-          <SheetHeader className="p-0 pb-3 border-b border-slate-800/80">
-            <SheetTitle className="text-lg font-bold text-slate-100">
+          <SheetHeader className="p-0 pb-3 border-b border-border/80">
+            <SheetTitle className="text-lg font-bold text-foreground">
               Navegación & Herramientas
             </SheetTitle>
           </SheetHeader>
 
-          <div className="mt-3 divide-y divide-slate-800/60 rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden">
+          <div className="mt-3 divide-y divide-border/60 rounded-2xl border border-border/80 bg-card/60 overflow-hidden">
             {moreItems.map((item) => {
               const Icon = item.icon
               return (

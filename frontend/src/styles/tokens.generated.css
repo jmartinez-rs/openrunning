@@ -20,16 +20,16 @@
   --secondary: #222222;
   --secondary-foreground: #FFFFFF;
   --muted: #141414;
-  --muted-foreground: #999999;
+  --muted-foreground: #A1A1AA;
   --accent: #2B2B2B;
   --accent-foreground: #EAFC5F;
-  --destructive: #ffb4ab;
+  --destructive: #EF4444;
   --border: #262626;
   --input: #222222;
   --ring: #EAFC5F;
   --chart-1: #EAFC5F;
   --chart-2: #FFFFFF;
-  --chart-3: #999999;
+  --chart-3: #A1A1AA;
   --chart-4: #353331;
   --chart-5: #2B2B2B;
   --sidebar: #1E1E1E;
@@ -50,9 +50,9 @@
   --surface-container-highest: #353534;
   --surface-variant: #353534;
   --on-surface: #e5e2e1;
-  --on-surface-variant: #c7c8af;
-  --outline: #91927c;
-  --outline-variant: #464835;
+  --on-surface-variant: #71717A;
+  --outline: #71717A;
+  --outline-variant: #3f3f46;
   --primary-container: #dbed52;
   --on-primary-container: #606a00;
   --primary-fixed: #dbed52;
@@ -68,10 +68,10 @@
   --on-tertiary: #32302e;
   --tertiary-container: #e7e1de;
   --on-tertiary-container: #676461;
-  --error: #ffb4ab;
-  --on-error: #690005;
-  --error-container: #93000a;
-  --on-error-container: #ffdad6;
+  --error: #EF4444;
+  --on-error: #FFFFFF;
+  --error-container: #7f1d1d;
+  --on-error-container: #fecaca;
   --surface-tint: #bfd037;
 }
 
@@ -87,16 +87,16 @@
   --secondary: #222222;
   --secondary-foreground: #FFFFFF;
   --muted: #141414;
-  --muted-foreground: #999999;
+  --muted-foreground: #A1A1AA;
   --accent: #2B2B2B;
   --accent-foreground: #EAFC5F;
-  --destructive: #ffb4ab;
+  --destructive: #EF4444;
   --border: #262626;
   --input: #222222;
   --ring: #EAFC5F;
   --chart-1: #EAFC5F;
   --chart-2: #FFFFFF;
-  --chart-3: #999999;
+  --chart-3: #A1A1AA;
   --chart-4: #353331;
   --chart-5: #2B2B2B;
   --sidebar: #1E1E1E;
@@ -117,9 +117,9 @@
   --surface-container-highest: #353534;
   --surface-variant: #353534;
   --on-surface: #e5e2e1;
-  --on-surface-variant: #c7c8af;
-  --outline: #91927c;
-  --outline-variant: #464835;
+  --on-surface-variant: #71717A;
+  --outline: #71717A;
+  --outline-variant: #3f3f46;
   --primary-container: #dbed52;
   --on-primary-container: #606a00;
   --primary-fixed: #dbed52;
@@ -135,9 +135,9 @@
   --on-tertiary: #32302e;
   --tertiary-container: #e7e1de;
   --on-tertiary-container: #676461;
-  --error: #ffb4ab;
-  --on-error: #690005;
-  --error-container: #93000a;
-  --on-error-container: #ffdad6;
+  --error: #EF4444;
+  --on-error: #FFFFFF;
+  --error-container: #7f1d1d;
+  --on-error-container: #fecaca;
   --surface-tint: #bfd037;
 }

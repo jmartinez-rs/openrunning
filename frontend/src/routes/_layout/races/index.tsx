@@ -68,13 +68,13 @@ function Races() {
           <h1 className="text-3xl font-black text-white tracking-tight">
             Race Hub
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Gestiona tus próximos desafíos y tu baúl de recuerdos.
           </p>
         </div>
         <Button
           type="button"
-          className="rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold shadow-lg shadow-orange-500/20"
+          className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-glow"
           onClick={() => {
             setEditing(null)
             setFormOpen(true)
@@ -86,25 +86,25 @@ function Races() {
 
       {query.isLoading ? (
         <div className="flex flex-col gap-6 mt-4">
-          <Skeleton className="h-10 w-64 rounded-xl bg-slate-800" />
-          <Skeleton className="h-64 w-full rounded-2xl bg-slate-800" />
-          <Skeleton className="h-64 w-full rounded-2xl bg-slate-800" />
+          <Skeleton className="h-10 w-64 rounded-xl bg-surface-container-high" />
+          <Skeleton className="h-64 w-full rounded-2xl bg-surface-container-high" />
+          <Skeleton className="h-64 w-full rounded-2xl bg-surface-container-high" />
         </div>
       ) : query.isError ? (
         <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <div className="rounded-full bg-slate-900 border border-slate-800 p-4">
-            <RefreshCw className="size-8 text-slate-500" />
+          <div className="rounded-full bg-card border border-border p-4">
+            <RefreshCw className="size-8 text-muted-foreground" />
           </div>
           <h3 className="text-xl font-bold text-white">
             No pudimos cargar tus carreras
           </h3>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted-foreground">
             Verificá que el backend esté disponible.
           </p>
           <Button
             type="button"
             variant="outline"
-            className="mt-2 rounded-xl bg-slate-900 border-slate-800 text-slate-300 hover:text-white"
+            className="mt-2 rounded-xl bg-card border-border text-muted-foreground hover:text-white"
             onClick={() => query.refetch()}
           >
             <RefreshCw className="mr-2 size-4" /> Reintentar
@@ -112,16 +112,16 @@ function Races() {
         </div>
       ) : (
         <Tabs defaultValue="upcoming" className="mt-4">
-          <TabsList className="bg-slate-900 border border-slate-800 rounded-xl p-1">
+          <TabsList className="bg-surface-container-low border border-border rounded-xl p-1">
             <TabsTrigger
               value="upcoming"
-              className="rounded-lg data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 data-[state=active]:shadow-none px-6 py-2"
+              className="rounded-lg data-[state=active]:bg-card data-[state=active]:text-primary text-muted-foreground data-[state=active]:shadow-card px-6 py-2"
             >
               <Trophy className="size-4 mr-2" /> Próximas
             </TabsTrigger>
             <TabsTrigger
               value="history"
-              className="rounded-lg data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 data-[state=active]:shadow-none px-6 py-2"
+              className="rounded-lg data-[state=active]:bg-card data-[state=active]:text-primary text-muted-foreground data-[state=active]:shadow-card px-6 py-2"
             >
               <Archive className="size-4 mr-2" /> Historial
             </TabsTrigger>

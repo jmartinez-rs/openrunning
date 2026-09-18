@@ -59,7 +59,7 @@ export function SyncScheduleSettings() {
   })
 
   if (query.isLoading) {
-    return <Skeleton className="h-14 w-full rounded-xl bg-slate-900/60" />
+    return <Skeleton className="h-14 w-full rounded-xl bg-card/60" />
   }
 
   return (
@@ -82,8 +82,8 @@ export function SyncScheduleSettings() {
           <SettingsRow
             key={schedule.provider}
             icon={Clock}
-            iconBg="bg-amber-500/15"
-            iconColor="text-amber-400"
+            iconBg="bg-primary/15"
+            iconColor="text-primary"
             title={`Auto-sync ${providerName}`}
             subtitle={lastRunText}
           >
@@ -103,7 +103,7 @@ export function SyncScheduleSettings() {
                   type="number"
                   min={1}
                   max={168}
-                  className="w-14 h-8 rounded-xl border-slate-800 bg-slate-950 text-xs text-center text-slate-200"
+                  className="w-14 h-8 rounded-xl border-border bg-background text-xs text-center text-foreground"
                   value={draft.interval}
                   onChange={(e) => {
                     setDrafts((prev) => ({
@@ -115,12 +115,14 @@ export function SyncScheduleSettings() {
                     }))
                   }}
                 />
-                <span className="text-xs text-slate-400 font-medium">hs</span>
+                <span className="text-xs text-muted-foreground font-medium">
+                  hs
+                </span>
               </div>
               <Button
                 type="button"
                 size="sm"
-                className="h-8 rounded-xl bg-emerald-500 text-slate-950 text-xs font-semibold hover:bg-emerald-400"
+                className="h-8 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90"
                 disabled={mutation.isPending || !draft.enabled}
                 onClick={() =>
                   mutation.mutate({

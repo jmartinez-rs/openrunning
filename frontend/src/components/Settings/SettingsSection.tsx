@@ -18,15 +18,17 @@ export function SettingsSection({
   return (
     <section className={cn("space-y-2", className)}>
       {title && (
-        <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {title}
         </h2>
       )}
-      <div className="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/60 divide-y divide-slate-800/60 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/60 divide-y divide-border/60 shadow-sm">
         {children}
       </div>
       {footer && (
-        <p className="px-1 text-xs text-slate-400 leading-relaxed">{footer}</p>
+        <p className="px-1 text-xs text-muted-foreground leading-relaxed">
+          {footer}
+        </p>
       )}
     </section>
   )
@@ -48,8 +50,8 @@ interface SettingsRowProps {
 
 export function SettingsRow({
   icon: Icon,
-  iconBg = "bg-slate-800/80",
-  iconColor = "text-slate-300",
+  iconBg = "bg-surface-container-high/80",
+  iconColor = "text-muted-foreground",
   title,
   subtitle,
   value,
@@ -68,8 +70,8 @@ export function SettingsRow({
       className={cn(
         "flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors",
         onClick &&
-          "cursor-pointer hover:bg-slate-800/40 active:bg-slate-800/60",
-        danger && "text-red-400 hover:bg-red-500/10",
+          "cursor-pointer hover:bg-surface-container-high/40 active:bg-surface-container-high/60",
+        danger && "text-destructive hover:bg-red-500/10",
         className,
       )}
     >
@@ -77,7 +79,7 @@ export function SettingsRow({
         <div
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-xl",
-            danger ? "bg-red-500/15 text-red-400" : cn(iconBg, iconColor),
+            danger ? "bg-red-500/15 text-destructive" : cn(iconBg, iconColor),
           )}
         >
           <Icon className="size-4.5" />
@@ -88,13 +90,13 @@ export function SettingsRow({
         <div
           className={cn(
             "text-sm font-medium leading-snug",
-            danger ? "text-red-400" : "text-slate-100",
+            danger ? "text-destructive" : "text-foreground",
           )}
         >
           {title}
         </div>
         {subtitle && (
-          <div className="mt-0.5 text-xs text-slate-400 leading-normal">
+          <div className="mt-0.5 text-xs text-muted-foreground leading-normal">
             {subtitle}
           </div>
         )}
@@ -103,13 +105,13 @@ export function SettingsRow({
       {children && <div className="shrink-0">{children}</div>}
 
       {value !== undefined && value !== null && (
-        <div className="text-sm font-medium text-slate-400 shrink-0">
+        <div className="text-sm font-medium text-muted-foreground shrink-0">
           {value}
         </div>
       )}
 
       {accessory === "chevron" && (
-        <ChevronRight className="size-4 shrink-0 text-slate-500" />
+        <ChevronRight className="size-4 shrink-0 text-on-surface-variant" />
       )}
     </Component>
   )
@@ -131,7 +133,7 @@ export function SettingsSegmented<T extends string>({
   return (
     <div
       className={cn(
-        "inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800/80",
+        "inline-flex rounded-xl bg-background p-1 border border-border/80",
         className,
       )}
     >
@@ -143,8 +145,8 @@ export function SettingsSegmented<T extends string>({
           className={cn(
             "rounded-lg px-3 py-1 text-xs font-semibold transition-all",
             value === opt.value
-              ? "bg-emerald-500/20 text-emerald-400 shadow-sm"
-              : "text-slate-400 hover:text-slate-200",
+              ? "bg-primary/20 text-primary shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           {opt.label}

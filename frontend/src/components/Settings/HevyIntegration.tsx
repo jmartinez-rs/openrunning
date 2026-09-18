@@ -77,10 +77,10 @@ export function HevyIntegration() {
     >
       <div className="flex items-center gap-2">
         {statusQuery.isLoading ? (
-          <Loader2 className="size-4 animate-spin text-slate-500" />
+          <Loader2 className="size-4 animate-spin text-on-surface-variant" />
         ) : connected ? (
           <>
-            <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-400">
+            <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
               Conectado
             </span>
             <Button
@@ -89,7 +89,7 @@ export function HevyIntegration() {
               size="sm"
               disabled={testMutation.isPending}
               onClick={() => testMutation.mutate()}
-              className="h-8 rounded-xl border-slate-800 text-xs text-slate-300"
+              className="h-8 rounded-xl border-border text-xs text-muted-foreground"
             >
               {testMutation.isPending && (
                 <Loader2 className="mr-1 size-3 animate-spin" />
@@ -100,7 +100,7 @@ export function HevyIntegration() {
               type="button"
               variant="ghost"
               size="sm"
-              className="h-8 rounded-xl text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              className="h-8 rounded-xl text-xs text-destructive hover:bg-red-500/10 hover:text-destructive"
               disabled={disconnectMutation.isPending}
               onClick={() => disconnectMutation.mutate()}
             >
@@ -115,7 +115,7 @@ export function HevyIntegration() {
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="hevy_..."
               autoComplete="off"
-              className="h-8 w-36 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+              className="h-8 w-36 rounded-xl border-border bg-background text-xs text-foreground"
             />
             <Button
               type="submit"

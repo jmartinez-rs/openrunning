@@ -17,7 +17,7 @@ export function ActivityMap({ encoded }: { encoded: string }) {
     }).setView(points[0], 13)
 
     L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
       {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -25,12 +25,12 @@ export function ActivityMap({ encoded }: { encoded: string }) {
       },
     ).addTo(map)
 
-    const cardioColor = "#f97316" // Orange accent matching Strava/Cardio
+    const cardioColor = "#EAFC5F" // Kinetic Volt accent
 
     L.polyline(points, {
       color: cardioColor,
       weight: 5,
-      opacity: 0.9,
+      opacity: 0.95,
       lineCap: "round",
       lineJoin: "round",
     }).addTo(map)
@@ -42,5 +42,10 @@ export function ActivityMap({ encoded }: { encoded: string }) {
     }
   }, [encoded])
 
-  return <div ref={containerRef} className="h-80 w-full rounded-2xl z-0" />
+  return (
+    <div
+      ref={containerRef}
+      className="h-80 w-full rounded-2xl z-0 overflow-hidden border border-white/5 shadow-card"
+    />
+  )
 }

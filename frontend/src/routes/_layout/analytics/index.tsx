@@ -88,7 +88,7 @@ function formatDuration(seconds: number): string {
 }
 
 /** Colores para las 5 zonas de FC (Z1 … Z5). */
-const HR_ZONE_COLORS = ["#14b8a6", "#10b981", "#f59e0b", "#f97316", "#ef4444"]
+const HR_ZONE_COLORS = ["#4d5a1a", "#6a8220", "#a9cc33", "#EAFC5F", "#EF4444"]
 
 // ---------------------------------------------------------------------------
 // Page
@@ -431,7 +431,7 @@ function RunningStats() {
             latestHrZones === null
           }
         >
-          <div className="text-slate-300">
+          <div className="text-muted-foreground">
             <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
               <PieChart>
                 <Pie
@@ -511,7 +511,7 @@ function RunningStats() {
             hrTrendData === null
           }
         >
-          <div className="text-slate-300">
+          <div className="text-muted-foreground">
             <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
               <LineChart
                 data={(hrTrendData?.labels ?? []).map((lbl, i) => ({
@@ -524,7 +524,7 @@ function RunningStats() {
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke="#1e293b"
+                  stroke="#262626"
                 />
                 <XAxis
                   dataKey="name"
@@ -582,7 +582,7 @@ function RunningStats() {
             monthlyKm.length === 0
           }
         >
-          <div className="text-slate-300">
+          <div className="text-muted-foreground">
             <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
               <BarChart
                 data={monthlyKm}
@@ -591,7 +591,7 @@ function RunningStats() {
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke="#1e293b"
+                  stroke="#262626"
                 />
                 <XAxis
                   dataKey="name"
@@ -637,7 +637,7 @@ function RunningStats() {
             monthlyKm.length === 0
           }
         >
-          <div className="text-slate-300">
+          <div className="text-muted-foreground">
             <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
               <BarChart
                 data={monthlyKm}
@@ -646,7 +646,7 @@ function RunningStats() {
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke="#1e293b"
+                  stroke="#262626"
                 />
                 <XAxis
                   dataKey="name"

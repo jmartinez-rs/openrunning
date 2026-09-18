@@ -66,8 +66,8 @@ function DesktopNav() {
             className={cn(
               "flex h-9 items-center gap-2 rounded-lg px-3 text-label-md font-semibold transition-all",
               isActive
-                ? "bg-emerald-500/15 font-bold text-emerald-400 border border-emerald-500/30"
-                : "text-slate-400 hover:bg-slate-800/60 hover:text-white",
+                ? "bg-primary/15 font-bold text-primary border border-primary/30"
+                : "text-muted-foreground hover:bg-surface-container-high/60 hover:text-foreground",
             )}
           >
             <Icon className="size-4 shrink-0" strokeWidth={2} />
@@ -94,15 +94,15 @@ function RightActions() {
       <Button
         variant="ghost"
         size="icon"
-        className="text-slate-400 hover:bg-slate-800 hover:text-white"
+        className="text-muted-foreground hover:bg-surface-container-high hover:text-foreground"
         aria-label="Sincronizar con Strava"
         disabled={syncMutation.isPending}
         onClick={() => syncMutation.mutate()}
       >
         {syncMutation.isPending ? (
-          <Loader2 className="size-5 animate-spin text-emerald-400" />
+          <Loader2 className="size-5 animate-spin text-primary" />
         ) : (
-          <RefreshCw className="size-5 text-emerald-400" />
+          <RefreshCw className="size-5 text-primary" />
         )}
       </Button>
 
@@ -111,20 +111,20 @@ function RightActions() {
           <Button
             variant="ghost"
             size="icon"
-            className="relative text-slate-400 hover:bg-slate-800 hover:text-white"
+            className="relative text-muted-foreground hover:bg-surface-container-high hover:text-foreground"
             aria-label="Notificaciones"
           >
             <Bell className="size-5" />
-            <span className="absolute right-2 top-2 size-2 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
+            <span className="absolute right-2 top-2 size-2 rounded-full bg-primary ring-2 ring-background" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
-          className="w-56 bg-slate-900 border-slate-800 text-slate-300"
+          className="w-56 bg-card border-border text-muted-foreground"
         >
           <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-slate-800" />
-          <div className="p-4 text-center text-xs text-slate-500">
+          <DropdownMenuSeparator className="bg-border" />
+          <div className="p-4 text-center text-xs text-muted-foreground">
             No tienes notificaciones recientes.
           </div>
         </DropdownMenuContent>
@@ -133,8 +133,8 @@ function RightActions() {
       {currentUser ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Avatar className="size-8 cursor-pointer ring-1 ring-emerald-500/30 transition-all hover:ring-emerald-400">
-              <AvatarFallback className="bg-slate-900 text-emerald-400 font-bold">
+            <Avatar className="size-8 cursor-pointer ring-1 ring-primary/30 transition-all hover:ring-primary">
+              <AvatarFallback className="bg-card text-primary font-bold">
                 {currentUser.full_name?.charAt(0) || (
                   <User className="size-4" />
                 )}
@@ -143,22 +143,22 @@ function RightActions() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-48 bg-slate-900 border-slate-800 text-slate-300"
+            className="w-48 bg-card border-border text-muted-foreground"
           >
-            <DropdownMenuLabel className="text-white truncate">
+            <DropdownMenuLabel className="text-foreground truncate">
               {currentUser.full_name || currentUser.email}
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-slate-800" />
+            <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuItem
-              className="cursor-pointer hover:bg-slate-800 hover:text-white focus:bg-slate-800 focus:text-white"
+              className="cursor-pointer hover:bg-surface-container-high hover:text-foreground focus:bg-surface-container-high focus:text-foreground"
               onClick={() => navigate({ to: "/settings" })}
             >
               <Settings2 className="mr-2 size-4" />
               Configuración
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-slate-800" />
+            <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuItem
-              className="cursor-pointer text-red-400 hover:bg-slate-800 hover:text-red-300 focus:bg-slate-800 focus:text-red-300"
+              className="cursor-pointer text-destructive hover:bg-surface-container-high hover:text-destructive focus:bg-surface-container-high focus:text-destructive"
               onClick={() => logout()}
             >
               Cerrar sesión
@@ -169,7 +169,7 @@ function RightActions() {
         <Button
           variant="ghost"
           size="icon"
-          className="text-slate-400 hover:bg-slate-800 hover:text-white"
+          className="text-muted-foreground hover:bg-surface-container-high hover:text-foreground"
           aria-label="Cuenta"
         >
           <User className="size-5" />
@@ -181,7 +181,7 @@ function RightActions() {
 
 export function TopNavbar() {
   return (
-    <header className="fixed top-0 right-0 left-0 z-50 flex h-16 items-center justify-between border-b border-slate-800/80 bg-slate-950/90 px-4 backdrop-blur-md md:h-16 md:px-6">
+    <header className="fixed top-0 right-0 left-0 z-50 flex h-16 items-center justify-between border-b border-border/80 bg-background/90 px-4 backdrop-blur-md md:h-16 md:px-6">
       <div className="flex items-center gap-3">
         <Logo variant="responsive" showSubtitle={false} />
       </div>

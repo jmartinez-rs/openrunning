@@ -1,12 +1,12 @@
-import React from "react";
-import { Flame, Moon, Timer, Zap, Play } from "lucide-react";
+import { Flame, Moon, Play, Timer, Zap } from "lucide-react"
+import type React from "react"
 
 interface TodayRowProps {
-  sessionTitle: string;
-  workoutType?: "easy_run" | "intervals" | "tempo" | "long_run" | "rest";
-  isCompleted?: boolean;
-  rescheduled?: boolean;
-  onAction: () => void;
+  sessionTitle: string
+  workoutType?: "easy_run" | "intervals" | "tempo" | "long_run" | "rest"
+  isCompleted?: boolean
+  rescheduled?: boolean
+  onAction: () => void
 }
 
 export const TodayRow: React.FC<TodayRowProps> = ({
@@ -16,18 +16,18 @@ export const TodayRow: React.FC<TodayRowProps> = ({
   rescheduled = false,
   onAction,
 }) => {
-  let IconComponent = Zap;
-  let iconBg = "bg-primary/20 text-primary";
+  let IconComponent = Zap
+  let iconBg = "bg-primary/20 text-primary"
 
   if (workoutType === "intervals") {
-    IconComponent = Flame;
-    iconBg = "bg-orange-500/20 text-orange-400";
+    IconComponent = Flame
+    iconBg = "bg-primary/20 text-primary"
   } else if (workoutType === "tempo") {
-    IconComponent = Timer;
-    iconBg = "bg-amber-500/20 text-amber-400";
+    IconComponent = Timer
+    iconBg = "bg-[#a9cc33]/20 text-[#a9cc33]"
   } else if (workoutType === "rest") {
-    IconComponent = Moon;
-    iconBg = "bg-slate-700/40 text-slate-400";
+    IconComponent = Moon
+    iconBg = "bg-surface-container-high/40 text-muted-foreground"
   }
 
   return (
@@ -36,7 +36,9 @@ export const TodayRow: React.FC<TodayRowProps> = ({
       className="flex items-center justify-between p-3.5 mt-3 bg-card/90 hover:bg-surface border border-white/5 rounded-xl transition-all cursor-pointer group shadow-card backdrop-blur-md"
     >
       <div className="flex items-center gap-3 min-w-0">
-        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
+        <div
+          className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}
+        >
           <IconComponent className="w-5 h-5" />
         </div>
         <div className="min-w-0">
@@ -45,7 +47,11 @@ export const TodayRow: React.FC<TodayRowProps> = ({
           </div>
           <div className="text-sm font-bold text-white truncate">
             {sessionTitle}
-            {rescheduled && <span className="text-xs text-amber-400 font-normal ml-1">· repogramado</span>}
+            {rescheduled && (
+              <span className="text-xs text-primary font-normal ml-1">
+                · repogramado
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -56,7 +62,9 @@ export const TodayRow: React.FC<TodayRowProps> = ({
             Cumplida ✓
           </span>
         ) : workoutType === "rest" ? (
-          <span className="text-xs text-muted-foreground font-medium">Descanso</span>
+          <span className="text-xs text-muted-foreground font-medium">
+            Descanso
+          </span>
         ) : (
           <span className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary text-black font-bold hover:bg-primary/90 active:scale-95 transition-all shadow-glow">
             <Play className="w-3.5 h-3.5 fill-current" /> Ver Sesión
@@ -64,5 +72,5 @@ export const TodayRow: React.FC<TodayRowProps> = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}

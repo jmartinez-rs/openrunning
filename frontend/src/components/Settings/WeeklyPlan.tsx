@@ -189,10 +189,7 @@ export function WeeklyPlan() {
     return (
       <div className="space-y-2">
         {Array.from({ length: 7 }).map((_, index) => (
-          <Skeleton
-            key={index}
-            className="h-14 w-full rounded-xl bg-slate-900/60"
-          />
+          <Skeleton key={index} className="h-14 w-full rounded-xl bg-card/60" />
         ))}
       </div>
     )
@@ -204,8 +201,8 @@ export function WeeklyPlan() {
         <SettingsRow
           key={day.weekday}
           icon={CalendarDays}
-          iconBg="bg-slate-800/80"
-          iconColor="text-slate-300"
+          iconBg="bg-surface-container-high/80"
+          iconColor="text-muted-foreground"
           title={WEEKDAY_LABELS[day.weekday - 1]}
           subtitle={
             day.kind === "rest"
@@ -223,7 +220,7 @@ export function WeeklyPlan() {
             >
               <SelectTrigger
                 aria-label="Tipo de entrenamiento"
-                className="h-8 w-28 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+                className="h-8 w-28 rounded-xl border-border bg-background text-xs text-foreground"
               >
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
@@ -245,7 +242,7 @@ export function WeeklyPlan() {
               >
                 <SelectTrigger
                   aria-label="Rutina de Hevy"
-                  className="h-8 w-32 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+                  className="h-8 w-32 rounded-xl border-border bg-background text-xs text-foreground"
                 >
                   <SelectValue placeholder="Rutina" />
                 </SelectTrigger>
@@ -267,7 +264,7 @@ export function WeeklyPlan() {
                   handleLabelChange(day.weekday, event.target.value)
                 }
                 placeholder="Detalle..."
-                className="h-8 w-32 rounded-xl border-slate-800 bg-slate-950 text-xs text-slate-200"
+                className="h-8 w-32 rounded-xl border-border bg-background text-xs text-foreground"
                 aria-label="Detalle de la sesión"
               />
             )}
@@ -281,7 +278,7 @@ export function WeeklyPlan() {
           size="sm"
           disabled={mutation.isPending}
           onClick={() => mutation.mutate()}
-          className="rounded-xl bg-emerald-500 text-slate-950 font-semibold text-xs hover:bg-emerald-400"
+          className="rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90"
         >
           {mutation.isPending && (
             <Loader2 className="mr-1.5 size-3.5 animate-spin" />

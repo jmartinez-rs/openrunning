@@ -66,8 +66,8 @@ function StatChip({
   className?: string
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-800/60 px-3.5 py-2 transition-colors">
-      {Icon && <Icon className="size-4 text-slate-400 shrink-0" />}
+    <div className="flex items-center gap-2 rounded-xl border border-border bg-surface-container-high/60 px-3.5 py-2 transition-colors">
+      {Icon && <Icon className="size-4 text-muted-foreground shrink-0" />}
       <div className="flex flex-col">
         <span
           className={cn(
@@ -77,7 +77,7 @@ function StatChip({
         >
           {value}
         </span>
-        <span className="text-[11px] text-slate-400 leading-tight font-medium">
+        <span className="text-[11px] text-muted-foreground leading-tight font-medium">
           {label}
         </span>
       </div>
@@ -352,19 +352,19 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                   <SelectContent>
                     <SelectItem
                       value="active"
-                      className="font-bold text-emerald-600 dark:text-emerald-400"
+                      className="font-bold text-primary"
                     >
                       🟢 Activo (En curso)
                     </SelectItem>
                     <SelectItem
                       value="planned"
-                      className="font-bold text-amber-600 dark:text-amber-400"
+                      className="font-bold text-primary"
                     >
                       ⏸️ Pausado / Planificado
                     </SelectItem>
                     <SelectItem
                       value="completed"
-                      className="font-bold text-sky-600 dark:text-sky-400"
+                      className="font-bold text-primary"
                     >
                       🏁 Finalizado (Concluido)
                     </SelectItem>
@@ -412,28 +412,28 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
       </div>
 
       {/* Progress & Target Time Hero Card */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-800 pb-4">
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card/80 p-5 shadow-card">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
           {/* Progress bar */}
           <div className="flex flex-col gap-1.5 flex-1 max-w-md">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-400">
+              <span className="font-semibold text-muted-foreground">
                 Progreso General
               </span>
-              <span className="font-bold text-emerald-400">
+              <span className="font-bold text-primary">
                 {progress.percent}% completado
               </span>
             </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-container-high">
               <div className="flex h-full">
                 <div
-                  className="h-full rounded-l-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-500"
+                  className="h-full rounded-l-full bg-gradient-to-r from-primary/70 to-primary transition-all duration-500"
                   style={{
                     width: `${(progress.completed / (progress.total || 1)) * 100}%`,
                   }}
                 />
                 <div
-                  className="h-full bg-red-500/70 transition-all duration-500"
+                  className="h-full bg-destructive/70 transition-all duration-500"
                   style={{
                     width: `${(progress.missed / (progress.total || 1)) * 100}%`,
                   }}
@@ -446,7 +446,7 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
           {(plan.target_time_seconds || plan.target_pace_seconds_per_km) && (
             <div className="flex flex-wrap items-center gap-3">
               {plan.target_time_seconds && (
-                <div className="flex items-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-1.5 text-emerald-400">
+                <div className="flex items-center gap-2 rounded-xl bg-primary/15 border border-primary/30 px-3.5 py-1.5 text-primary">
                   <Timer className="size-4 shrink-0" />
                   <div className="flex flex-col">
                     <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">
@@ -459,10 +459,10 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                 </div>
               )}
               {plan.target_pace_seconds_per_km && (
-                <div className="flex items-center gap-2 rounded-xl bg-slate-800 border border-slate-700 px-3.5 py-1.5 text-white">
-                  <TrendingUp className="size-4 shrink-0 text-teal-400" />
+                <div className="flex items-center gap-2 rounded-xl bg-surface-container-high border border-border px-3.5 py-1.5 text-white">
+                  <TrendingUp className="size-4 shrink-0 text-primary" />
                   <div className="flex flex-col">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
                       Ritmo Objetivo
                     </span>
                     <span className="text-sm font-extrabold leading-tight">
@@ -491,17 +491,17 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
           <StatChip
             label="Completadas"
             value={progress.completed}
-            className="text-emerald-400"
+            className="text-primary"
           />
           <StatChip
             label="Perdidas"
             value={progress.missed}
-            className="text-red-400"
+            className="text-destructive"
           />
           <StatChip
             label="Pendientes"
             value={progress.planned}
-            className="text-slate-400"
+            className="text-muted-foreground"
           />
         </div>
       </div>
@@ -522,7 +522,7 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
           return (
             <section key={phase.id} className="flex flex-col gap-3">
               {/* Phase Header */}
-              <div className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/90 p-3.5">
+              <div className="flex items-start gap-3 rounded-xl border border-border bg-card/90 p-3.5">
                 <div
                   className={cn(
                     "w-1.5 self-stretch rounded-full",
@@ -545,7 +545,7 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                     </Badge>
                   </div>
                   {phase.objective && (
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {phase.objective}
                     </p>
                   )}
@@ -563,41 +563,41 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                     <div
                       key={week.id}
                       className={cn(
-                        "rounded-xl border border-slate-800 bg-slate-900/80 transition-all duration-200 overflow-hidden shadow-md",
+                        "rounded-xl border border-border bg-card/80 transition-all duration-200 overflow-hidden shadow-md",
                         isCurrentWeek &&
-                          "ring-2 ring-emerald-500 border-emerald-500/50 shadow-lg",
+                          "ring-2 ring-primary border-primary/50 shadow-card",
                       )}
                     >
                       {/* Week Accordion Header */}
                       <button
                         type="button"
                         onClick={() => toggleWeek(week.id)}
-                        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-800/60"
+                        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-container-high/60"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {isCollapsed ? (
-                            <ChevronRight className="size-4 shrink-0 text-slate-400" />
+                            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                           ) : (
-                            <ChevronDown className="size-4 shrink-0 text-slate-400" />
+                            <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                           )}
                           <div className="flex flex-wrap items-center gap-2 min-w-0">
                             <span className="font-bold text-sm text-white">
                               Semana {week.number}
                             </span>
                             {week.name && (
-                              <span className="truncate text-xs text-slate-400 font-medium">
+                              <span className="truncate text-xs text-muted-foreground font-medium">
                                 · {week.name}
                               </span>
                             )}
                             {isCurrentWeek && (
-                              <Badge className="bg-emerald-500 text-slate-950 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md">
+                              <Badge className="bg-primary text-primary-foreground text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md">
                                 Semana Actual
                               </Badge>
                             )}
                           </div>
                         </div>
 
-                        <span className="shrink-0 text-xs font-semibold text-slate-400">
+                        <span className="shrink-0 text-xs font-semibold text-muted-foreground">
                           {formatDateRange(week.start_date, week.end_date)}
                           {workouts.length > 0 &&
                             ` · ${workouts.length} sesiones`}
@@ -606,15 +606,15 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
 
                       {/* Accordion Content */}
                       {!isCollapsed && (
-                        <div className="flex flex-col gap-3 border-t border-slate-800 p-4 bg-slate-950/40">
+                        <div className="flex flex-col gap-3 border-t border-border p-4 bg-surface-container-lowest/40">
                           {week.objective && (
-                            <p className="text-xs text-slate-400 font-medium italic">
+                            <p className="text-xs text-muted-foreground font-medium italic">
                               Objetivo: {week.objective}
                             </p>
                           )}
 
                           {workouts.length === 0 ? (
-                            <p className="text-xs text-slate-400 py-2">
+                            <p className="text-xs text-muted-foreground py-2">
                               Sin sesiones en esta semana.
                             </p>
                           ) : (

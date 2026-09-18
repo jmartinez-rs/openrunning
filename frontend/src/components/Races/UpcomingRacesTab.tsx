@@ -47,17 +47,17 @@ export function UpcomingRacesTab({
             ))}
           </div>
         ) : (
-          <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-900/50 p-8 text-center flex flex-col items-center justify-center min-h-[220px]">
+          <div className="rounded-3xl border border-dashed border-border bg-card/50 p-8 text-center flex flex-col items-center justify-center min-h-[220px]">
             <h3 className="text-lg font-bold text-white mb-2">
               Sin objetivo principal
             </h3>
-            <p className="text-sm text-slate-400 max-w-sm mb-6">
+            <p className="text-sm text-muted-foreground max-w-sm mb-6">
               Registra tu próxima carrera objetivo (Prioridad A) para visualizar
               la cuenta regresiva y estrategia.
             </p>
             <button
               onClick={onOpenForm}
-              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-card shadow-primary/20 hover:bg-primary/90 transition-colors"
             >
               <Plus className="size-4" /> Añadir Carrera Objetivo
             </button>
@@ -77,8 +77,8 @@ export function UpcomingRacesTab({
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-6 text-center">
-            <p className="text-sm text-slate-500">
+          <div className="rounded-2xl border border-dashed border-border bg-card/30 p-6 text-center">
+            <p className="text-sm text-on-surface-variant">
               No tienes carreras preparatorias (B/C) programadas.
             </p>
           </div>

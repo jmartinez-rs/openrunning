@@ -248,7 +248,7 @@ function RaceDetail() {
                 </p>
               </div>
             )}
-            <div className="absolute bottom-3 right-3 flex items-center gap-4 rounded-lg border border-border/50 bg-card/80 px-3 py-2 shadow-sm backdrop-blur-sm">
+            <div className="absolute bottom-3 right-3 flex items-center gap-4 rounded-lg border border-white/5 bg-card/80 px-3 py-2 shadow-card backdrop-blur-md">
               <div className="flex flex-col items-center">
                 <span className="text-label-sm text-on-surface-variant">
                   Dist.

@@ -7,7 +7,7 @@ function Stat({
   icon,
   label,
   value,
-  accentColor = "text-emerald-400",
+  accentColor = "text-primary",
 }: {
   icon: React.ReactNode
   label: string
@@ -15,12 +15,12 @@ function Stat({
   accentColor?: string
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-xl">
-      <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+    <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-card">
+      <div className="flex size-10 items-center justify-center rounded-xl bg-primary/15 text-primary border border-primary/30">
         {icon}
       </div>
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
           {label}
         </p>
         <p className={`text-base font-extrabold ${accentColor}`}>{value}</p>
@@ -42,19 +42,19 @@ export function ShoeStats({ stats }: { stats: ShoeStatsPublic }) {
         icon={<Activity className="size-5" />}
         label="Sesiones Completadas"
         value={String(stats.sessions ?? 0)}
-        accentColor="text-emerald-400"
+        accentColor="text-primary"
       />
       <Stat
         icon={<Timer className="size-5" />}
         label="Ritmo Promedio"
         value={formatPace(stats.avg_pace_seconds_per_km)}
-        accentColor="text-teal-400"
+        accentColor="text-primary"
       />
       <Stat
         icon={<Gauge className="size-5" />}
         label="FC Promedio"
         value={stats.avg_hr != null ? `${Math.round(stats.avg_hr)} bpm` : "—"}
-        accentColor="text-amber-400"
+        accentColor="text-primary"
       />
     </div>
   )

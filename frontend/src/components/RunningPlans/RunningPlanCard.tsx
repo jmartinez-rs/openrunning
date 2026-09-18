@@ -26,19 +26,19 @@ export function RunningPlanCard({
 
   return (
     <Link to="/routines/run/$planId" params={{ planId: plan.id }}>
-      <div className="group/card relative flex flex-col gap-3.5 rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl transition-all duration-200 hover:border-emerald-500/40 hover:bg-slate-900/90 cursor-pointer">
+      <div className="group/card relative flex flex-col gap-3.5 rounded-2xl border border-border bg-card p-5 shadow-card transition-all duration-200 hover:border-primary/40 hover:bg-card/90 cursor-pointer">
         {/* Header row */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary border border-primary/30">
               <Footprints className="size-5" />
             </div>
             <div className="min-w-0">
-              <h3 className="truncate text-lg font-bold text-white group-hover/card:text-emerald-300 transition-colors">
+              <h3 className="truncate text-lg font-bold text-white group-hover/card:text-primary transition-colors">
                 {plan.name}
               </h3>
               {plan.goal && (
-                <p className="mt-0.5 line-clamp-1 text-xs text-slate-400 font-medium">
+                <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground font-medium">
                   {plan.goal}
                 </p>
               )}
@@ -48,7 +48,7 @@ export function RunningPlanCard({
             className={cn(
               "inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-bold border",
               status.className ||
-                "bg-slate-800 text-slate-300 border-slate-700",
+                "bg-surface-container-high text-muted-foreground border-border",
             )}
           >
             {status.label}
@@ -58,10 +58,10 @@ export function RunningPlanCard({
         {/* Progress bar (only for plans with sessions) */}
         {progress.total > 0 && (
           <div className="flex flex-col gap-1.5">
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
               <div className="flex h-full">
                 <div
-                  className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-primary/70 to-primary transition-all duration-500"
                   style={{
                     width: `${(progress.completed / progress.total) * 100}%`,
                     borderRadius:
@@ -73,7 +73,7 @@ export function RunningPlanCard({
                 />
                 {progress.missed > 0 && (
                   <div
-                    className="h-full bg-red-500/70 transition-all duration-500"
+                    className="h-full bg-destructive/70 transition-all duration-500"
                     style={{
                       width: `${(progress.missed / progress.total) * 100}%`,
                     }}
@@ -81,11 +81,11 @@ export function RunningPlanCard({
                 )}
               </div>
             </div>
-            <div className="flex items-center justify-between text-xs text-slate-400">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
                 {progress.completed}/{progress.total} sesiones
               </span>
-              <span className="font-bold text-emerald-400">
+              <span className="font-bold text-primary">
                 {progress.percent}%
               </span>
             </div>
@@ -93,24 +93,24 @@ export function RunningPlanCard({
         )}
 
         {/* Stats row */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400">
-          <span className="flex items-center gap-1 text-slate-300 font-semibold">
-            <TrendingUp className="size-3.5 text-slate-400" />
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1 text-muted-foreground font-semibold">
+            <TrendingUp className="size-3.5 text-muted-foreground" />
             {plan.weeks} {plan.weeks === 1 ? "semana" : "semanas"}
           </span>
           <span>·</span>
-          <span className="font-extrabold text-emerald-400">
+          <span className="font-extrabold text-primary">
             {plan.planned_km} km
           </span>
           <span>·</span>
           <span className="flex items-center gap-1">
-            <MapPin className="size-3.5 text-slate-500" />
+            <MapPin className="size-3.5 text-on-surface-variant" />
             {formatDateRange(plan.start_date, plan.end_date)}
           </span>
           {progress.completed > 0 && (
             <>
               <span>·</span>
-              <span className="font-bold text-emerald-400">
+              <span className="font-bold text-primary">
                 {progress.completed} completadas
               </span>
             </>
@@ -118,7 +118,7 @@ export function RunningPlanCard({
           {progress.missed > 0 && (
             <>
               <span>·</span>
-              <span className="font-bold text-red-400">
+              <span className="font-bold text-destructive">
                 {progress.missed} perdidas
               </span>
             </>
@@ -134,7 +134,7 @@ export function RunningPlanCard({
                 variant="ghost"
                 size="icon-sm"
                 aria-label="Editar plan"
-                className="size-8 rounded-xl bg-slate-800/90 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 shadow-md cursor-pointer"
+                className="size-8 rounded-xl bg-surface-container-high/90 border border-border text-muted-foreground hover:text-white hover:bg-surface-container-highest shadow-md cursor-pointer"
                 onClick={(event) => {
                   event.preventDefault()
                   event.stopPropagation()
@@ -150,7 +150,7 @@ export function RunningPlanCard({
                 variant="ghost"
                 size="icon-sm"
                 aria-label="Eliminar plan"
-                className="size-8 rounded-xl bg-slate-800/90 border border-slate-700 text-red-400 hover:text-red-300 hover:bg-slate-700 shadow-md cursor-pointer"
+                className="size-8 rounded-xl bg-surface-container-high/90 border border-border text-destructive hover:text-destructive hover:bg-surface-container-highest shadow-md cursor-pointer"
                 disabled={deleting}
                 onClick={(event) => {
                   event.preventDefault()

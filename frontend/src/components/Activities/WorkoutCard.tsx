@@ -7,12 +7,12 @@ interface WorkoutCardProps {
 }
 
 export function WorkoutCard({ activity, isActive = false }: WorkoutCardProps) {
-  // Use emerald-400 as the "neon" accent color to match OpenRunning's palette
-  const accentColor = isActive ? "text-emerald-400" : "text-slate-300"
-  const borderColor = isActive ? "border-emerald-400" : "border-slate-800"
+  // Use primary as the "neon" accent color to match Kinetic Volt's palette
+  const accentColor = isActive ? "text-primary" : "text-muted-foreground"
+  const borderColor = isActive ? "border-primary" : "border-border"
   const badgeBg = isActive
-    ? "bg-emerald-400 text-slate-950"
-    : "bg-transparent border border-slate-700 text-slate-400"
+    ? "bg-primary text-primary-foreground"
+    : "bg-transparent border border-border text-muted-foreground"
 
   // Format Distance
   const distance = activity.cardio?.distance_meters
@@ -41,7 +41,7 @@ export function WorkoutCard({ activity, isActive = false }: WorkoutCardProps) {
 
   return (
     <div
-      className={`relative flex flex-col items-center justify-center min-w-[140px] px-4 py-6 rounded-[2rem] border-2 bg-slate-950 transition-all z-10 ${borderColor}`}
+      className={`relative flex flex-col items-center justify-center min-w-[140px] px-4 py-6 rounded-[2rem] border-2 bg-background transition-all z-10 ${borderColor}`}
     >
       {/* Icon at top */}
       <div className={`mb-3 ${accentColor}`}>
