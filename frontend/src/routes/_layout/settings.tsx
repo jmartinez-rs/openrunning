@@ -36,7 +36,7 @@ function UserSettings() {
   }
 
   return (
-    <div className="col-span-12 max-w-4xl mx-auto w-full space-y-8 pb-12">
+    <div className="col-span-12 flex flex-col gap-6 pb-12">
       {/* Header section — OpenGym style */}
       <div className="border-b border-slate-800/80 pb-4">
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">

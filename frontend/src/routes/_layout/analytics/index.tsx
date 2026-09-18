@@ -6,7 +6,7 @@ import {
   Flame,
   MapPin,
   Timer,
-  TrendingUp,
+  Trophy,
 } from "lucide-react"
 import { useMemo } from "react"
 import {
@@ -25,7 +25,7 @@ import {
   YAxis,
 } from "recharts"
 
-import { ActivitiesService, AnalyticsService } from "@/client"
+import { ActivitiesService, AnalyticsService, RacesService } from "@/client"
 import { formatPace } from "@/components/Activities/activity-utils"
 import { ChartCard } from "@/components/Analytics/ChartCard"
 import { RunningHeatmap } from "@/components/Analytics/RunningHeatmap"
@@ -143,11 +143,13 @@ function RunningStats() {
   /** Recent activities (for the heatmap + list) */
   const activitiesQuery = useQuery({
     queryKey: ["stats-recent-activities"],
-    queryFn: () =>
-      ActivitiesService.readActivities({
-        sourceType: "strava",
-        limit: 500,
-      }),
+    queryFn: () => ActivitiesService.readActivities({ limit: 100 }),
+  })
+
+  /** Races (for the Carreras tile) */
+  const racesQuery = useQuery({
+    queryKey: ["stats-races"],
+    queryFn: () => RacesService.readRaces({ limit: 100 }),
   })
 
   /** Cardio analytics for 30d (for pace tile) */
@@ -166,10 +168,36 @@ function RunningStats() {
 
   // ── Derived data ──
 
-  // Stat tiles
-  const allActivities = activitiesQuery.data?.data ?? []
-  const totalRuns = allActivities.length
+  const rawActivities = activitiesQuery.data?.data ?? []
+  
+  const allRaces = racesQuery.data?.data ?? []
+  const pastRaces = allRaces.filter((r) => new Date(r.date) <= new Date())
+  const pastRacesCount = pastRaces.length
 
+  // Add past races that aren't linked to an activity as manual activities
+  const unlinkedRacesAsActivities = pastRaces
+    .filter((r) => !r.activity_id)
+    .map((r) => ({
+      id: r.id,
+      timestamp: r.date,
+      name: r.event_name,
+      source_type: "manual_race",
+      source_id: `race-${r.id}`,
+      user_id: r.user_id,
+      created_at: r.created_at,
+      duration_seconds: r.official_time_seconds || r.chip_time_seconds || (r as any).target_time_seconds || 0,
+      cardio: {
+        distance_meters: r.distance_km * 1000,
+        avg_pace_seconds_per_km: r.official_pace_seconds_per_km || (r as any).target_pace_seconds_per_km || 0,
+      } as any,
+    }))
+  
+  const allActivities = [...rawActivities, ...unlinkedRacesAsActivities].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  )
+
+  const totalActivities = allActivities.length
+  
   const thisMonthKey = new Date().toISOString().slice(0, 7)
   const thisMonthRuns = allActivities.filter(
     (a) => a.timestamp?.slice(0, 7) === thisMonthKey,
@@ -203,16 +231,31 @@ function RunningStats() {
       }))
   }, [allActivities])
 
-  // Monthly distance chart
-  const monthlyKm = useMemo(
-    () =>
-      (cardioMonthlyQuery.data ?? []).map((m) => ({
-        name: formatMonthLabel(m.month as string),
-        km: Number(m.distance_meters ?? 0) / 1000,
-        sessions: Number(m.sessions ?? 0),
-      })),
-    [cardioMonthlyQuery.data],
-  )
+  // Monthly distance chart (frontend override to include manual races)
+  const monthlyKm = useMemo(() => {
+    // Start with backend data
+    const backendData = [...(cardioMonthlyQuery.data ?? [])].map((m) => ({
+      name: formatMonthLabel(m.month as string),
+      monthKey: m.month as string,
+      km: Number(m.distance_meters ?? 0) / 1000,
+      sessions: Number(m.sessions ?? 0),
+    }))
+    
+    // Add unlinked races to the monthly aggregations
+    for (const r of unlinkedRacesAsActivities) {
+      if (!r.cardio?.distance_meters) continue
+      const monthKey = r.timestamp.slice(0, 7)
+      let bucket = backendData.find(b => b.monthKey === monthKey)
+      if (!bucket) {
+        bucket = { name: formatMonthLabel(monthKey), monthKey, km: 0, sessions: 0 }
+        backendData.push(bucket)
+      }
+      bucket.km += r.cardio.distance_meters / 1000
+      bucket.sessions += 1
+    }
+    
+    return backendData.sort((a, b) => a.monthKey.localeCompare(b.monthKey))
+  }, [cardioMonthlyQuery.data, unlinkedRacesAsActivities])
 
   // Best paces sorted
   const paces = useMemo(() => {
@@ -262,7 +305,7 @@ function RunningStats() {
   // ── Render ──
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-20 px-2 sm:px-4">
+    <div className="col-span-12 flex flex-col gap-6 pb-20">
       {/* ── Header ── */}
       <div className="flex items-center justify-between pt-2">
         <div>
@@ -285,13 +328,13 @@ function RunningStats() {
       {/* ── Stat Tiles (2×2 grid) ── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
-          icon={<TrendingUp className="size-4" />}
+          icon={<Trophy className="size-4" />}
           label="Carreras"
-          value={totalRuns}
+          value={pastRacesCount}
         />
         <StatTile
           icon={<CalendarDays className="size-4" />}
-          label="Este mes"
+          label="Actividades en el mes"
           value={thisMonthRuns}
         />
         <StatTile
@@ -641,7 +684,7 @@ function RunningStats() {
               className="text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl"
               onClick={() => navigate({ to: "/activities" })}
             >
-              Todas ({totalRuns})
+              Todas ({totalActivities})
               <ChevronRight className="ml-1 size-4" />
             </Button>
           </div>

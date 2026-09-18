@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowLeft, Dumbbell, Footprints } from "lucide-react"
+import { ArrowLeft, Check, Dumbbell, Footprints, Calendar, Clock, Trophy } from "lucide-react"
+import { useState } from "react"
 
 import { ActivitiesService, AnalyticsService, ShoesService } from "@/client"
 import { ActivitySummary } from "@/components/Activities/ActivitySummary"
@@ -15,10 +16,8 @@ import {
   type ExerciseRecord,
   StrengthDetail,
 } from "@/components/Activities/StrengthDetail"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { RaceFormDialog } from "@/components/Races/RaceFormDialog"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
@@ -59,42 +58,54 @@ function ShoeSelector({
 
   if (shoesQuery.isLoading) {
     return (
-      <div className="flex flex-col gap-1.5">
-        <Label>Calzado</Label>
-        <select
-          disabled
-          className="rounded-md border bg-background px-3 py-2 text-sm"
-        >
-          <option>Cargando zapatillas…</option>
-        </select>
+      <div className="flex items-center justify-between gap-3 p-3.5 bg-slate-900/80 border border-slate-800 rounded-2xl">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-slate-800 text-slate-400">
+            <Footprints className="w-4 h-4" />
+          </div>
+          <span className="text-xs font-semibold text-slate-400">Cargando zapatillas...</span>
+        </div>
       </div>
     )
   }
 
   if (shoes.length === 0) {
     return (
-      <div className="flex flex-col gap-1.5">
-        <Label>Calzado</Label>
-        <p className="text-body-md text-on-surface-variant">
-          Creá una zapatilla para asignarla a tus sesiones{" "}
-          <Link to="/shoes" className="text-primary underline">
-            acá
-          </Link>
-        </p>
+      <div className="flex items-center justify-between gap-3 p-3.5 bg-slate-900/80 border border-slate-800 rounded-2xl">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-orange-500/15 text-orange-400">
+            <Footprints className="w-4 h-4" />
+          </div>
+          <span className="text-xs font-medium text-slate-400">
+            Sin calzado disponible.{" "}
+            <Link to="/shoes" className="text-orange-400 font-semibold hover:underline">
+              Crear calzado
+            </Link>
+          </span>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label>Calzado</Label>
+    <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-slate-900/80 border border-slate-800 rounded-2xl">
+      <div className="flex items-center gap-2.5">
+        <div className="p-2 rounded-xl bg-orange-500/15 text-orange-400">
+          <Footprints className="w-4 h-4" />
+        </div>
+        <div>
+          <p className="text-xs font-bold text-white tracking-tight">Calzado de la sesión</p>
+          <p className="text-[11px] font-medium text-slate-400">Asigná las zapatillas usadas</p>
+        </div>
+      </div>
+
       <select
-        className="rounded-md border bg-background px-3 py-2 text-sm"
+        className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs font-semibold focus:outline-none focus:border-orange-500/50 cursor-pointer disabled:opacity-50 transition-colors"
         value={shoeId ?? ""}
         disabled={assignMutation.isPending}
         onChange={(e) => assignMutation.mutate(e.target.value)}
       >
-        <option value="">Sin calzado</option>
+        <option value="">Sin calzado asignado</option>
         {shoes.map((shoe) => (
           <option key={shoe.id} value={shoe.id}>
             {shoe.name}
@@ -123,6 +134,7 @@ function hasCardioAside(cardio: {
 
 function ActivityDetail() {
   const { activityId } = Route.useParams()
+  const [formOpen, setFormOpen] = useState(false)
 
   const query = useQuery({
     queryKey: ["activity", activityId],
@@ -141,27 +153,29 @@ function ActivityDetail() {
 
   if (query.isLoading) {
     return (
-      <div className="col-span-12 flex flex-col gap-4">
-        <Skeleton className="h-8 w-40 rounded-lg" />
-        <Skeleton className="h-80 w-full rounded-2xl" />
+      <div className="col-span-12 flex flex-col gap-6 pb-20">
+        <Skeleton className="h-10 w-48 rounded-xl bg-slate-800" />
+        <Skeleton className="h-96 w-full rounded-2xl bg-slate-800" />
       </div>
     )
   }
 
   if (query.isError || !query.data) {
     return (
-      <div className="col-span-12 flex flex-col items-center gap-4 py-16 text-center">
-        <h3 className="text-title-lg text-primary">
-          No se pudo cargar la actividad
-        </h3>
-        <p className="text-body-md text-on-surface-variant">
-          La actividad no existe o hubo un error al cargarla.
+      <div className="col-span-12 flex flex-col items-center justify-center gap-4 py-20 text-center">
+        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400">
+          <Footprints className="w-8 h-8 text-slate-500" />
+        </div>
+        <h3 className="text-xl font-bold text-white">No se pudo cargar la actividad</h3>
+        <p className="text-xs text-slate-400 max-w-sm">
+          La actividad no existe o hubo un error al obtener la información desde el servidor.
         </p>
-        <Button type="button" variant="outline" asChild className="rounded-lg">
-          <Link to="/activities">
-            <ArrowLeft className="mr-2 size-4" /> Volver a actividades
-          </Link>
-        </Button>
+        <Link
+          to="/activities"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Volver a actividades
+        </Link>
       </div>
     )
   }
@@ -175,83 +189,97 @@ function ActivityDetail() {
     isStrava && Boolean(activity.cardio) && hasCardioAside(activity.cardio!)
 
   return (
-    <div className="col-span-12 flex flex-col gap-6">
-      <div className="flex items-center gap-3">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          asChild
-          className="rounded-lg"
-        >
-          <Link to="/activities">
-            <ArrowLeft className="size-5" />
+    <div className="col-span-12 flex flex-col gap-6 pb-20">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+        <div className="flex items-start sm:items-center gap-3">
+          <Link
+            to="/activities"
+            className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors shrink-0"
+            aria-label="Volver"
+          >
+            <ArrowLeft className="w-5 h-5" />
           </Link>
-        </Button>
-        <div>
-          <h1 className="text-headline-lg text-primary">
-            {activity.name || "Actividad"}
-          </h1>
-          <p className="text-body-md text-on-surface-variant">
-            {formatDate(activity.timestamp)} · {formatTime(activity.timestamp)}{" "}
-            · {formatDuration(activity.duration_seconds)}
-          </p>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                {activity.name || (isStrength ? "Sesión de fuerza" : "Sesión cardio")}
+              </h1>
+              <span
+                className={
+                  isStrength
+                    ? "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-bold"
+                    : "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold"
+                }
+              >
+                {isStrength ? (
+                  <>
+                    <Dumbbell className="w-3.5 h-3.5" /> Hevy
+                  </>
+                ) : (
+                  <>
+                    <Footprints className="w-3.5 h-3.5" /> Strava
+                  </>
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-xs font-medium text-slate-400 flex-wrap">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                {formatDate(activity.timestamp)} · {formatTime(activity.timestamp)}
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                {formatDuration(activity.duration_seconds)}
+              </span>
+              <span>•</span>
+              <span className="inline-flex items-center gap-1 text-emerald-400">
+                <Check className="w-3.5 h-3.5" /> Sincronizado
+              </span>
+            </div>
+          </div>
         </div>
+
+        {isStrava && (
+          <button
+            onClick={() => setFormOpen(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors text-xs font-bold w-full sm:w-auto"
+          >
+            <Trophy className="w-4 h-4 text-orange-400" /> Marcar como carrera
+          </button>
+        )}
       </div>
 
+      {/* Main Grid Content */}
       <div
         className={
           hasStrengthSummary || hasCardioSummary
-            ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
-            : "flex flex-col gap-6"
+            ? "grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]"
+            : "flex flex-col gap-5"
         }
       >
-        <div className="flex flex-col gap-6">
-          <Card className="rounded-2xl shadow-card dark:border dark:border-border/50">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-title-lg text-primary">
-                  {isStrength ? (
-                    <Dumbbell className="size-5 text-domain-strength" />
-                  ) : (
-                    <Footprints className="size-5 text-domain-cardio" />
-                  )}
-                  {isStrength ? "Sesión de fuerza" : "Sesión cardio"}
-                </CardTitle>
-                <span
-                  className={
-                    isStrength
-                      ? "inline-flex items-center gap-1 rounded bg-domain-strength/10 px-2 py-0.5 text-label-lg text-domain-strength"
-                      : "inline-flex items-center gap-1 rounded bg-domain-cardio/10 px-2 py-0.5 text-label-lg text-domain-cardio"
-                  }
-                >
-                  {isStrength ? "Hevy" : "Strava"}
-                </span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {activity.cardio ? (
-                <div className="flex flex-col gap-5">
-                  {isStrava ? (
-                    <ShoeSelector
-                      activityId={activity.id}
-                      shoeId={activity.cardio.shoe_id}
-                    />
-                  ) : null}
-                  <CardioDetail cardio={activity.cardio} />
-                </div>
-              ) : activity.strength ? (
-                <StrengthDetail
-                  strength={activity.strength}
-                  records={records}
+        <div className="flex flex-col gap-5">
+          {activity.cardio ? (
+            <div className="flex flex-col gap-5">
+              {isStrava ? (
+                <ShoeSelector
+                  activityId={activity.id}
+                  shoeId={activity.cardio.shoe_id}
                 />
-              ) : (
-                <p className="text-body-md text-on-surface-variant">
-                  Sin métricas cargadas.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+              ) : null}
+              <CardioDetail cardio={activity.cardio} />
+            </div>
+          ) : activity.strength ? (
+            <StrengthDetail
+              strength={activity.strength}
+              records={records}
+            />
+          ) : (
+            <div className="p-8 bg-slate-900/80 border border-slate-800 rounded-2xl text-center text-slate-400 text-xs font-medium">
+              Sin métricas cargadas para esta sesión.
+            </div>
+          )}
         </div>
 
         {hasStrengthSummary ? (
@@ -267,6 +295,13 @@ function ActivityDetail() {
           </aside>
         ) : null}
       </div>
+
+      <RaceFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        defaultActivityId={activityId}
+      />
     </div>
   )
 }
+

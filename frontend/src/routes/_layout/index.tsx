@@ -9,6 +9,7 @@ import { WeekStrip, DayStatus } from "@/components/Dashboard/WeekStrip";
 import { TodayRow } from "@/components/Dashboard/TodayRow";
 import { StravaSyncBar } from "@/components/Dashboard/StravaSyncBar";
 import { TargetRaceCard } from "@/components/Dashboard/TargetRaceCard";
+import { StreakCard } from "@/components/Dashboard/StreakCard";
 import { VolumeCard } from "@/components/Dashboard/VolumeCard";
 import { CoachCard } from "@/components/Dashboard/CoachCard";
 import { ManualRunSheet } from "@/components/Sheets/ManualRunSheet";
@@ -111,7 +112,15 @@ function OpenRunningDashboard() {
 
   const kpis = dashboard?.kpis;
   const currentKm = (kpis?.cardio_distance_meters || 0) / 1000;
-  const targetKm = 50.0;
+  const targetKm = dashboard?.previous_kpis ? Math.max(10, Math.round(dashboard.previous_kpis.cardio_distance_meters / 1000) + 5) : 50.0;
+
+  const formatPace = (secondsPerKm?: number | null) => {
+    if (!secondsPerKm) return undefined;
+    const mins = Math.floor(secondsPerKm / 60);
+    const secs = Math.floor(secondsPerKm % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  const avgPaceText = formatPace(kpis?.cardio_avg_pace_seconds_per_km);
 
   const upcomingRace = dashboard?.upcoming_race;
   const daysToRace = upcomingRace
@@ -122,7 +131,38 @@ function OpenRunningDashboard() {
             (1000 * 60 * 60 * 24)
         )
       )
-    : 38;
+    : 0;
+
+  const targetTimeText = undefined;
+  const targetPaceText = undefined;
+
+  // 1. Strava Sync State
+  const stravaSyncState = dashboard?.sync_state?.find(s => s.provider === "strava");
+  let lastSyncText = "Strava sin configurar";
+  if (stravaSyncState) {
+    if (stravaSyncState.last_run_at) {
+       const diffMin = Math.floor((new Date().getTime() - new Date(stravaSyncState.last_run_at).getTime()) / 60000);
+       if (diffMin < 1) lastSyncText = "Strava sincronizado · recién";
+       else if (diffMin < 60) lastSyncText = `Strava sincronizado · hace ${diffMin} min`;
+       else if (diffMin < 1440) lastSyncText = `Strava sincronizado · hace ${Math.floor(diffMin/60)} h`;
+       else lastSyncText = `Strava sincronizado · hace ${Math.floor(diffMin/1440)} d`;
+    } else {
+       lastSyncText = "Strava conectado (sin sincro)";
+    }
+  }
+
+  // 2. Today logic
+  const todayData = dashboard?.timeline?.find(d => d.date === todayIso);
+  const todayActivities = todayData?.activities || [];
+  const hasCompletedActivity = todayActivities.length > 0;
+  
+  let todayTitle = "Día Libre / Recuperación";
+  let todayWorkoutType: "easy_run" | "intervals" | "tempo" | "long_run" | "rest" = "rest";
+
+  if (hasCompletedActivity) {
+    todayTitle = todayActivities[0].name || "Actividad completada";
+    todayWorkoutType = "easy_run";
+  }
 
   const handleManualRunSubmit = async (_data: any) => {
     // Refresh dashboard on submit
@@ -130,7 +170,7 @@ function OpenRunningDashboard() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4 pb-20 px-2 sm:px-4">
+    <div className="col-span-12 flex flex-col gap-6 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between pt-2">
         <div>
@@ -157,7 +197,7 @@ function OpenRunningDashboard() {
 
       {/* Strava Sync Bar */}
       <StravaSyncBar
-        lastSyncText="Strava sincronizado · recien"
+        lastSyncText={lastSyncText}
         isSyncing={syncMutation.isPending}
         onSyncStrava={() => syncMutation.mutate()}
         onOpenManualRun={() => setIsManualSheetOpen(true)}
@@ -174,47 +214,48 @@ function OpenRunningDashboard() {
         />
 
         <TodayRow
-          sessionTitle="Rodaje Z2 (8K) + 4 Series de 100m"
-          workoutType="easy_run"
-          isCompleted={false}
+          sessionTitle={todayTitle}
+          workoutType={todayWorkoutType}
+          isCompleted={hasCompletedActivity}
           onAction={() => setIsManualSheetOpen(true)}
         />
       </div>
 
-      {/* Target Race Countdown Card */}
-      <TargetRaceCard
-        raceName={upcomingRace?.event_name || "Media Maratón de Buenos Aires"}
-        daysRemaining={daysToRace}
-        dateText={
-          upcomingRace?.date
-            ? new Date(upcomingRace.date).toLocaleDateString("es-AR", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })
-            : "24 Ago 2025"
-        }
-        distanceKm={upcomingRace?.distance_km || 21.1}
-        targetTimeText="Sub-1:45:00"
-        targetPaceText="4:58"
-        onClick={() => navigate({ to: "/races" as any })}
-      />
-
-      {/* Weekly Volume & Streak Card */}
+      {/* Weekly Volume Card */}
       <VolumeCard
         currentKm={currentKm}
         targetKm={targetKm}
-        streakWeeks={12}
-        completedSessions={kpis?.sessions || 3}
+        avgPaceText={avgPaceText}
+        onOpenCalendar={() => navigate({ to: "/analytics" as any })}
+      />
+
+      <TargetRaceCard
+        raceName={upcomingRace?.event_name}
+        daysRemaining={upcomingRace ? daysToRace : undefined}
+        dateText={upcomingRace ? new Date(upcomingRace.date).toLocaleDateString("es-AR", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }) : undefined}
+        distanceKm={upcomingRace?.distance_km}
+        targetTimeText={targetTimeText}
+        targetPaceText={targetPaceText}
+        onClick={() => navigate({ to: "/races" as any })}
+      />
+
+      {/* Weekly Streak Card */}
+      <StreakCard
+        streakWeeks={0}
+        completedSessions={kpis?.sessions || 0}
         plannedSessions={4}
-        onOpenCalendar={() => {}}
+        onOpenCalendar={() => navigate({ to: "/analytics" as any })}
       />
 
       {/* AI Coach Proposal Card */}
       <CoachCard
-        title="Plan de descarga listo para la semana 6"
-        subtitle="Sugerencia: reducir 3 km el rodaje del jueves"
-        hasProposal={true}
+        title="AI Coach en desarrollo..."
+        subtitle="Las rutinas y planes inteligentes estarán disponibles pronto."
+        hasProposal={false}
         onReview={() => {}}
       />
 

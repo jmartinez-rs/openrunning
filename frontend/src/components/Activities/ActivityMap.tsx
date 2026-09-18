@@ -16,24 +16,29 @@ export function ActivityMap({ encoded }: { encoded: string }) {
       scrollWheelZoom: false,
     }).setView(points[0], 13)
 
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 19,
     }).addTo(map)
 
-    const cardioColor =
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--domain-cardio")
-        .trim() || "#ea580c"
+    const cardioColor = "#f97316" // Orange accent matching Strava/Cardio
 
-    L.polyline(points, { color: cardioColor, weight: 4 }).addTo(map)
-    map.fitBounds(L.latLngBounds(points))
+    L.polyline(points, {
+      color: cardioColor,
+      weight: 5,
+      opacity: 0.9,
+      lineCap: "round",
+      lineJoin: "round",
+    }).addTo(map)
+
+    map.fitBounds(L.latLngBounds(points), { padding: [24, 24] })
 
     return () => {
       map.remove()
     }
   }, [encoded])
 
-  return <div ref={containerRef} className="h-72 w-full rounded-lg z-0" />
+  return <div ref={containerRef} className="h-80 w-full rounded-2xl z-0" />
 }
+

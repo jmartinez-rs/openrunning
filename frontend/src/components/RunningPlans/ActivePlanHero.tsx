@@ -2,35 +2,29 @@ import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import {
   ArrowRight,
-  CalendarDays,
-  Flag,
-  Footprints,
   MapPin,
-  Timer,
-  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight
 } from "lucide-react"
+import { useState, useMemo } from "react"
 
 import {
   type RunningPlanSummaryPublic,
   RunningPlansService,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import {
-  computeProgress,
   formatDateRange,
   formatDuration,
   formatDistance,
   formatPace,
-  getCurrentWeekFromPhases,
   getWeekBoundsISO,
-  PHASE_COLORS,
-  type PhaseColor,
   PLAN_STATUS_META,
+  computeProgress
 } from "./running-utils"
-import { WeekStrip } from "./WeekStrip"
+import { WeekVolumeChart } from "./WeekVolumeChart"
 
 interface ActivePlanHeroProps {
   plan: RunningPlanSummaryPublic
@@ -52,42 +46,26 @@ function ProgressBar({
   const missedPct = (missed / total) * 100
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1.5 w-full">
       <div className="flex items-center justify-between">
-        <span className="text-label-lg text-on-surface-variant">
-          Progreso del plan
+        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          Progreso general del plan
         </span>
-        <span className="text-label-lg font-bold text-primary">
+        <span className="text-[11px] font-bold text-emerald-400">
           {percent}%
         </span>
       </div>
-      <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-container">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
         <div className="flex h-full">
           <div
             className="h-full rounded-l-full bg-emerald-500 transition-all duration-500"
             style={{ width: `${completedPct}%` }}
           />
           <div
-            className="h-full bg-destructive/70 transition-all duration-500"
+            className="h-full bg-red-500/70 transition-all duration-500"
             style={{ width: `${missedPct}%` }}
           />
         </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-label-sm text-on-surface-variant">
-        <span className="flex items-center gap-1">
-          <span className="inline-block size-2 rounded-full bg-emerald-500" />
-          {completed} completadas
-        </span>
-        {missed > 0 && (
-          <span className="flex items-center gap-1">
-            <span className="inline-block size-2 rounded-full bg-destructive/70" />
-            {missed} perdidas
-          </span>
-        )}
-        <span className="flex items-center gap-1">
-          <span className="inline-block size-2 rounded-full bg-surface-container" />
-          {total - completed - missed} pendientes
-        </span>
       </div>
     </div>
   )
@@ -96,7 +74,7 @@ function ProgressBar({
 export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
   const status = PLAN_STATUS_META[plan.status]
   const progress = computeProgress(plan)
-
+  
   // Fetch full plan detail to get current week workouts
   const detailQuery = useQuery({
     queryKey: ["running-plan", plan.id],
@@ -104,165 +82,195 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
     staleTime: 5 * 60 * 1000,
   })
 
+  const [weekOffset, setWeekOffset] = useState<0 | -1>(0)
+
   const phases = detailQuery.data?.phases ?? []
-  const currentWeek = phases.length > 0
-    ? getCurrentWeekFromPhases(phases)
-    : null
+  
+  // Calculate selected week and comparison
+  const { selectedWeekData, comparisonPct, isPositive } = useMemo(() => {
+    const allWeeks = phases.flatMap(p => p.weeks?.map(w => ({ ...w, phaseName: p.name, phaseColor: p.color })) ?? [])
+    allWeeks.sort((a, b) => a.number - b.number)
+    
+    // Find "current" week based on today
+    const today = new Date().toISOString().slice(0,10)
+    let currentIndex = allWeeks.findIndex(w => w.start_date && w.end_date && today >= w.start_date && today <= w.end_date)
+    
+    // Fallback if not active today
+    if (currentIndex === -1 && allWeeks.length > 0) currentIndex = 0
+    
+    const targetIndex = Math.max(0, currentIndex + weekOffset)
+    const selected = allWeeks[targetIndex]
+    const previous = targetIndex > 0 ? allWeeks[targetIndex - 1] : null
+    
+    // Distances
+    const calculateDistance = (week: any) => 
+      (week?.workouts ?? []).reduce((acc: number, w: any) => acc + (w.distance_km ?? 0), 0)
+      
+    const selectedDist = calculateDistance(selected)
+    const previousDist = calculateDistance(previous)
+    
+    let pct = 0
+    let pos = true
+    if (previousDist > 0) {
+      pct = Math.abs((selectedDist - previousDist) / previousDist) * 100
+      pos = selectedDist >= previousDist
+    } else if (selectedDist > 0) {
+      pct = 100
+    }
 
-  // Determine monday for the WeekStrip
+    return { 
+      selectedWeekData: selected, 
+      comparisonPct: pct.toFixed(1),
+      isPositive: pos
+    }
+  }, [phases, weekOffset])
+
   const { monday } = getWeekBoundsISO()
-  const weekMondayISO = currentWeek?.startDate ?? monday
+  const weekMondayISO = selectedWeekData?.start_date ?? monday
 
-  const phaseColor = currentWeek
-    ? PHASE_COLORS[currentWeek.phaseColor as PhaseColor] ?? PHASE_COLORS.slate
-    : null
+  // Calculate week stats
+  const weekTotalDistance = (selectedWeekData?.workouts ?? []).reduce((acc: number, w: any) => acc + (w.distance_km ?? 0), 0)
+  const weekTotalDuration = (selectedWeekData?.workouts ?? []).reduce((acc: number, w: any) => acc + (w.duration_seconds ?? 0), 0)
+  const weekSessions = (selectedWeekData?.workouts ?? []).length
+  const weekAvgPace = weekTotalDistance > 0 && weekTotalDuration > 0 
+    ? weekTotalDuration / weekTotalDistance 
+    : 0
 
   return (
     <Link to="/routines/run/$planId" params={{ planId: plan.id }}>
-      <div className="group relative flex flex-col gap-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-emerald-500/30 p-6 shadow-xl transition-all hover:border-emerald-500/60">
-        {/* Glow accent */}
-        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5" />
+      <div className="group relative flex flex-col gap-6 rounded-[2rem] bg-slate-950 border-2 border-slate-900 p-5 shadow-2xl transition-all hover:border-emerald-500/30 overflow-hidden">
+        
+        {/* Header Toggle */}
+        <div className="flex items-center justify-between">
+          <div className="flex bg-slate-900 p-1 rounded-2xl border border-slate-800">
+            <button 
+              type="button"
+              className={cn(
+                "px-5 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all",
+                weekOffset === 0 ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+              )}
+              onClick={(e) => { e.preventDefault(); setWeekOffset(0); }}
+            >
+              ESTA SEMANA
+            </button>
+            <button 
+              type="button"
+              className={cn(
+                "px-5 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all",
+                weekOffset === -1 ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+              )}
+              onClick={(e) => { e.preventDefault(); setWeekOffset(-1); }}
+            >
+              SEMANA PASADA
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-2">
+             <Badge variant={status.variant} className={cn("hidden sm:flex font-bold", status.className)}>
+                {status.label}
+             </Badge>
+             <div className="size-10 flex items-center justify-center rounded-2xl bg-slate-900 border border-slate-800 text-emerald-400 group-hover:bg-emerald-500/10 transition-colors">
+               <ArrowRight className="size-5" />
+             </div>
+          </div>
+        </div>
 
-        {/* Header */}
-        <div className="relative flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              <Footprints className="size-5" />
+        {/* Big Metric Area */}
+        <div className="flex items-end justify-between relative mt-2">
+          <div className="flex flex-col gap-1 z-10">
+            <div className="flex items-center gap-1.5 text-slate-400">
+              <MapPin className="size-4 text-emerald-400" />
+              <span className="text-sm font-semibold">Distancia total planeada</span>
             </div>
-            <div className="min-w-0">
-              <h3 className="truncate text-title-lg font-extrabold text-white group-hover:text-emerald-300 transition-colors">
-                {plan.name}
-              </h3>
-              {plan.goal && (
-                <p className="mt-0.5 line-clamp-1 text-body-md text-slate-400">
-                  {plan.goal}
-                </p>
+            <div className="flex items-baseline gap-3">
+              <h2 className="text-5xl sm:text-6xl font-black text-white tracking-tighter">
+                {weekTotalDistance > 0 ? formatDistance(weekTotalDistance).replace(" km", "") : "0"}
+                <span className="text-2xl sm:text-3xl ml-1 font-bold text-slate-300">KM</span>
+              </h2>
+              
+              {weekTotalDistance > 0 && Number(comparisonPct) > 0 && (
+                <div className={cn("flex flex-col text-xs font-bold leading-tight mb-2", isPositive ? "text-emerald-400" : "text-red-400")}>
+                  <span className="flex items-center">
+                    {isPositive ? <ArrowUpRight className="size-3.5 mr-0.5" /> : <ArrowDownRight className="size-3.5 mr-0.5" />}
+                    {comparisonPct}%
+                  </span>
+                  <span>vs sem. pas.</span>
+                </div>
               )}
             </div>
           </div>
-          <Badge
-            variant={status.variant}
-            className={cn("shrink-0 font-bold", status.className)}
-          >
-            {status.label}
-          </Badge>
+
+          {/* Decorative Right Pill Graphic */}
+          <div className="absolute -right-2 -bottom-2 flex items-end gap-2 opacity-60 z-0 pointer-events-none">
+            <div className="w-8 sm:w-10 h-16 rounded-full bg-slate-800 border-2 border-slate-700" />
+            <div className="w-8 sm:w-10 h-28 rounded-full bg-emerald-400 shadow-[0_0_30px_rgba(52,211,153,0.3)] stripe-pattern" />
+          </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="relative">
+        {/* General Progress Bar */}
+        <div className="relative z-10 mt-1 mb-1">
           <ProgressBar {...progress} />
         </div>
 
-        {/* Estimated Race Time — simulated from target_time_seconds */}
-        {detailQuery.data && (
-          detailQuery.data.target_time_seconds != null ||
-          detailQuery.data.distance_km != null
-        ) && (
-          <div className="relative flex flex-wrap items-center gap-3 rounded-xl bg-slate-800/60 px-4 py-3 border border-slate-700/60">
-            <Timer className="size-4 text-emerald-400" />
-            <span className="text-label-lg font-semibold text-slate-200">
-              Tiempo estimado
+        {/* Small Stats Grid */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 z-10 mt-2">
+          <div className="flex flex-col items-center justify-center p-3 rounded-2xl border border-slate-800 bg-slate-900/60">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ritmo Medio</span>
+            <span className="text-sm sm:text-base font-extrabold text-white">
+              {weekAvgPace > 0 ? formatPace(weekAvgPace).replace("/km", "") : "—"}
             </span>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              {detailQuery.data.target_time_seconds != null && (
-                <span className="text-body-md font-bold text-emerald-400">
-                  {formatDuration(detailQuery.data.target_time_seconds)}
-                </span>
-              )}
-              {detailQuery.data.distance_km != null && (
-                <span className="text-label-sm text-slate-400">
-                  {formatDistance(detailQuery.data.distance_km)}
-                </span>
-              )}
-              {detailQuery.data.target_pace_seconds_per_km != null && (
-                <span className="text-label-sm text-slate-400">
-                  Ritmo {formatPace(detailQuery.data.target_pace_seconds_per_km)}
-                </span>
-              )}
-            </div>
           </div>
-        )}
-
-        {/* Current week strip */}
-        <div className="relative flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="size-3.5 text-slate-400" />
-              <span className="text-xs font-bold text-white">
-                Semana actual
-              </span>
-              {currentWeek && (
-                <span className="text-xs text-slate-400 font-medium">
-                  · S{currentWeek.weekNumber}
-                </span>
-              )}
-              {currentWeek && phaseColor && (
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border",
-                    phaseColor.badge,
-                  )}
-                >
-                  {currentWeek.phaseName}
-                </span>
-              )}
-            </div>
+          <div className="flex flex-col items-center justify-center p-3 rounded-2xl border border-slate-800 bg-slate-900/60">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tiempo Total</span>
+            <span className="text-sm sm:text-base font-extrabold text-white">
+              {weekTotalDuration > 0 ? formatDuration(weekTotalDuration).replace(" h", "h").replace(" min", "m") : "—"}
+            </span>
           </div>
+          <div className="flex flex-col items-center justify-center p-3 rounded-2xl border border-slate-800 bg-slate-900/60">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Sesiones</span>
+            <span className="text-sm sm:text-base font-extrabold text-white">
+              {weekSessions}
+            </span>
+          </div>
+        </div>
 
+        {/* Bar Chart Section */}
+        <div className="mt-2 z-10">
           {detailQuery.isLoading ? (
-            <Skeleton className="h-24 w-full rounded-2xl bg-slate-800/80" />
+            <Skeleton className="h-32 w-full rounded-2xl bg-slate-800/80" />
           ) : (
-            <WeekStrip
+            <WeekVolumeChart
               mondayISO={weekMondayISO}
-              workouts={currentWeek?.workouts ?? []}
-              className="rounded-2xl bg-slate-900/90 border border-slate-800 p-2 shadow-inner"
+              workouts={selectedWeekData?.workouts ?? []}
+              className="mt-2"
             />
           )}
         </div>
 
-        {/* Stats strip */}
-        <div className="relative flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-800/80 pt-4 text-xs text-slate-400">
-          <span className="flex items-center gap-1 font-semibold text-slate-300">
-            <TrendingUp className="size-3.5 text-slate-400" />
-            {plan.weeks} {plan.weeks === 1 ? "semana" : "semanas"}
-          </span>
-          <span>·</span>
-          <span>
-            {plan.sessions} {plan.sessions === 1 ? "sesión" : "sesiones"}
-          </span>
-          <span>·</span>
-          <span className="font-extrabold text-emerald-400">
-            {plan.planned_km} km
-          </span>
-          <span>·</span>
-          <span className="flex items-center gap-1">
-            <MapPin className="size-3.5 text-slate-500" />
-            {formatDateRange(plan.start_date, plan.end_date)}
-          </span>
-
-          {plan.race_id && (
-            <>
-              <span>·</span>
-              <span className="flex items-center gap-1 text-amber-400 font-semibold">
-                <Flag className="size-3.5" />
-                Carrera objetivo
-              </span>
-            </>
-          )}
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="ml-auto gap-1 text-emerald-400 font-bold hover:text-emerald-300 hover:bg-slate-800/80"
-            asChild
-          >
-            <span>
-              Ver plan <ArrowRight className="size-3.5" />
-            </span>
-          </Button>
+        {/* Bottom Context Info */}
+        <div className="flex items-center justify-between border-t border-slate-800 pt-4 mt-2 text-xs font-semibold text-slate-500 z-10 flex-wrap gap-2">
+           <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="text-slate-300 truncate">{plan.name}</span>
+              {selectedWeekData && (
+                <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 whitespace-nowrap shrink-0">
+                  Semana {selectedWeekData.number}
+                </span>
+              )}
+           </div>
+           <span className="shrink-0">{formatDateRange(plan.start_date, plan.end_date)}</span>
         </div>
       </div>
+      <style>{`
+        .stripe-pattern {
+          background-image: repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 4px,
+            rgba(0, 0, 0, 0.1) 4px,
+            rgba(0, 0, 0, 0.1) 8px
+          );
+        }
+      `}</style>
     </Link>
   )
 }

@@ -11,15 +11,44 @@ import {
   SearchX,
   Upload,
   X,
+  ArrowLeft,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 
-import { ActivitiesService } from "@/client"
+import { ActivitiesService, AnalyticsService } from "@/client"
 import { ActivityRow } from "@/components/Activities/ActivityRow"
+import { WorkoutCard } from "@/components/Activities/WorkoutCard"
+import { ChartCard } from "@/components/Analytics/ChartCard"
+import {
+  AXIS_TICK_STYLE,
+  CHART_HEIGHTS,
+  DOMAIN_COLORS,
+  TOOLTIP_CONTENT_STYLE,
+} from "@/components/Analytics/chart-theme"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import useCustomToast from "@/hooks/useCustomToast"
+
+// Helper function
+function formatMonthLabel(month: string): string {
+  if (!month) return ""
+  const date = new Date(`${month}-01T12:00:00`)
+  if (Number.isNaN(date.getTime())) return month
+  return new Intl.DateTimeFormat("es-AR", { month: "short" })
+    .format(date)
+    .replace(".", "")
+    .toUpperCase()
+}
 
 export const Route = createFileRoute("/_layout/activities/")({
   component: ActivitiesHistory,
@@ -38,6 +67,7 @@ function ActivitiesHistory() {
   const [skip, setSkip] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [showAllActivities, setShowAllActivities] = useState(false)
   const [applied, setApplied] = useState({
     sourceType: "all",
     fromDate: "",
@@ -92,6 +122,11 @@ function ActivitiesHistory() {
         skip,
         limit: PAGE_SIZE,
       }),
+  })
+
+  const cardioMonthlyQuery = useQuery({
+    queryKey: ["stats-cardio-monthly"],
+    queryFn: () => AnalyticsService.readCardioMonthly({ months: 12 }),
   })
 
   const selectTab = (tab: string) => {
@@ -158,8 +193,18 @@ function ActivitiesHistory() {
     return true
   })
 
+  // Chart calculation
+  const monthlyKm = useMemo(() => {
+    return (cardioMonthlyQuery.data ?? []).map((m) => ({
+      name: formatMonthLabel(m.month as string),
+      monthKey: m.month as string,
+      km: Number(m.distance_meters ?? 0) / 1000,
+      sessions: Number(m.sessions ?? 0),
+    }))
+  }, [cardioMonthlyQuery.data])
+
   return (
-    <div className="col-span-12 max-w-5xl mx-auto w-full space-y-6 pb-8">
+    <div className="col-span-12 flex flex-col gap-6 pb-8">
       {/* Header section — styled after OpenGym .hdr */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
         <div>
@@ -195,7 +240,7 @@ function ActivitiesHistory() {
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Category Chips */}
-          <div className="inline-flex rounded-xl bg-slate-900/90 p-1 border border-slate-800/80 shadow-inner">
+          <div className="inline-flex gap-2 items-center flex-wrap">
             {[
               { id: "all", label: "Todas" },
               { id: "cardio", label: "Cardio" },
@@ -207,8 +252,8 @@ function ActivitiesHistory() {
                 onClick={() => selectTab(tab.id)}
                 className={
                   sourceType === tab.id
-                    ? "rounded-lg bg-emerald-500/20 text-emerald-400 font-semibold px-4 py-1.5 text-xs sm:text-sm shadow-sm transition-all"
-                    : "rounded-lg px-4 py-1.5 text-xs sm:text-sm text-slate-400 font-medium transition-colors hover:text-slate-200"
+                    ? "rounded-full border border-emerald-400 text-emerald-400 font-semibold px-5 py-1.5 text-xs sm:text-sm shadow-sm transition-all"
+                    : "rounded-full border border-slate-700 bg-transparent px-5 py-1.5 text-xs sm:text-sm text-slate-400 font-medium transition-colors hover:text-slate-200"
                 }
               >
                 {tab.label}
@@ -216,46 +261,48 @@ function ActivitiesHistory() {
             ))}
           </div>
 
-          {/* Search and toggle options */}
-          <div className="flex items-center gap-2 flex-1 max-w-sm">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
-              <Input
-                className="w-full rounded-xl border border-slate-800/80 bg-slate-900/60 pl-9 pr-3 py-1.5 text-sm placeholder:text-slate-500 text-slate-200 focus:border-emerald-500/50"
-                placeholder="Buscar por nombre…"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
+          {/* Search and toggle options - Only show in All Activities mode */}
+          {showAllActivities && (
+            <div className="flex items-center gap-2 flex-1 max-w-sm">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
+                <Input
+                  className="w-full rounded-xl border border-slate-800/80 bg-slate-900/60 pl-9 pr-3 py-1.5 text-sm placeholder:text-slate-500 text-slate-200 focus:border-emerald-500/50"
+                  placeholder="Buscar por nombre…"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={
-                showAdvancedFilters || fromDate || toDate
-                  ? "rounded-xl border-emerald-500/40 bg-emerald-500/10 text-emerald-400 text-xs gap-1.5"
-                  : "rounded-xl border-slate-800 bg-slate-900/60 text-slate-400 text-xs gap-1.5 hover:text-slate-200"
-              }
-            >
-              <Filter className="size-3.5" />
-              <span className="hidden sm:inline">Fechas</span>
-            </Button>
-          </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={
+                  showAdvancedFilters || fromDate || toDate
+                    ? "rounded-xl border-emerald-500/40 bg-emerald-500/10 text-emerald-400 text-xs gap-1.5"
+                    : "rounded-xl border-slate-800 bg-slate-900/60 text-slate-400 text-xs gap-1.5 hover:text-slate-200"
+                }
+              >
+                <Filter className="size-3.5" />
+                <span className="hidden sm:inline">Fechas</span>
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Collapsible Date Filters */}
-        {showAdvancedFilters && (
+        {showAllActivities && showAdvancedFilters && (
           <div className="flex flex-wrap items-center gap-3 p-3.5 rounded-2xl border border-slate-800/80 bg-slate-900/40 animate-in fade-in slide-in-from-top-2 duration-150">
             <span className="text-xs font-medium text-slate-400">Rango de fechas:</span>
             <div className="flex items-center gap-2">
@@ -352,44 +399,138 @@ function ActivitiesHistory() {
         </div>
       ) : (
         <>
-          {/* List of Workout/Activity Rows */}
-          <div className="space-y-2.5">
-            {filteredActivities.map((activity) => (
-              <ActivityRow activity={activity} key={activity.id} />
-            ))}
-          </div>
+          {!showAllActivities ? (
+            /* Dashboard-like View */
+            <div className="space-y-8 animate-in fade-in duration-300">
+              {/* Last Workouts Horizontal Carousel */}
+              <div className="overflow-hidden">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-slate-200">Últimas actividades</h2>
+                  <Button variant="ghost" size="sm" className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10" onClick={() => setShowAllActivities(true)}>
+                    Ver todas
+                  </Button>
+                </div>
+                <div className="relative">
+                  {/* Decorative timeline line */}
+                  <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-slate-800 -translate-y-1/2 z-0" />
+                  
+                  <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 pt-2 px-2 scrollbar-hide relative z-10">
+                    {filteredActivities.slice(0, 10).map((activity, index) => (
+                      <div key={activity.id} className="snap-center shrink-0">
+                        <WorkoutCard activity={activity} isActive={index === 0} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
-          {/* Pagination Footer */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-800/60 text-xs text-slate-400">
-            <span>
-              Mostrando {skip + 1}–{Math.min(skip + PAGE_SIZE, totalCount)} de{" "}
-              {totalCount} actividades
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={skip === 0}
-                onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}
-                className="h-8 rounded-xl border-slate-800 text-xs text-slate-300 disabled:opacity-40"
-              >
-                <ChevronLeft className="size-3.5 mr-1" />
-                Anterior
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={skip + PAGE_SIZE >= totalCount}
-                onClick={() => setSkip(skip + PAGE_SIZE)}
-                className="h-8 rounded-xl border-slate-800 text-xs text-slate-300 disabled:opacity-40"
-              >
-                Siguiente
-                <ChevronRight className="size-3.5 ml-1" />
-              </Button>
+              {/* Volume Chart */}
+              <div>
+                <h2 className="text-xl font-bold text-slate-200 mb-4">Volumen mensual</h2>
+                <ChartCard
+                  title=""
+                  loading={cardioMonthlyQuery.isLoading}
+                  error={cardioMonthlyQuery.isError}
+                  onRetry={() => cardioMonthlyQuery.refetch()}
+                >
+                  {monthlyKm.length > 0 &&
+                    !cardioMonthlyQuery.isLoading &&
+                    !cardioMonthlyQuery.isError && (
+                      <ResponsiveContainer width="100%" height={CHART_HEIGHTS.sm}>
+                        <BarChart
+                          data={monthlyKm}
+                          margin={{ top: 20, right: 0, left: -20, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            vertical={false}
+                            strokeDasharray="3 3"
+                            stroke="#1e293b"
+                          />
+                          <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={AXIS_TICK_STYLE}
+                            dy={10}
+                          />
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={AXIS_TICK_STYLE}
+                            tickFormatter={(value: number) =>
+                              value === 0 ? "" : `${value}`
+                            }
+                          />
+                          <Tooltip
+                            cursor={{ fill: "#0f172a", opacity: 0.4 }}
+                            contentStyle={TOOLTIP_CONTENT_STYLE}
+                            formatter={(value: any) => {
+                              const numValue = Number(value) || 0
+                              return [`${numValue.toFixed(1)} km`, "Distancia"]
+                            }}
+                          />
+                          <Bar
+                            dataKey="km"
+                            fill={DOMAIN_COLORS.cardio}
+                            radius={[4, 4, 0, 0]}
+                            maxBarSize={40}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                </ChartCard>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* All Activities List View */
+            <div className="animate-in slide-in-from-right-4 duration-300">
+              <div className="flex items-center gap-2 mb-4">
+                <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-200 px-2" onClick={() => setShowAllActivities(false)}>
+                  <ArrowLeft className="size-4 mr-2" />
+                  Volver al panel
+                </Button>
+              </div>
+              
+              {/* List of Workout/Activity Rows */}
+              <div id="all-activities" className="space-y-2.5 mt-2">
+                {filteredActivities.map((activity) => (
+                  <ActivityRow activity={activity} key={activity.id} />
+                ))}
+              </div>
+
+              {/* Pagination Footer */}
+              <div className="flex items-center justify-between pt-4 mt-6 border-t border-slate-800/60 text-xs text-slate-400">
+                <span>
+                  Mostrando {skip + 1}–{Math.min(skip + PAGE_SIZE, totalCount)} de{" "}
+                  {totalCount} actividades
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={skip === 0}
+                    onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}
+                    className="h-8 rounded-xl border-slate-800 text-xs text-slate-300 disabled:opacity-40"
+                  >
+                    <ChevronLeft className="size-3.5 mr-1" />
+                    Anterior
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={skip + PAGE_SIZE >= totalCount}
+                    onClick={() => setSkip(skip + PAGE_SIZE)}
+                    className="h-8 rounded-xl border-slate-800 text-xs text-slate-300 disabled:opacity-40"
+                  >
+                    Siguiente
+                    <ChevronRight className="size-3.5 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

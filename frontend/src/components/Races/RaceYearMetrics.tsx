@@ -16,47 +16,47 @@ export function RaceYearMetrics({ completed }: { completed: RacePublic[] }) {
       : null
 
   return (
-    <div className="flex flex-col justify-between rounded-2xl bg-card p-6 shadow-card dark:border dark:border-border/50">
+    <div className="flex flex-col justify-between rounded-2xl bg-slate-900/80 border border-slate-800 p-6 shadow-xl">
       <div>
-        <h3 className="text-label-sm text-on-surface-variant uppercase">
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           Métricas del año
         </h3>
         <div className="mt-4 flex items-baseline gap-2">
-          <span className="text-display-lg tabular-nums text-primary">
+          <span className="text-5xl font-black text-white tabular-nums tracking-tighter">
             {completed.length}
           </span>
-          <span className="text-body-md text-on-surface-variant">
+          <span className="text-sm font-medium text-slate-400">
             carreras completadas
           </span>
         </div>
 
         <dl className="mt-6 space-y-0">
-          <div className="flex items-center justify-between gap-4 border-b border-border/50 py-2.5">
-            <dt className="text-label-sm text-on-surface-variant uppercase">
+          <div className="flex items-center justify-between gap-4 border-b border-slate-800/80 py-3">
+            <dt className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Distancia total
             </dt>
-            <dd className="text-title-lg tabular-nums text-primary">
+            <dd className="text-xl font-bold text-white tabular-nums">
               {totalKm % 1 === 0 ? totalKm.toFixed(0) : totalKm.toFixed(1)}
-              <span className="ml-1 text-body-md text-on-surface-variant">
+              <span className="ml-1 text-sm font-medium text-slate-400">
                 km
               </span>
             </dd>
           </div>
-          <div className="flex items-center justify-between gap-4 border-b border-border/50 py-2.5">
-            <dt className="text-label-sm text-on-surface-variant uppercase">
+          <div className="flex items-center justify-between gap-4 border-b border-slate-800/80 py-3">
+            <dt className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Ritmo promedio
             </dt>
-            <dd className="text-title-lg tabular-nums text-primary">
+            <dd className="text-xl font-bold text-white tabular-nums">
               {formatRacePace(avgPace)}
             </dd>
           </div>
         </dl>
       </div>
 
-      <Button asChild variant="outline" className="mt-6 w-full rounded-lg">
+      <Button asChild variant="outline" className="mt-6 w-full rounded-xl bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800">
         <Link to="/analytics/cardio">
           Ver detalles
-          <ArrowRight className="size-4" />
+          <ArrowRight className="ml-2 size-4" />
         </Link>
       </Button>
     </div>

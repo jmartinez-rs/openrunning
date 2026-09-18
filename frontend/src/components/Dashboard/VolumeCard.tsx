@@ -1,65 +1,66 @@
 import React from "react";
-import { Flame, Calendar } from "lucide-react";
+// no icons needed
 
 interface VolumeCardProps {
   currentKm: number;
   targetKm: number;
-  streakWeeks: number;
-  completedSessions: number;
-  plannedSessions: number;
+  avgPaceText?: string;
   onOpenCalendar: () => void;
 }
 
 export const VolumeCard: React.FC<VolumeCardProps> = ({
   currentKm,
   targetKm,
-  streakWeeks,
-  completedSessions,
-  plannedSessions,
+  avgPaceText,
   onOpenCalendar,
 }) => {
   const percentage = Math.min(100, Math.round((currentKm / (targetKm || 1)) * 100));
 
   return (
-    <div
-      onClick={onOpenCalendar}
-      className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl hover:border-slate-700 transition-all cursor-pointer group"
-    >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-orange-500/15 text-orange-400">
-            <Flame className="w-5 h-5 fill-current" />
+    <div className="grid grid-cols-2 gap-3" onClick={onOpenCalendar}>
+      {/* Volume Card */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl hover:border-slate-700 transition-all cursor-pointer group flex flex-col justify-between">
+        <div>
+          <h3 className="text-xs font-semibold text-slate-400 mb-1">Volumen Semanal</h3>
+          <div className="text-3xl font-black text-white tracking-tight flex items-baseline gap-1">
+            {currentKm.toFixed(1)}
+            <span className="text-sm font-bold text-slate-500">km</span>
           </div>
+        </div>
+        
+        <div className="mt-4">
+          <div className="flex justify-between items-baseline text-[10px] mb-1.5 font-semibold text-slate-500">
+            <span>Meta: {targetKm.toFixed(0)} km</span>
+            <span className="text-emerald-400">{percentage}%</span>
+          </div>
+          <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full transition-all duration-500"
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Average Pace Card */}
+      {avgPaceText && (
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl hover:border-slate-700 transition-all cursor-pointer group flex flex-col justify-between">
           <div>
-            <div className="text-base font-extrabold text-white tracking-tight flex items-center gap-1.5">
-              <span>{streakWeeks} semanas de racha</span>
-              <span className="text-sm">🔥</span>
+            <h3 className="text-xs font-semibold text-slate-400 mb-1">Ritmo Promedio</h3>
+            <div className="text-3xl font-black text-white tracking-tight flex items-baseline gap-1">
+              {avgPaceText}
+              <span className="text-sm font-bold text-slate-500">/km</span>
             </div>
-            <div className="text-xs text-slate-400">
-              {completedSessions} de {plannedSessions} sesiones esta semana
+          </div>
+          <div className="mt-4 flex items-center justify-between">
+            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden flex">
+              <div className="h-full bg-teal-500/50 w-1/3" />
+              <div className="h-full bg-teal-400 w-1/3" />
+              <div className="h-full bg-teal-300 w-1/3" />
             </div>
           </div>
         </div>
-
-        <Calendar className="w-5 h-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
-      </div>
-
-      {/* Progress bar */}
-      <div className="mt-3">
-        <div className="flex justify-between items-baseline text-xs mb-1.5">
-          <span className="font-semibold text-slate-300">Volumen Semanal</span>
-          <span className="font-extrabold text-emerald-400">
-            {currentKm.toFixed(1)} / {targetKm.toFixed(1)} km · {percentage}%
-          </span>
-        </div>
-
-        <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5">
-          <div
-            className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full transition-all duration-500"
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 };

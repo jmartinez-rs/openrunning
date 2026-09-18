@@ -237,7 +237,6 @@ def read_cardio_monthly(
         .join(ActivityCardio)
         .where(
             Activity.user_id == current_user.id,
-            Activity.source_type == "strava",
             Activity.timestamp >= start,
         )
         .order_by(col(Activity.timestamp))
@@ -273,7 +272,7 @@ def read_cardio_best_paces(
     rows = session.exec(
         select(Activity, ActivityCardio)
         .join(ActivityCardio)
-        .where(Activity.user_id == current_user.id, Activity.source_type == "strava")
+        .where(Activity.user_id == current_user.id)
         .order_by(col(Activity.timestamp))
     ).all()
 
@@ -310,7 +309,6 @@ def read_cardio_hr_zones(
         .join(ActivityCardio)
         .where(
             Activity.user_id == current_user.id,
-            Activity.source_type == "strava",
             Activity.timestamp >= start,
         )
         .order_by(col(Activity.timestamp))
@@ -370,7 +368,6 @@ def read_cardio_hr_trend(
         .join(ActivityCardio)
         .where(
             Activity.user_id == current_user.id,
-            Activity.source_type == "strava",
             Activity.timestamp >= start,
         )
         .order_by(col(Activity.timestamp))
@@ -473,7 +470,6 @@ def read_activities_summary(
         .join(ActivityCardio)
         .where(
             Activity.user_id == current_user.id,
-            Activity.source_type == "strava",
             Activity.timestamp >= start_dt,
             Activity.timestamp <= end_dt,
         )

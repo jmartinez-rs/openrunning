@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ImagePlus, Loader2, X } from "lucide-react"
-import { useRef, useState } from "react"
+import { ImagePlus, Loader2, X, ChevronDown, ChevronUp, MapPin, Flag, Target, Navigation, Trophy, Camera } from "lucide-react"
+import { useRef, useState, useEffect } from "react"
 
 import {
   ActivitiesService,
@@ -15,7 +15,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -24,49 +23,126 @@ import { Label } from "@/components/ui/label"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 import { parseRaceTime, secondsToTimeInput } from "./race-utils"
+import { parseRaceNotes, stringifyRaceNotes, type RaceMeta } from "./race-meta"
 
 interface RaceFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   race?: RacePublic | null
+  defaultActivityId?: string
+}
+
+function Section({ title, icon: Icon, open, onToggle, children }: { title: string, icon: any, open: boolean, onToggle: () => void, children: React.ReactNode }) {
+  return (
+    <div className="border border-slate-800 rounded-2xl bg-slate-900/50 overflow-hidden transition-all">
+      <button 
+        type="button" 
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-4 bg-slate-900 hover:bg-slate-800/80 transition-colors focus:outline-none"
+      >
+        <div className="flex items-center gap-2">
+          <Icon className="size-4 text-orange-500" />
+          <span className="font-bold text-white tracking-tight">{title}</span>
+        </div>
+        {open ? <ChevronUp className="size-4 text-slate-400" /> : <ChevronDown className="size-4 text-slate-400" />}
+      </button>
+      {open && (
+        <div className="p-4 border-t border-slate-800 bg-slate-950 flex flex-col gap-4 animate-in slide-in-from-top-2 duration-300">
+          {children}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function RaceFormDialog({
   open,
   onOpenChange,
   race,
+  defaultActivityId,
 }: RaceFormDialogProps) {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
+  const initialMeta = parseRaceNotes(race?.notes)
+
+  // 1. Esencial
   const [eventName, setEventName] = useState(race?.event_name ?? "")
+  const [distanceKm, setDistanceKm] = useState(race?.distance_km != null ? String(race.distance_km) : "")
   const [date, setDate] = useState(race?.date ? race.date.slice(0, 10) : "")
-  const [distanceKm, setDistanceKm] = useState(
-    race?.distance_km != null ? String(race.distance_km) : "",
-  )
+  const [startTime, setStartTime] = useState(initialMeta.start_time ?? "")
   const [location, setLocation] = useState(race?.location ?? "")
-  const [officialTime, setOfficialTime] = useState(
-    secondsToTimeInput(race?.official_time_seconds),
-  )
-  const [chipTime, setChipTime] = useState(
-    secondsToTimeInput(race?.chip_time_seconds),
-  )
-  const [position, setPosition] = useState(
-    race?.position != null ? String(race.position) : "",
-  )
-  const [category, setCategory] = useState(race?.category ?? "")
-  const [bibNumber, setBibNumber] = useState(race?.bib_number ?? "")
-  const [notes, setNotes] = useState(race?.notes ?? "")
-  const [activityId, setActivityId] = useState(race?.activity_id ?? "")
+  const [surfaceType, setSurfaceType] = useState<RaceMeta["surface_type"]>(initialMeta.surface_type ?? "")
+  const [elevationProfile, setElevationProfile] = useState<RaceMeta["elevation_profile"]>(initialMeta.elevation_profile ?? "")
+
+  // 2. Prioridad y Plan
+  const [priority, setPriority] = useState<RaceMeta["priority"]>(initialMeta.priority ?? "")
+  const [linkToPlan, setLinkToPlan] = useState(false) // Fake for now
+
+  // 3. Objetivos de Rendimiento
+  const [goalType, setGoalType] = useState<RaceMeta["goal_type"]>(initialMeta.goal_type ?? "")
+  const [targetTime, setTargetTime] = useState(initialMeta.target_time ?? "")
+  const [targetPace, setTargetPace] = useState(initialMeta.target_pace ?? "")
   const [shoeId, setShoeId] = useState(race?.shoe_id ?? "")
+  
+  // 4. Logística
+  const [bibNumber, setBibNumber] = useState(race?.bib_number ?? "")
+  const [corral, setCorral] = useState(initialMeta.corral ?? "")
+  const [kitRetrievalInfo, setKitRetrievalInfo] = useState(initialMeta.kit_retrieval_info ?? "")
+  const [webLink, setWebLink] = useState(initialMeta.web_link ?? "")
+  const [status, setStatus] = useState<RaceMeta["status"]>(initialMeta.status ?? "")
+  const [splitsStrategy, setSplitsStrategy] = useState(initialMeta.splits_strategy ?? "")
+  const [nutritionPlan, setNutritionPlan] = useState(initialMeta.nutrition_plan ?? "")
+
+  // 5. Post-Carrera (Resultados)
+  const [officialTime, setOfficialTime] = useState(secondsToTimeInput(race?.official_time_seconds))
+  const [chipTime, setChipTime] = useState(secondsToTimeInput(race?.chip_time_seconds))
+  const [position, setPosition] = useState(race?.position != null ? String(race.position) : "")
+  const [category, setCategory] = useState(race?.category ?? "")
+  const [activityId, setActivityId] = useState(race?.activity_id ?? defaultActivityId ?? "")
+  const [notes, setNotes] = useState(initialMeta.raw_notes ?? "")
   const [photos, setPhotos] = useState<string[]>(race?.photos_urls ?? [])
+
   const [uploading, setUploading] = useState(false)
   const userPickedShoe = useRef(false)
 
+  // Sections State
+  const [openSections, setOpenSections] = useState({
+    esencial: true,
+    prioridad: false,
+    objetivos: false,
+    logistica: false,
+    post: false,
+  })
+
+  const toggleSection = (key: keyof typeof openSections) => {
+    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  // Automatic target pace calculation
+  useEffect(() => {
+    if (targetTime && distanceKm && goalType === "tiempo") {
+      const parts = targetTime.split(":")
+      let seconds = 0
+      if (parts.length === 3) {
+        seconds = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2])
+      } else if (parts.length === 2) {
+        seconds = parseInt(parts[0]) * 60 + parseInt(parts[1])
+      }
+      
+      const dist = parseFloat(distanceKm)
+      if (dist > 0 && seconds > 0) {
+        const paceSecs = Math.floor(seconds / dist)
+        const pm = Math.floor(paceSecs / 60)
+        const ps = paceSecs % 60
+        setTargetPace(`${pm.toString().padStart(2, '0')}:${ps.toString().padStart(2, '0')}`)
+      }
+    }
+  }, [targetTime, distanceKm, goalType])
+
   const activitiesQuery = useQuery({
     queryKey: ["activities", "strava"],
-    queryFn: () =>
-      ActivitiesService.readActivities({ sourceType: "strava", limit: 100 }),
+    queryFn: () => ActivitiesService.readActivities({ sourceType: "strava", limit: 100 }),
     enabled: open,
   })
 
@@ -80,9 +156,7 @@ export function RaceFormDialog({
     mutationFn: () => {
       const payload = {
         event_name: eventName,
-        date: date
-          ? new Date(`${date}T12:00:00`).toISOString()
-          : new Date().toISOString(),
+        date: date ? new Date(`${date}T12:00:00`).toISOString() : new Date().toISOString(),
         distance_km: Number(distanceKm) || 0,
         location: location || null,
         official_time_seconds: parseRaceTime(officialTime),
@@ -90,16 +164,28 @@ export function RaceFormDialog({
         position: position ? Number(position) : null,
         category: category || null,
         bib_number: bibNumber || null,
-        notes: notes || null,
+        notes: stringifyRaceNotes({
+          priority,
+          status,
+          corral,
+          start_time: startTime,
+          target_pace: targetPace,
+          target_time: targetTime,
+          splits_strategy: splitsStrategy,
+          nutrition_plan: nutritionPlan,
+          raw_notes: notes,
+          surface_type: surfaceType,
+          elevation_profile: elevationProfile,
+          goal_type: goalType,
+          kit_retrieval_info: kitRetrievalInfo,
+          web_link: webLink,
+        }),
         activity_id: activityId || null,
         shoe_id: shoeId || null,
         photos_urls: photos,
       }
       if (race) {
-        return RacesService.updateRace({
-          raceId: race.id,
-          requestBody: payload,
-        })
+        return RacesService.updateRace({ raceId: race.id, requestBody: payload })
       }
       return RacesService.createRace({ requestBody: payload })
     },
@@ -118,9 +204,7 @@ export function RaceFormDialog({
     if (!file) return
     setUploading(true)
     try {
-      const result = await StorageService.uploadFile({
-        formData: { file: file as unknown as string },
-      })
+      const result = await StorageService.uploadFile({ formData: { file: file as unknown as string } })
       const url = String((result as Record<string, string>).url ?? "")
       if (url) setPhotos((prev) => [...prev, url])
     } catch (error) {
@@ -132,221 +216,427 @@ export function RaceFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {race ? "Editar carrera" : "Registrar carrera"}
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto bg-slate-900 border-slate-800 text-white sm:rounded-2xl p-0 gap-0">
+        <DialogHeader className="p-6 border-b border-slate-800 sticky top-0 bg-slate-900/90 backdrop-blur-md z-10">
+          <DialogTitle className="text-xl font-black text-white tracking-tight">
+            {race ? "Editar Carrera" : "Añadir Carrera"}
           </DialogTitle>
-          <DialogDescription>
-            Guardá el evento, tus tiempos y la bitácora.
+          <DialogDescription className="text-sm text-slate-400">
+            Estructura los detalles, metas y logística de tu evento.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <Label htmlFor="race-name">Evento</Label>
+        <div className="p-6 flex flex-col gap-4">
+          
+          {/* Bloque 1: Esencial */}
+          <Section title="1. Datos del Evento" icon={Flag} open={openSections.esencial} onToggle={() => toggleSection("esencial")}>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nombre de la Carrera</Label>
               <Input
-                id="race-name"
+                className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
                 value={eventName}
                 onChange={(e) => setEventName(e.target.value)}
-                placeholder="Ej: 15k Puerto Madero"
+                placeholder="Buscador predictivo o texto libre (Ej: NB 15K)"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="race-date">Fecha</Label>
-              <Input
-                id="race-date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="race-distance">Distancia (km)</Label>
-              <Input
-                id="race-distance"
-                type="number"
-                step="0.1"
-                value={distanceKm}
-                onChange={(e) => setDistanceKm(e.target.value)}
-                placeholder="21.1"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <Label htmlFor="race-location">Lugar</Label>
-              <Input
-                id="race-location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Ciudad"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="race-official">Tiempo oficial (mm:ss)</Label>
-              <Input
-                id="race-official"
-                value={officialTime}
-                onChange={(e) => setOfficialTime(e.target.value)}
-                placeholder="42:30"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="race-chip">Tiempo chip (mm:ss)</Label>
-              <Input
-                id="race-chip"
-                value={chipTime}
-                onChange={(e) => setChipTime(e.target.value)}
-                placeholder="42:18"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="race-position">Puesto</Label>
-              <Input
-                id="race-position"
-                type="number"
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
-                placeholder="123"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="race-bib">Dorsal</Label>
-              <Input
-                id="race-bib"
-                value={bibNumber}
-                onChange={(e) => setBibNumber(e.target.value)}
-                placeholder="A-1024"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <Label htmlFor="race-category">Categoría</Label>
-              <Input
-                id="race-category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="General / M40 / ..."
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label>Actividad de Strava vinculada</Label>
-            <select
-              className="rounded-md border bg-background px-3 py-2 text-sm"
-              value={activityId}
-              onChange={(e) => {
-                const nextActivityId = e.target.value
-                setActivityId(nextActivityId)
-                if (!userPickedShoe.current) {
-                  const activity = (activitiesQuery.data?.data ?? []).find(
-                    (a) => a.id === nextActivityId,
-                  )
-                  if (activity?.cardio?.shoe_id) {
-                    setShoeId(activity.cardio.shoe_id)
-                  }
-                }
-              }}
-            >
-              <option value="">Ninguna</option>
-              {(activitiesQuery.data?.data ?? []).map((activity) => (
-                <option key={activity.id} value={activity.id}>
-                  {activity.name} · {activity.timestamp.slice(0, 10)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label>Calzado</Label>
-            <select
-              className="rounded-md border bg-background px-3 py-2 text-sm"
-              value={shoeId}
-              onChange={(e) => {
-                userPickedShoe.current = true
-                setShoeId(e.target.value)
-              }}
-            >
-              <option value="">Sin calzado</option>
-              {(shoesQuery.data?.data ?? []).map((shoe) => (
-                <option key={shoe.id} value={shoe.id}>
-                  {shoe.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label>Fotos</Label>
-            <div className="flex flex-wrap gap-2">
-              {photos.map((url, index) => (
-                <div
-                  key={index}
-                  className="relative h-20 w-20 overflow-hidden rounded-lg border"
-                >
-                  <img
-                    src={url}
-                    alt={`Foto ${index + 1}`}
-                    className="h-full w-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white"
-                    onClick={() =>
-                      setPhotos((prev) => prev.filter((_, i) => i !== index))
-                    }
+            
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Distancia Oficial (km)</Label>
+                <div className="flex gap-2">
+                  <select
+                    className="w-24 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    value={distanceKm}
+                    onChange={(e) => setDistanceKm(e.target.value)}
                   >
-                    <X className="size-3" />
-                  </button>
+                    <option value="">Personalizada</option>
+                    <option value="5">5K</option>
+                    <option value="10">10K</option>
+                    <option value="15">15K</option>
+                    <option value="21.1">21K (Media)</option>
+                    <option value="42.2">42K (Maratón)</option>
+                  </select>
+                  <Input
+                    className="flex-1 bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                    type="number"
+                    step="0.1"
+                    value={distanceKm}
+                    onChange={(e) => setDistanceKm(e.target.value)}
+                    placeholder="Dist."
+                  />
                 </div>
-              ))}
-              <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-lg border border-dashed text-muted-foreground hover:bg-muted">
-                {uploading ? (
-                  <Loader2 className="size-5 animate-spin" />
-                ) : (
-                  <ImagePlus className="size-5" />
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={uploadPhoto}
+              </div>
+              
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ubicación</Label>
+                <Input
+                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Ciudad, País"
                 />
-              </label>
-            </div>
-          </div>
+              </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="race-notes">Bitácora</Label>
-            <textarea
-              id="race-notes"
-              className="flex min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Estrategia, sensaciones, clima..."
-            />
-          </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha</Label>
+                <Input
+                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tipo de Superficie</Label>
+                <select
+                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  value={surfaceType || ""}
+                  onChange={(e) => setSurfaceType(e.target.value as any)}
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="calle">Calle / Asfalto</option>
+                  <option value="pista">Pista</option>
+                  <option value="trail">Trail / Montaña</option>
+                  <option value="mixto">Mixto</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Perfil de Altimetría</Label>
+                <select
+                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  value={elevationProfile || ""}
+                  onChange={(e) => setElevationProfile(e.target.value as any)}
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="plano">Plano</option>
+                  <option value="ondulado">Ondulado</option>
+                  <option value="subidas">Subidas pronunciadas</option>
+                </select>
+              </div>
+            </div>
+          </Section>
+
+          {/* Bloque 2: Prioridad */}
+          <Section title="2. Prioridad y Plan de Entrenamiento" icon={MapPin} open={openSections.prioridad} onToggle={() => toggleSection("prioridad")}>
+             <div className="flex flex-col gap-1.5">
+              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Prioridad de la Carrera</Label>
+              <select
+                className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                value={priority || ""}
+                onChange={(e) => setPriority(e.target.value as any)}
+              >
+                <option value="">No definida</option>
+                <option value="A">🥇 Objetivo A (Principal de temporada)</option>
+                <option value="B">🥈 Objetivo B (Preparatoria / Tune-up)</option>
+                <option value="C">🥉 Objetivo C (Recreativa / Acompañamiento)</option>
+              </select>
+            </div>
+            
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vincular a Plan de Entrenamiento</Label>
+              <select
+                className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                value={linkToPlan ? "yes" : "no"}
+                onChange={(e) => setLinkToPlan(e.target.value === "yes")}
+              >
+                <option value="no">Sin plan asociado (por defecto)</option>
+                <option value="yes">Sí, crear/integrar al plan actual</option>
+              </select>
+              <span className="text-xs text-slate-500 mt-1">La integración con el calendario ajustará los días de descarga (*tapering*).</span>
+            </div>
+          </Section>
+
+          {/* Bloque 3: Objetivos */}
+          <Section title="3. Objetivos de Rendimiento" icon={Target} open={openSections.objetivos} onToggle={() => toggleSection("objetivos")}>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tipo de Meta</Label>
+                <select
+                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  value={goalType || ""}
+                  onChange={(e) => setGoalType(e.target.value as any)}
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="completar">Completar la distancia (Sin presión de tiempo)</option>
+                  <option value="tiempo">Buscar marca / Tiempo objetivo (Time Goal)</option>
+                </select>
+              </div>
+
+              {goalType === "tiempo" && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tiempo Objetivo</Label>
+                    <Input
+                      className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                      value={targetTime}
+                      onChange={(e) => setTargetTime(e.target.value)}
+                      placeholder="01:14:30"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ritmo Promedio Proyectado</Label>
+                    <Input
+                      className="bg-slate-950 border-slate-800 text-slate-400 focus-visible:ring-orange-500/50 rounded-xl cursor-not-allowed font-medium"
+                      value={targetPace ? `${targetPace} /km` : "--:-- /km"}
+                      readOnly
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Calzado a utilizar</Label>
+                <select
+                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  value={shoeId}
+                  onChange={(e) => {
+                    userPickedShoe.current = true
+                    setShoeId(e.target.value)
+                  }}
+                >
+                  <option value="">Sin calzado asignado</option>
+                  {(shoesQuery.data?.data ?? []).map((shoe) => (
+                    <option key={shoe.id} value={shoe.id}>
+                      {shoe.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </Section>
+
+          {/* Bloque 4: Logística */}
+          <Section title="4. Logística y Evento (Opcional)" icon={Navigation} open={openSections.logistica} onToggle={() => toggleSection("logistica")}>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Horario de Largada</Label>
+                <Input
+                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado de Inscripción</Label>
+                <select
+                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  value={status || ""}
+                  onChange={(e) => setStatus(e.target.value as any)}
+                >
+                  <option value="">Desconocido</option>
+                  <option value="confirmed">Confirmada</option>
+                  <option value="pending_payment">Pago pendiente</option>
+                  <option value="pending_kit">Retiro de kit pendiente</option>
+                </select>
+              </div>
+              
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dorsal / Bib Number</Label>
+                <Input
+                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  value={bibNumber}
+                  onChange={(e) => setBibNumber(e.target.value)}
+                  placeholder="Ej: A-1024"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Corral / Cajón de salida</Label>
+                <Input
+                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  value={corral}
+                  onChange={(e) => setCorral(e.target.value)}
+                  placeholder="Ej: Cajón Verde"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lugar y Fecha de Retiro de Kit</Label>
+                <Input
+                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  value={kitRetrievalInfo}
+                  onChange={(e) => setKitRetrievalInfo(e.target.value)}
+                  placeholder="Ej: Expo Running, Viernes 14hs"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Web oficial o Comprobante (URL)</Label>
+                <Input
+                  className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
+                  value={webLink}
+                  onChange={(e) => setWebLink(e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estrategia: Splits (Opcional)</Label>
+                <textarea
+                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white min-h-[60px]"
+                  value={splitsStrategy}
+                  onChange={(e) => setSplitsStrategy(e.target.value)}
+                  placeholder="Ej: km 1-5 suave, km 6-12 ritmo crucero..."
+                />
+              </div>
+              
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estrategia: Nutrición (Opcional)</Label>
+                <textarea
+                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white min-h-[60px]"
+                  value={nutritionPlan}
+                  onChange={(e) => setNutritionPlan(e.target.value)}
+                  placeholder="Ej: Geles en km 10, 20 y 30."
+                />
+              </div>
+            </div>
+          </Section>
+
+          {/* Bloque 5: Post-Carrera */}
+          <Section title="5. Resultados y Post-Carrera" icon={Trophy} open={openSections.post} onToggle={() => toggleSection("post")}>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tiempo Oficial</Label>
+                <Input
+                  className="bg-slate-950 border-slate-800 text-white rounded-xl"
+                  value={officialTime}
+                  onChange={(e) => setOfficialTime(e.target.value)}
+                  placeholder="01:15:00"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tiempo Neto (Chip)</Label>
+                <Input
+                  className="bg-slate-950 border-slate-800 text-white rounded-xl"
+                  value={chipTime}
+                  onChange={(e) => setChipTime(e.target.value)}
+                  placeholder="01:14:45"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Puesto General</Label>
+                <Input
+                  className="bg-slate-950 border-slate-800 text-white rounded-xl"
+                  type="number"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  placeholder="Puesto (ej: 12)"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Categoría</Label>
+                <Input
+                  className="bg-slate-950 border-slate-800 text-white rounded-xl"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="Ej: M40"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5 sm:col-span-2 mt-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Actividad de Strava vinculada</Label>
+                <select
+                  className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  value={activityId}
+                  onChange={(e) => {
+                    const nextActivityId = e.target.value
+                    setActivityId(nextActivityId)
+                    if (!userPickedShoe.current) {
+                      const activity = (activitiesQuery.data?.data ?? []).find(
+                        (a) => a.id === nextActivityId,
+                      )
+                      if (activity?.cardio?.shoe_id) {
+                        setShoeId(activity.cardio.shoe_id)
+                      }
+                    }
+                  }}
+                >
+                  <option value="">Ninguna</option>
+                  {(activitiesQuery.data?.data ?? []).map((activity) => (
+                    <option key={activity.id} value={activity.id}>
+                      {activity.name} · {activity.timestamp.slice(0, 10)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bitácora y Notas Personales</Label>
+                <textarea
+                  className="flex min-h-[80px] w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white shadow-sm"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="¿Cómo te sentiste? ¿Clima? Lecciones aprendidas..."
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Camera className="size-3" /> Fotos del Evento</Label>
+                <div className="flex flex-wrap gap-2">
+                  {photos.map((url, index) => (
+                    <div
+                      key={index}
+                      className="relative h-20 w-20 overflow-hidden rounded-xl border border-slate-800"
+                    >
+                      <img
+                        src={url}
+                        alt={`Foto ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white"
+                        onClick={() =>
+                          setPhotos((prev) => prev.filter((_, i) => i !== index))
+                        }
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-900/50 text-slate-500 hover:bg-slate-800 transition-colors">
+                    {uploading ? (
+                      <Loader2 className="size-5 animate-spin" />
+                    ) : (
+                      <ImagePlus className="size-5" />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={uploadPhoto}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </Section>
+
         </div>
 
-        <DialogFooter>
+        <div className="p-6 border-t border-slate-800 bg-slate-900 sticky bottom-0 z-10 flex gap-3 justify-end rounded-b-2xl">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={() => onOpenChange(false)}
+            className="rounded-xl text-slate-300 hover:text-white"
           >
-            Cancelar
+            Cancelar / Descartar
           </Button>
           <Button
             type="button"
-            disabled={!eventName.trim() || mutation.isPending}
+            className="rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold shadow-lg shadow-orange-500/20"
+            disabled={mutation.isPending || !eventName || !distanceKm || !date}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending && (
+            {mutation.isPending ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
-            )}
-            Guardar
+            ) : null}
+            Guardar y añadir al calendario
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )
