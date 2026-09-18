@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { ImagePlus, Loader2, Footprints, X } from "lucide-react"
+import { Footprints, ImagePlus, Loader2, X } from "lucide-react"
 import { useState } from "react"
 
 import {
@@ -132,13 +132,17 @@ export function ShoeFormDialog({
             {shoe ? "Editar Zapatilla" : "Registrar Nueva Zapatilla"}
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-400 mt-1">
-            Ingresá los detalles del calzado para el cálculo de desgaste y algoritmo Runna.
+            Ingresá los detalles del calzado para el cálculo de desgaste y
+            algoritmo Runna.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 mt-2 w-full min-w-0">
           <div className="flex flex-col gap-1.5 w-full">
-            <Label htmlFor="shoe-name" className="text-xs font-semibold text-slate-300">
+            <Label
+              htmlFor="shoe-name"
+              className="text-xs font-semibold text-slate-300"
+            >
               Nombre / Apodo *
             </Label>
             <Input
@@ -152,7 +156,12 @@ export function ShoeFormDialog({
 
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 w-full">
             <div className="flex flex-col gap-1.5 w-full">
-              <Label htmlFor="shoe-brand" className="text-xs font-semibold text-slate-300">Marca</Label>
+              <Label
+                htmlFor="shoe-brand"
+                className="text-xs font-semibold text-slate-300"
+              >
+                Marca
+              </Label>
               <Input
                 id="shoe-brand"
                 value={brand}
@@ -162,7 +171,12 @@ export function ShoeFormDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5 w-full">
-              <Label htmlFor="shoe-model" className="text-xs font-semibold text-slate-300">Modelo</Label>
+              <Label
+                htmlFor="shoe-model"
+                className="text-xs font-semibold text-slate-300"
+              >
+                Modelo
+              </Label>
               <Input
                 id="shoe-model"
                 value={model}
@@ -174,7 +188,12 @@ export function ShoeFormDialog({
           </div>
 
           <div className="flex flex-col gap-1.5 w-full">
-            <Label htmlFor="shoe-category" className="text-xs font-semibold text-slate-300">Categoría & Uso Recomendado</Label>
+            <Label
+              htmlFor="shoe-category"
+              className="text-xs font-semibold text-slate-300"
+            >
+              Categoría & Uso Recomendado
+            </Label>
             <select
               id="shoe-category"
               className="w-full max-w-full truncate rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white font-medium focus:border-emerald-500 focus:outline-none cursor-pointer"
@@ -184,7 +203,11 @@ export function ShoeFormDialog({
               }
             >
               {SHOE_CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value} className="bg-slate-900 text-white py-1">
+                <option
+                  key={cat.value}
+                  value={cat.value}
+                  className="bg-slate-900 text-white py-1"
+                >
                   {cat.label}
                 </option>
               ))}
@@ -193,7 +216,12 @@ export function ShoeFormDialog({
 
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 w-full">
             <div className="flex flex-col gap-1.5 w-full">
-              <Label htmlFor="shoe-purchase" className="text-xs font-semibold text-slate-300">Fecha de compra</Label>
+              <Label
+                htmlFor="shoe-purchase"
+                className="text-xs font-semibold text-slate-300"
+              >
+                Fecha de compra
+              </Label>
               <Input
                 id="shoe-purchase"
                 type="date"
@@ -203,7 +231,12 @@ export function ShoeFormDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5 w-full">
-              <Label htmlFor="shoe-target" className="text-xs font-semibold text-slate-300">Vida útil estimada (km)</Label>
+              <Label
+                htmlFor="shoe-target"
+                className="text-xs font-semibold text-slate-300"
+              >
+                Vida útil estimada (km)
+              </Label>
               <Input
                 id="shoe-target"
                 type="number"
@@ -217,7 +250,12 @@ export function ShoeFormDialog({
           </div>
 
           <div className="flex flex-col gap-1.5 w-full">
-            <Label htmlFor="shoe-color" className="text-xs font-semibold text-slate-300">Color distintivo (Hexadecimal)</Label>
+            <Label
+              htmlFor="shoe-color"
+              className="text-xs font-semibold text-slate-300"
+            >
+              Color distintivo (Hexadecimal)
+            </Label>
             <Input
               id="shoe-color"
               value={color}
@@ -228,7 +266,9 @@ export function ShoeFormDialog({
           </div>
 
           <div className="flex flex-col gap-1.5 w-full">
-            <Label className="text-xs font-semibold text-slate-300">Foto de la zapatilla</Label>
+            <Label className="text-xs font-semibold text-slate-300">
+              Foto de la zapatilla
+            </Label>
             {photoUrl ? (
               <div className="relative inline-block h-28 w-28 overflow-hidden rounded-xl border border-slate-700 bg-slate-800">
                 <img
@@ -251,7 +291,9 @@ export function ShoeFormDialog({
                 ) : (
                   <ImagePlus className="size-5 text-emerald-400" />
                 )}
-                <span className="text-xs font-semibold">Subir foto de calzado</span>
+                <span className="text-xs font-semibold">
+                  Subir foto de calzado
+                </span>
                 <input
                   type="file"
                   accept="image/*"
@@ -263,7 +305,12 @@ export function ShoeFormDialog({
           </div>
 
           <div className="flex flex-col gap-1.5 w-full">
-            <Label htmlFor="shoe-notes" className="text-xs font-semibold text-slate-300">Notas y sensaciones</Label>
+            <Label
+              htmlFor="shoe-notes"
+              className="text-xs font-semibold text-slate-300"
+            >
+              Notas y sensaciones
+            </Label>
             <textarea
               id="shoe-notes"
               className="flex min-h-20 w-full max-w-full rounded-xl border border-slate-700 bg-slate-800 p-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none resize-none"
@@ -275,7 +322,12 @@ export function ShoeFormDialog({
 
           <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-800/40 p-3.5 sm:p-4 w-full">
             <div className="min-w-0 flex-1">
-              <Label htmlFor="shoe-active" className="font-bold text-sm text-white block truncate">Par en rotación activa</Label>
+              <Label
+                htmlFor="shoe-active"
+                className="font-bold text-sm text-white block truncate"
+              >
+                Par en rotación activa
+              </Label>
               <p className="text-xs text-slate-400 truncate">
                 Al desmarcarla, se moverá al armario de retiradas.
               </p>

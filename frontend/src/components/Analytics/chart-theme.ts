@@ -2,12 +2,12 @@
  * Tema de charts para OpenRunning — Recharts & Dark Slate.
  */
 export const DOMAIN_COLORS = {
-  cardio: "#10b981",
-  strength: "#8b5cf6",
-  success: "#10b981",
-  race: "#f59e0b",
-  pace: "#14b8a6",
-  active: "#3b82f6",
+  cardio: "#EAFC5F",
+  strength: "#A3E635",
+  success: "#EAFC5F",
+  race: "#F59E0B",
+  pace: "#EAFC5F",
+  active: "#A3E635",
 } as const
 
 export type DomainColorKey = keyof typeof DOMAIN_COLORS

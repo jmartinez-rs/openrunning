@@ -53,7 +53,11 @@ export function RaceYearMetrics({ completed }: { completed: RacePublic[] }) {
         </dl>
       </div>
 
-      <Button asChild variant="outline" className="mt-6 w-full rounded-xl bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800">
+      <Button
+        asChild
+        variant="outline"
+        className="mt-6 w-full rounded-xl bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
+      >
         <Link to="/analytics/cardio">
           Ver detalles
           <ArrowRight className="ml-2 size-4" />

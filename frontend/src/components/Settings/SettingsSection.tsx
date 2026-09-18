@@ -1,5 +1,5 @@
-import { ChevronRight, LucideIcon } from "lucide-react"
-import React from "react"
+import { ChevronRight, type LucideIcon } from "lucide-react"
+import type React from "react"
 import { cn } from "@/lib/utils"
 
 interface SettingsSectionProps {
@@ -67,7 +67,8 @@ export function SettingsRow({
       onClick={onClick}
       className={cn(
         "flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors",
-        onClick && "cursor-pointer hover:bg-slate-800/40 active:bg-slate-800/60",
+        onClick &&
+          "cursor-pointer hover:bg-slate-800/40 active:bg-slate-800/60",
         danger && "text-red-400 hover:bg-red-500/10",
         className,
       )}

@@ -1,9 +1,8 @@
+import { Clock, Medal, Trophy } from "lucide-react"
 import { useState } from "react"
-import { Medal, Trophy, Clock } from "lucide-react"
 
 import type { RacePublic } from "@/client"
-import { formatRaceTime, formatRaceDate, formatRacePace } from "./race-utils"
-
+import { formatRaceDate, formatRacePace, formatRaceTime } from "./race-utils"
 
 interface MedalCard3DProps {
   race: RacePublic
@@ -32,32 +31,33 @@ export function MedalCard3D({ race, isPB, onClick }: MedalCard3DProps) {
   }
 
   return (
-    <div 
+    <div
       className="group perspective-1000 w-full h-[320px] cursor-pointer"
       onClick={onClick}
     >
-      <div 
+      <div
         className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${
           flipped ? "rotate-y-180" : ""
         }`}
       >
         {/* Front */}
         <div className="absolute inset-0 backface-hidden w-full h-full rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col items-center justify-center p-6 text-center hover:border-slate-700 transition-colors">
-          
           {isPB && (
             <div className="absolute top-3 left-[-30px] rotate-[-45deg] bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest py-1 w-[120px] shadow-lg shadow-orange-500/20">
               PB / PR
             </div>
           )}
 
-          <button 
+          <button
             className="absolute top-3 right-3 p-2 rounded-full bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
             onClick={handleFlip}
           >
             <Trophy className="size-4" />
           </button>
 
-          <div className={`p-5 rounded-full ${medalBgClass} mb-4 shadow-[0_0_30px_rgba(255,165,0,0.1)]`}>
+          <div
+            className={`p-5 rounded-full ${medalBgClass} mb-4 shadow-[0_0_30px_rgba(255,165,0,0.1)]`}
+          >
             <Medal className={`size-16 ${medalColorClass} drop-shadow-md`} />
           </div>
 
@@ -78,8 +78,7 @@ export function MedalCard3D({ race, isPB, onClick }: MedalCard3DProps) {
 
         {/* Back */}
         <div className="absolute inset-0 backface-hidden rotate-y-180 w-full h-full rounded-2xl bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700 shadow-xl p-6 flex flex-col">
-          
-          <button 
+          <button
             className="absolute top-3 right-3 p-2 rounded-full bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
             onClick={handleFlip}
           >
@@ -89,7 +88,7 @@ export function MedalCard3D({ race, isPB, onClick }: MedalCard3DProps) {
           <h4 className="text-sm font-bold text-white tracking-tight pr-8 line-clamp-1">
             {race.event_name}
           </h4>
-          
+
           <div className="flex-1 mt-4 space-y-4">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
@@ -126,7 +125,7 @@ export function MedalCard3D({ race, isPB, onClick }: MedalCard3DProps) {
               )}
             </div>
           </div>
-          
+
           <button className="mt-4 w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-white transition-colors">
             Abrir Ficha
           </button>

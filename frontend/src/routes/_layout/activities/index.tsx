@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
+  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Filter,
@@ -11,9 +12,8 @@ import {
   SearchX,
   Upload,
   X,
-  ArrowLeft,
 } from "lucide-react"
-import { useState, useMemo } from "react"
+import { useMemo, useState } from "react"
 import {
   Bar,
   BarChart,
@@ -304,7 +304,9 @@ function ActivitiesHistory() {
         {/* Collapsible Date Filters */}
         {showAllActivities && showAdvancedFilters && (
           <div className="flex flex-wrap items-center gap-3 p-3.5 rounded-2xl border border-slate-800/80 bg-slate-900/40 animate-in fade-in slide-in-from-top-2 duration-150">
-            <span className="text-xs font-medium text-slate-400">Rango de fechas:</span>
+            <span className="text-xs font-medium text-slate-400">
+              Rango de fechas:
+            </span>
             <div className="flex items-center gap-2">
               <Input
                 type="date"
@@ -347,7 +349,10 @@ function ActivitiesHistory() {
       {query.isLoading ? (
         <div className="space-y-2.5">
           {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton className="h-16 w-full rounded-2xl bg-slate-900/60" key={i} />
+            <Skeleton
+              className="h-16 w-full rounded-2xl bg-slate-900/60"
+              key={i}
+            />
           ))}
         </div>
       ) : query.isError ? (
@@ -372,7 +377,11 @@ function ActivitiesHistory() {
         /* Empty State — OpenGym style .empty */
         <div className="flex flex-col items-center justify-center gap-3 py-16 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/20">
           <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-900 border border-slate-800 text-slate-500">
-            {hasFilters ? <SearchX className="size-7" /> : <HistoryIcon className="size-7" />}
+            {hasFilters ? (
+              <SearchX className="size-7" />
+            ) : (
+              <HistoryIcon className="size-7" />
+            )}
           </div>
           <div>
             <h3 className="text-base font-semibold text-slate-200">
@@ -397,141 +406,151 @@ function ActivitiesHistory() {
             </Button>
           )}
         </div>
-      ) : (
-        <>
-          {!showAllActivities ? (
-            /* Dashboard-like View */
-            <div className="space-y-8 animate-in fade-in duration-300">
-              {/* Last Workouts Horizontal Carousel */}
-              <div className="overflow-hidden">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-slate-200">Últimas actividades</h2>
-                  <Button variant="ghost" size="sm" className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10" onClick={() => setShowAllActivities(true)}>
-                    Ver todas
-                  </Button>
-                </div>
-                <div className="relative">
-                  {/* Decorative timeline line */}
-                  <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-slate-800 -translate-y-1/2 z-0" />
-                  
-                  <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 pt-2 px-2 scrollbar-hide relative z-10">
-                    {filteredActivities.slice(0, 10).map((activity, index) => (
-                      <div key={activity.id} className="snap-center shrink-0">
-                        <WorkoutCard activity={activity} isActive={index === 0} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Volume Chart */}
-              <div>
-                <h2 className="text-xl font-bold text-slate-200 mb-4">Volumen mensual</h2>
-                <ChartCard
-                  title=""
-                  loading={cardioMonthlyQuery.isLoading}
-                  error={cardioMonthlyQuery.isError}
-                  onRetry={() => cardioMonthlyQuery.refetch()}
-                >
-                  {monthlyKm.length > 0 &&
-                    !cardioMonthlyQuery.isLoading &&
-                    !cardioMonthlyQuery.isError && (
-                      <ResponsiveContainer width="100%" height={CHART_HEIGHTS.sm}>
-                        <BarChart
-                          data={monthlyKm}
-                          margin={{ top: 20, right: 0, left: -20, bottom: 0 }}
-                        >
-                          <CartesianGrid
-                            vertical={false}
-                            strokeDasharray="3 3"
-                            stroke="#1e293b"
-                          />
-                          <XAxis
-                            dataKey="name"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={AXIS_TICK_STYLE}
-                            dy={10}
-                          />
-                          <YAxis
-                            axisLine={false}
-                            tickLine={false}
-                            tick={AXIS_TICK_STYLE}
-                            tickFormatter={(value: number) =>
-                              value === 0 ? "" : `${value}`
-                            }
-                          />
-                          <Tooltip
-                            cursor={{ fill: "#0f172a", opacity: 0.4 }}
-                            contentStyle={TOOLTIP_CONTENT_STYLE}
-                            formatter={(value: any) => {
-                              const numValue = Number(value) || 0
-                              return [`${numValue.toFixed(1)} km`, "Distancia"]
-                            }}
-                          />
-                          <Bar
-                            dataKey="km"
-                            fill={DOMAIN_COLORS.cardio}
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={40}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                </ChartCard>
-              </div>
+      ) : !showAllActivities ? (
+        /* Dashboard-like View */
+        <div className="space-y-8 animate-in fade-in duration-300">
+          {/* Last Workouts Horizontal Carousel */}
+          <div className="overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-slate-200">
+                Últimas actividades
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10"
+                onClick={() => setShowAllActivities(true)}
+              >
+                Ver todas
+              </Button>
             </div>
-          ) : (
-            /* All Activities List View */
-            <div className="animate-in slide-in-from-right-4 duration-300">
-              <div className="flex items-center gap-2 mb-4">
-                <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-200 px-2" onClick={() => setShowAllActivities(false)}>
-                  <ArrowLeft className="size-4 mr-2" />
-                  Volver al panel
-                </Button>
-              </div>
-              
-              {/* List of Workout/Activity Rows */}
-              <div id="all-activities" className="space-y-2.5 mt-2">
-                {filteredActivities.map((activity) => (
-                  <ActivityRow activity={activity} key={activity.id} />
+            <div className="relative">
+              {/* Decorative timeline line */}
+              <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-slate-800 -translate-y-1/2 z-0" />
+
+              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 pt-2 px-2 scrollbar-hide relative z-10">
+                {filteredActivities.slice(0, 10).map((activity, index) => (
+                  <div key={activity.id} className="snap-center shrink-0">
+                    <WorkoutCard activity={activity} isActive={index === 0} />
+                  </div>
                 ))}
               </div>
-
-              {/* Pagination Footer */}
-              <div className="flex items-center justify-between pt-4 mt-6 border-t border-slate-800/60 text-xs text-slate-400">
-                <span>
-                  Mostrando {skip + 1}–{Math.min(skip + PAGE_SIZE, totalCount)} de{" "}
-                  {totalCount} actividades
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={skip === 0}
-                    onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}
-                    className="h-8 rounded-xl border-slate-800 text-xs text-slate-300 disabled:opacity-40"
-                  >
-                    <ChevronLeft className="size-3.5 mr-1" />
-                    Anterior
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={skip + PAGE_SIZE >= totalCount}
-                    onClick={() => setSkip(skip + PAGE_SIZE)}
-                    className="h-8 rounded-xl border-slate-800 text-xs text-slate-300 disabled:opacity-40"
-                  >
-                    Siguiente
-                    <ChevronRight className="size-3.5 ml-1" />
-                  </Button>
-                </div>
-              </div>
             </div>
-          )}
-        </>
+          </div>
+
+          {/* Volume Chart */}
+          <div>
+            <h2 className="text-xl font-bold text-slate-200 mb-4">
+              Volumen mensual
+            </h2>
+            <ChartCard
+              title=""
+              loading={cardioMonthlyQuery.isLoading}
+              error={cardioMonthlyQuery.isError}
+              onRetry={() => cardioMonthlyQuery.refetch()}
+            >
+              {monthlyKm.length > 0 &&
+                !cardioMonthlyQuery.isLoading &&
+                !cardioMonthlyQuery.isError && (
+                  <ResponsiveContainer width="100%" height={CHART_HEIGHTS.sm}>
+                    <BarChart
+                      data={monthlyKm}
+                      margin={{ top: 20, right: 0, left: -20, bottom: 0 }}
+                    >
+                      <CartesianGrid
+                        vertical={false}
+                        strokeDasharray="3 3"
+                        stroke="#1e293b"
+                      />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={AXIS_TICK_STYLE}
+                        dy={10}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={AXIS_TICK_STYLE}
+                        tickFormatter={(value: number) =>
+                          value === 0 ? "" : `${value}`
+                        }
+                      />
+                      <Tooltip
+                        cursor={{ fill: "#0f172a", opacity: 0.4 }}
+                        contentStyle={TOOLTIP_CONTENT_STYLE}
+                        formatter={(value: any) => {
+                          const numValue = Number(value) || 0
+                          return [`${numValue.toFixed(1)} km`, "Distancia"]
+                        }}
+                      />
+                      <Bar
+                        dataKey="km"
+                        fill={DOMAIN_COLORS.cardio}
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={40}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+            </ChartCard>
+          </div>
+        </div>
+      ) : (
+        /* All Activities List View */
+        <div className="animate-in slide-in-from-right-4 duration-300">
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-400 hover:text-slate-200 px-2"
+              onClick={() => setShowAllActivities(false)}
+            >
+              <ArrowLeft className="size-4 mr-2" />
+              Volver al panel
+            </Button>
+          </div>
+
+          {/* List of Workout/Activity Rows */}
+          <div id="all-activities" className="space-y-2.5 mt-2">
+            {filteredActivities.map((activity) => (
+              <ActivityRow activity={activity} key={activity.id} />
+            ))}
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="flex items-center justify-between pt-4 mt-6 border-t border-slate-800/60 text-xs text-slate-400">
+            <span>
+              Mostrando {skip + 1}–{Math.min(skip + PAGE_SIZE, totalCount)} de{" "}
+              {totalCount} actividades
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={skip === 0}
+                onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))}
+                className="h-8 rounded-xl border-slate-800 text-xs text-slate-300 disabled:opacity-40"
+              >
+                <ChevronLeft className="size-3.5 mr-1" />
+                Anterior
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={skip + PAGE_SIZE >= totalCount}
+                onClick={() => setSkip(skip + PAGE_SIZE)}
+                className="h-8 rounded-xl border-slate-800 text-xs text-slate-300 disabled:opacity-40"
+              >
+                Siguiente
+                <ChevronRight className="size-3.5 ml-1" />
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

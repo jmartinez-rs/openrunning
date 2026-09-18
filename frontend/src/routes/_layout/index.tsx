@@ -174,10 +174,10 @@ function OpenRunningDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between pt-2">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-2xl font-display font-black text-white tracking-tight">
             ¡Hola, {user?.full_name?.split(" ")[0] || "Corredor"}! 👋
           </h1>
-          <p className="text-xs text-slate-400 capitalize font-medium">
+          <p className="text-xs text-muted-foreground capitalize font-medium">
             {new Date().toLocaleDateString("es-AR", {
               weekday: "long",
               day: "numeric",
@@ -188,7 +188,7 @@ function OpenRunningDashboard() {
         <button
           type="button"
           onClick={() => navigate({ to: "/settings" })}
-          className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+          className="p-2.5 rounded-xl bg-card/90 border border-white/5 text-muted-foreground hover:text-white transition-colors cursor-pointer shadow-card"
           aria-label="Settings"
         >
           <Settings className="w-5 h-5" />

@@ -1,19 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Plus, RefreshCw, Trophy, Archive } from "lucide-react"
+import { Archive, Plus, RefreshCw, Trophy } from "lucide-react"
 import { useState } from "react"
 
 import { type RacePublic, RacesService } from "@/client"
+import { HistoryRacesTab } from "@/components/Races/HistoryRacesTab"
+import { RaceFormDialog } from "@/components/Races/RaceFormDialog"
+import { RaceMemoryModal } from "@/components/Races/RaceMemoryModal"
+import { UpcomingRacesTab } from "@/components/Races/UpcomingRacesTab"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
-
-import { RaceFormDialog } from "@/components/Races/RaceFormDialog"
-import { UpcomingRacesTab } from "@/components/Races/UpcomingRacesTab"
-import { HistoryRacesTab } from "@/components/Races/HistoryRacesTab"
-import { RaceMemoryModal } from "@/components/Races/RaceMemoryModal"
 
 export const Route = createFileRoute("/_layout/races/")({
   component: Races,
@@ -26,9 +25,10 @@ function Races() {
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<RacePublic | null>(null)
-  
+
   const [memoryModalOpen, setMemoryModalOpen] = useState(false)
-  const [selectedRaceForMemory, setSelectedRaceForMemory] = useState<RacePublic | null>(null)
+  const [selectedRaceForMemory, setSelectedRaceForMemory] =
+    useState<RacePublic | null>(null)
 
   const query = useQuery({
     queryKey: ["races", ""],
@@ -48,11 +48,10 @@ function Races() {
 
   const races = query.data?.data ?? []
   const now = Date.now()
-  
+
   // Split into upcoming and completed
-  const upcoming = races
-    .filter((race) => new Date(race.date).getTime() > now)
-  
+  const upcoming = races.filter((race) => new Date(race.date).getTime() > now)
+
   const completed = races
     .filter((race) => new Date(race.date).getTime() <= now)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Newest first for history
@@ -66,7 +65,9 @@ function Races() {
     <div className="col-span-12 flex flex-col gap-6 pb-20">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Race Hub</h1>
+          <h1 className="text-3xl font-black text-white tracking-tight">
+            Race Hub
+          </h1>
           <p className="text-sm text-slate-400 mt-1">
             Gestiona tus próximos desafíos y tu baúl de recuerdos.
           </p>
@@ -112,13 +113,13 @@ function Races() {
       ) : (
         <Tabs defaultValue="upcoming" className="mt-4">
           <TabsList className="bg-slate-900 border border-slate-800 rounded-xl p-1">
-            <TabsTrigger 
+            <TabsTrigger
               value="upcoming"
               className="rounded-lg data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 data-[state=active]:shadow-none px-6 py-2"
             >
               <Trophy className="size-4 mr-2" /> Próximas
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="history"
               className="rounded-lg data-[state=active]:bg-slate-800 data-[state=active]:text-white text-slate-400 data-[state=active]:shadow-none px-6 py-2"
             >
@@ -127,18 +128,18 @@ function Races() {
           </TabsList>
 
           <TabsContent value="upcoming" className="focus-visible:outline-none">
-            <UpcomingRacesTab 
-              upcoming={upcoming} 
+            <UpcomingRacesTab
+              upcoming={upcoming}
               onOpenForm={() => {
                 setEditing(null)
                 setFormOpen(true)
-              }} 
+              }}
             />
           </TabsContent>
 
           <TabsContent value="history" className="focus-visible:outline-none">
-            <HistoryRacesTab 
-              completed={completed} 
+            <HistoryRacesTab
+              completed={completed}
               onOpenMemoryModal={handleOpenMemoryModal}
             />
           </TabsContent>
@@ -153,7 +154,7 @@ function Races() {
         }}
         race={editing}
       />
-      
+
       <RaceMemoryModal
         open={memoryModalOpen}
         onOpenChange={setMemoryModalOpen}

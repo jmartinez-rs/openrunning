@@ -3,11 +3,11 @@ import { Dumbbell, Footprints, HeartPulse, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { SettingsService } from "@/client"
-import { SettingsRow } from "./SettingsSection"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { SettingsRow } from "./SettingsSection"
 
 export function WeeklyGoals() {
   const queryClient = useQueryClient()

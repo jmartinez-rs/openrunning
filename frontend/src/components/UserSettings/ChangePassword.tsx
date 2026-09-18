@@ -5,12 +5,18 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { type UpdatePassword, UsersService } from "@/client"
-import { SettingsRow } from "../Settings/SettingsSection"
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { SettingsRow } from "../Settings/SettingsSection"
 
 const formSchema = z
   .object({

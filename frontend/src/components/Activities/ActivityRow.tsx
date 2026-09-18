@@ -39,12 +39,20 @@ export function ActivityRow({ activity }: ActivityRowProps) {
     iconBgClass = "bg-purple-500/15 text-purple-400"
     badgeText = "Hevy"
     badgeClass = "bg-purple-500/10 text-purple-400 border-purple-500/20"
-  } else if (sportType.includes("ride") || sportType.includes("bike") || sportType.includes("ciclismo")) {
+  } else if (
+    sportType.includes("ride") ||
+    sportType.includes("bike") ||
+    sportType.includes("ciclismo")
+  ) {
     Icon = Bike
     iconBgClass = "bg-cyan-500/15 text-cyan-400"
     badgeText = "Ciclismo"
     badgeClass = "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
-  } else if (sportType.includes("walk") || sportType.includes("hike") || sportType.includes("caminata")) {
+  } else if (
+    sportType.includes("walk") ||
+    sportType.includes("hike") ||
+    sportType.includes("caminata")
+  ) {
     Icon = PersonStanding
     iconBgClass = "bg-amber-500/15 text-amber-400"
     badgeText = "Caminata"
@@ -54,7 +62,10 @@ export function ActivityRow({ activity }: ActivityRowProps) {
     iconBgClass = "bg-blue-500/15 text-blue-400"
     badgeText = "Natación"
     badgeClass = "bg-blue-500/10 text-blue-400 border-blue-500/20"
-  } else if (activity.source_type === "gpx_upload" || activity.source_type === "fit_upload") {
+  } else if (
+    activity.source_type === "gpx_upload" ||
+    activity.source_type === "fit_upload"
+  ) {
     badgeText = "Archivo GPS"
     badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
   } else if (activity.source_type === "manual") {
@@ -116,9 +127,7 @@ export function ActivityRow({ activity }: ActivityRowProps) {
             {activity.name || "Actividad sin nombre"}
           </h3>
         </div>
-        <div className="mt-0.5 truncate text-xs text-slate-400">
-          {subtitle}
-        </div>
+        <div className="mt-0.5 truncate text-xs text-slate-400">{subtitle}</div>
       </div>
 
       {/* Badge & Chevron */}

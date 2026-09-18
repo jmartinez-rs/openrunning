@@ -2,47 +2,58 @@ import { Plus } from "lucide-react"
 
 import type { RacePublic } from "@/client"
 import { PriorityRaceCard } from "./PriorityRaceCard"
-import { SecondaryRaceCard } from "./SecondaryRaceCard"
 import { parseRaceNotes } from "./race-meta"
+import { SecondaryRaceCard } from "./SecondaryRaceCard"
 
 interface UpcomingRacesTabProps {
   upcoming: RacePublic[]
   onOpenForm: () => void
 }
 
-export function UpcomingRacesTab({ upcoming, onOpenForm }: UpcomingRacesTabProps) {
+export function UpcomingRacesTab({
+  upcoming,
+  onOpenForm,
+}: UpcomingRacesTabProps) {
   // Sort upcoming by priority A > B > C > None, then by date
   const sortedUpcoming = [...upcoming].sort((a, b) => {
     const metaA = parseRaceNotes(a.notes)
     const metaB = parseRaceNotes(b.notes)
     const pA = metaA.priority || "Z" // Z so unassigned goes last
     const pB = metaB.priority || "Z"
-    
+
     if (pA !== pB) return pA.localeCompare(pB)
     return new Date(a.date).getTime() - new Date(b.date).getTime()
   })
 
   // Group into A and others
-  const priorityA = sortedUpcoming.filter(r => parseRaceNotes(r.notes).priority === "A")
-  const secondary = sortedUpcoming.filter(r => parseRaceNotes(r.notes).priority !== "A")
+  const priorityA = sortedUpcoming.filter(
+    (r) => parseRaceNotes(r.notes).priority === "A",
+  )
+  const secondary = sortedUpcoming.filter(
+    (r) => parseRaceNotes(r.notes).priority !== "A",
+  )
 
   return (
     <div className="flex flex-col gap-10 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
       {/* Target Race (A) */}
       <div className="flex flex-col gap-4">
-        <h2 className="text-xl font-black text-white tracking-tight">Objetivo Principal</h2>
+        <h2 className="text-xl font-black text-white tracking-tight">
+          Objetivo Principal
+        </h2>
         {priorityA.length > 0 ? (
           <div className="grid gap-6">
-            {priorityA.map(race => (
+            {priorityA.map((race) => (
               <PriorityRaceCard key={race.id} race={race} />
             ))}
           </div>
         ) : (
           <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-900/50 p-8 text-center flex flex-col items-center justify-center min-h-[220px]">
-            <h3 className="text-lg font-bold text-white mb-2">Sin objetivo principal</h3>
+            <h3 className="text-lg font-bold text-white mb-2">
+              Sin objetivo principal
+            </h3>
             <p className="text-sm text-slate-400 max-w-sm mb-6">
-              Registra tu próxima carrera objetivo (Prioridad A) para visualizar la cuenta regresiva y estrategia.
+              Registra tu próxima carrera objetivo (Prioridad A) para visualizar
+              la cuenta regresiva y estrategia.
             </p>
             <button
               onClick={onOpenForm}
@@ -56,10 +67,12 @@ export function UpcomingRacesTab({ upcoming, onOpenForm }: UpcomingRacesTabProps
 
       {/* Secondary Races (B/C or None) */}
       <div className="flex flex-col gap-4">
-        <h2 className="text-xl font-black text-white tracking-tight">Carreras Preparatorias</h2>
+        <h2 className="text-xl font-black text-white tracking-tight">
+          Carreras Preparatorias
+        </h2>
         {secondary.length > 0 ? (
           <div className="grid gap-4">
-            {secondary.map(race => (
+            {secondary.map((race) => (
               <SecondaryRaceCard key={race.id} race={race} />
             ))}
           </div>

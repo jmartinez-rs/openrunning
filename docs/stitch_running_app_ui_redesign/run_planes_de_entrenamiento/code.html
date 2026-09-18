@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&amp;family=Space+Grotesk:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary-fixed-variant": "#494644", "surface-container-high": "#2a2a2a", "tertiary": "#ffffff", "tertiary-fixed": "#e7e1de", "surface-container-lowest": "#0e0e0e", "on-error": "#690005", "on-secondary-container": "#b4b5b5", "primary-fixed-dim": "#bfd037", "on-primary": "#2e3300", "error-container": "#93000a", "on-primary-fixed": "#1a1e00", "on-secondary-fixed": "#1a1c1c", "on-error-container": "#ffdad6", "surface-container": "#201f1f", "primary": "#ffffff", "primary-fixed": "#dbed52", "on-primary-container": "#606a00", "inverse-surface": "#e5e2e1", "outline": "#91927c", "surface-tint": "#bfd037", "error": "#ffb4ab", "surface-variant": "#353534", "surface-container-low": "#1c1b1b", "surface-container-highest": "#353534", "outline-variant": "#464835", "on-background": "#e5e2e1", "on-surface": "#e5e2e1", "background": "#131313", "inverse-on-surface": "#313030", "surface": "#131313", "surface-dim": "#131313", "inverse-primary": "#5a6400", "tertiary-fixed-dim": "#cac6c2", "primary-container": "#dbed52", "on-primary-fixed-variant": "#434b00", "secondary-fixed-dim": "#c6c6c7", "on-secondary": "#2f3131", "secondary-container": "#454747", "surface-bright": "#393939", "secondary-fixed": "#e2e2e2", "on-tertiary-fixed": "#1d1b1a", "secondary": "#c6c6c7", "on-surface-variant": "#c7c8af", "on-secondary-fixed-variant": "#454747", "tertiary-container": "#e7e1de", "on-tertiary-container": "#676461", "on-tertiary": "#32302e" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xl": "2rem", "space-sm": "0.5rem", "space-xs": "0.25rem", "space-md": "1rem", "space-lg": "1.5rem", "margin": "1.25rem", "gutter": "1rem" }, "fontFamily": { "display-hero": ["Space Grotesk"], "headline-md": ["Space Grotesk"], "headline-lg": ["Space Grotesk"], "label-lg": ["Space Grotesk"], "label-caps": ["Space Grotesk"], "body-sm": ["Plus Jakarta Sans"], "stat-metric": ["Space Grotesk"], "label-md": ["Space Grotesk"], "display-hero-mobile": ["Space Grotesk"], "headline-sm": ["Space Grotesk"], "body-md": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"] }, "fontSize": { "display-hero": ["48px", { "lineHeight": "52px", "fontWeight": "700" }], "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }], "headline-lg": ["28px", { "lineHeight": "34px", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }], "label-caps": ["11px", { "lineHeight": "14px", "fontWeight": "700" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "stat-metric": ["24px", { "lineHeight": "28px", "fontWeight": "700" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "600" }], "display-hero-mobile": ["36px", { "lineHeight": "40px", "fontWeight": "700" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }] } } } };</script><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#131313;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.5)]"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col"><span class="font-label-caps text-label-caps uppercase tracking-wider text-on-surface-variant">Athletic Telemetry</span><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight">Performance Telemetry</h1></div></div><div class="flex items-center gap-space-xs"><button aria-label="GPS Telemetry Active" class="w-11 h-11 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px] text-primary-container animate-pulse">satellite_alt</span></button><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span></button></div></div></header><main class="flex-1 w-full bg-surface pt-16 pb-28"><div class="flex flex-col w-full px-margin pb-6 gap-y-5">
+<!-- Title & Primary CTA Header -->
+<section class="flex flex-col gap-y-3 pt-2">
+<div class="flex items-start justify-between gap-x-3">
+<div class="flex flex-col">
+<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Planes de Entrenamiento</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-0.5">Organizá tu temporada con planes estructurados de running.</p>
+</div>
+</div>
+<div>
+<button class="inline-flex items-center gap-x-2 px-5 py-2.5 rounded-full bg-primary-container text-on-primary-container font-label-lg text-label-lg shadow-[0_0_20px_rgba(219,237,82,0.3)] hover:brightness-105 active:scale-95 transition-all" id="btn-nuevo-plan" type="button">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">add</span>
+<span>Nuevo plan</span>
+</button>
+</div>
+</section>
+<!-- Active Plan Hero Telemetry Card -->
+<section class="flex flex-col rounded-xl bg-surface-container-low shadow-[0_12px_32px_rgba(0,0,0,0.6)] p-space-md gap-y-4">
+<!-- Period Filter Pills + Next Week Action -->
+<div class="flex items-center justify-between">
+<div class="flex items-center p-1 rounded-full bg-surface-container-highest">
+<button class="px-3.5 py-1.5 rounded-full bg-surface-container-high text-on-surface font-label-caps text-label-caps tracking-wider transition-colors shadow-sm" id="tab-esta-semana" type="button">
+          ESTA SEMANA
+        </button>
+<button class="px-3.5 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-caps text-label-caps tracking-wider transition-colors" id="tab-semana-pasada" type="button">
+          SEMANA PASADA
+        </button>
+</div>
+<button aria-label="Semana siguiente" class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+<!-- Metric Primary Block -->
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<div class="flex items-center gap-x-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] text-primary-container">location_on</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Distancia total planeada</span>
+</div>
+<div class="flex items-baseline gap-x-1.5 mt-1">
+<span class="font-display-hero-mobile text-display-hero-mobile text-primary tracking-tighter">30</span>
+<span class="font-headline-sm text-headline-sm text-on-surface-variant tracking-normal">KM</span>
+</div>
+<div class="flex items-center gap-x-1 mt-1 text-primary-container font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[14px]">north_east</span>
+<span>100.0% vs sem. pas.</span>
+</div>
+</div>
+<!-- Weekly Progress Visual Meter -->
+<div class="flex items-end gap-x-2">
+<div class="w-6 h-14 rounded-full bg-surface-container-highest"></div>
+<div class="w-7 h-20 rounded-full bg-primary-container flex flex-col justify-end p-1 shadow-[0_0_16px_rgba(219,237,82,0.35)] relative overflow-hidden">
+<div class="w-full h-full rounded-full opacity-30 bg-[repeating-linear-gradient(45deg,#000,#000_2px,transparent_2px,transparent_6px)]"></div>
+</div>
+</div>
+</div>
+<!-- Overall Plan Progress Line -->
+<div class="flex flex-col gap-y-1.5">
+<div class="flex items-center justify-between font-label-caps text-label-caps text-on-surface-variant">
+<span class="uppercase tracking-wider">PROGRESO GENERAL DEL PLAN</span>
+<span class="text-on-surface font-label-caps">0%</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="w-0 h-full bg-primary-container rounded-full transition-all duration-700"></div>
+</div>
+</div>
+<!-- Dual / Triple Stat Pods -->
+<div class="grid grid-cols-3 gap-2">
+<div class="flex flex-col items-center justify-center p-2.5 rounded-lg bg-surface-container-high text-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">RITMO MEDIO</span>
+<span class="font-stat-metric text-stat-metric text-primary mt-1">—</span>
+</div>
+<div class="flex flex-col items-center justify-center p-2.5 rounded-lg bg-surface-container-high text-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">TIEMPO TOTAL</span>
+<span class="font-stat-metric text-stat-metric text-primary mt-1">—</span>
+</div>
+<div class="flex flex-col items-center justify-center p-2.5 rounded-lg bg-surface-container-high text-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">SESIONES</span>
+<span class="font-stat-metric text-stat-metric text-primary-container mt-1">4</span>
+</div>
+</div>
+<!-- Segmented Weekly Running Volume Graph -->
+<div class="flex flex-col pt-1">
+<div class="grid grid-cols-7 gap-1.5 items-end h-36 pb-2">
+<!-- Jueves (Descanso) -->
+<div class="flex flex-col items-center h-full justify-end gap-y-1">
+<span class="h-3 font-label-caps text-[10px] text-transparent">0</span>
+<div class="flex flex-col gap-y-1 w-full max-w-[28px]">
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-1">J</span>
+</div>
+<!-- Viernes (6 km - Activo) -->
+<div class="flex flex-col items-center h-full justify-end gap-y-1">
+<span class="font-label-caps text-[10px] text-primary-container">6km</span>
+<div class="flex flex-col gap-y-1 w-full max-w-[28px]">
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-primary-container shadow-[0_0_8px_rgba(219,237,82,0.4)]"></div>
+<div class="h-1.5 rounded-full bg-primary-container shadow-[0_0_8px_rgba(219,237,82,0.4)]"></div>
+<div class="h-1.5 rounded-full bg-primary-container shadow-[0_0_8px_rgba(219,237,82,0.4)]"></div>
+<div class="h-1.5 rounded-full bg-primary-container shadow-[0_0_8px_rgba(219,237,82,0.4)]"></div>
+</div>
+<span class="font-label-caps text-label-caps text-primary-container mt-1 font-bold">V</span>
+</div>
+<!-- Sábado (Descanso) -->
+<div class="flex flex-col items-center h-full justify-end gap-y-1">
+<span class="h-3 font-label-caps text-[10px] text-transparent">0</span>
+<div class="flex flex-col gap-y-1 w-full max-w-[28px]">
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-1">S</span>
+</div>
+<!-- Domingo (6 km) -->
+<div class="flex flex-col items-center h-full justify-end gap-y-1">
+<span class="font-label-caps text-[10px] text-on-surface">6km</span>
+<div class="flex flex-col gap-y-1 w-full max-w-[28px]">
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-1">D</span>
+</div>
+<!-- Lunes (Descanso) -->
+<div class="flex flex-col items-center h-full justify-end gap-y-1">
+<span class="h-3 font-label-caps text-[10px] text-transparent">0</span>
+<div class="flex flex-col gap-y-1 w-full max-w-[28px]">
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-1">L</span>
+</div>
+<!-- Martes (6 km) -->
+<div class="flex flex-col items-center h-full justify-end gap-y-1">
+<span class="font-label-caps text-[10px] text-on-surface">6km</span>
+<div class="flex flex-col gap-y-1 w-full max-w-[28px]">
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-1">M</span>
+</div>
+<!-- Miércoles (12 km - Fondo largo) -->
+<div class="flex flex-col items-center h-full justify-end gap-y-1">
+<span class="font-label-caps text-[10px] text-primary-container font-bold">12km</span>
+<div class="flex flex-col gap-y-1 w-full max-w-[28px]">
+<div class="h-1.5 rounded-full bg-primary-container shadow-[0_0_6px_rgba(219,237,82,0.3)]"></div>
+<div class="h-1.5 rounded-full bg-primary-container shadow-[0_0_6px_rgba(219,237,82,0.3)]"></div>
+<div class="h-1.5 rounded-full bg-primary-container shadow-[0_0_6px_rgba(219,237,82,0.3)]"></div>
+<div class="h-1.5 rounded-full bg-primary-container shadow-[0_0_6px_rgba(219,237,82,0.3)]"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+<div class="h-1.5 rounded-full bg-primary-container"></div>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-1">M</span>
+</div>
+</div>
+</div>
+<!-- Hero Card Footer Metadata -->
+<div class="pt-3 border-none flex flex-wrap items-center justify-between gap-y-2">
+<div class="flex items-center gap-x-2">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+<span class="font-label-lg text-label-lg text-on-surface">Plan 21.1K — Runna Engine</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">(12 sem)</span>
+</div>
+<div class="flex items-center gap-x-2">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary-container font-label-caps text-label-caps tracking-wide">
+          Semana 1
+        </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">17-sept – 09-dic</span>
+</div>
+</div>
+</section>
+<!-- Section: Otros planes -->
+<section class="flex flex-col gap-y-3">
+<!-- Header with Counter -->
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Otros planes</h3>
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high font-label-caps text-label-caps text-on-surface-variant">1 plan</span>
+</div>
+<!-- Filter Chips Horizontal Scroller -->
+<div class="flex items-center gap-x-2 overflow-x-auto pb-1 scrollbar-none">
+<button class="plan-chip px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-label-caps text-label-caps tracking-wider shrink-0 transition-colors shadow-sm" type="button">
+        Todos
+      </button>
+<button class="plan-chip px-4 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-caps text-label-caps tracking-wider shrink-0 transition-colors" type="button">
+        Activos
+      </button>
+<button class="plan-chip px-4 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-caps text-label-caps tracking-wider shrink-0 transition-colors" type="button">
+        Planificados
+      </button>
+<button class="plan-chip px-4 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-caps text-label-caps tracking-wider shrink-0 transition-colors" type="button">
+        Finalizados
+      </button>
+</div>
+<!-- Plan Card: Plan 10K Sub-60 -->
+<article class="flex flex-col p-space-md rounded-xl bg-surface-container-low shadow-[0_8px_24px_rgba(0,0,0,0.4)] gap-y-3 relative group">
+<div class="flex items-start justify-between gap-x-3">
+<!-- Leading Running Footprint Icon Disc -->
+<div class="flex items-center gap-x-3 min-w-0">
+<div class="w-11 h-11 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 text-primary-container shadow-inner">
+<span class="material-symbols-outlined text-[24px]">sprint</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-x-2">
+<h4 class="font-headline-sm text-headline-sm text-on-surface truncate">Plan 10K Sub-60</h4>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary-container font-label-caps text-[10px] uppercase tracking-wider">Activo</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate mt-0.5">Correr 10K en menos de 60 minutos</p>
+</div>
+</div>
+<!-- Quick Actions (Edit / Delete) -->
+<div class="flex items-center gap-x-1 shrink-0">
+<button aria-label="Editar plan" class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+<button aria-label="Eliminar plan" class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-error hover:text-on-error-container hover:bg-error-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Bicolor Progress Indicator Bar -->
+<div class="flex flex-col gap-y-1.5 pt-1">
+<div class="flex items-center justify-between font-label-caps text-label-caps">
+<span class="text-on-surface-variant font-medium">11/18 sesiones</span>
+<span class="text-primary-container font-bold">61%</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-highest flex overflow-hidden">
+<div class="h-full bg-primary-container shadow-[0_0_12px_rgba(219,237,82,0.4)]" style="width: 61%;"></div>
+<div class="h-full bg-error-container" style="width: 39%;"></div>
+</div>
+</div>
+<!-- Plan Metadata Technical Row -->
+<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-on-surface-variant font-label-caps text-label-caps pt-1">
+<span class="flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-[14px]">timeline</span>
+          6 semanas
+        </span>
+<span>•</span>
+<span class="text-primary-container font-bold">77 km</span>
+<span>•</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">calendar_month</span>
+          04-ago – 13-sept
+        </span>
+<span>•</span>
+<span class="text-primary-container font-semibold">11 completadas</span>
+<span>•</span>
+<span class="text-error font-semibold">7 perdidas</span>
+</div>
+</article>
+</section>
+</div>
+<script>
+  // Simple micro-interactions for tabs and chips
+  (function() {
+    const tabCurrent = document.getElementById('tab-esta-semana');
+    const tabPrev = document.getElementById('tab-semana-pasada');
+
+    if (tabCurrent && tabPrev) {
+      tabCurrent.addEventListener('click', () => {
+        tabCurrent.className = 'px-3.5 py-1.5 rounded-full bg-surface-container-high text-on-surface font-label-caps text-label-caps tracking-wider transition-colors shadow-sm';
+        tabPrev.className = 'px-3.5 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-caps text-label-caps tracking-wider transition-colors';
+      });
+      tabPrev.addEventListener('click', () => {
+        tabPrev.className = 'px-3.5 py-1.5 rounded-full bg-surface-container-high text-on-surface font-label-caps text-label-caps tracking-wider transition-colors shadow-sm';
+        tabCurrent.className = 'px-3.5 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-caps text-label-caps tracking-wider transition-colors';
+      });
+    }
+
+    const chips = document.querySelectorAll('.plan-chip');
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => {
+          c.className = 'plan-chip px-4 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-caps text-label-caps tracking-wider shrink-0 transition-colors';
+        });
+        chip.className = 'plan-chip px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-label-caps text-label-caps tracking-wider shrink-0 transition-colors shadow-sm';
+      });
+    });
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe pointer-events-none" data-active-classes="text-primary-container font-headline-sm"><div class="px-margin pb-space-sm"><div class="pointer-events-auto h-20 rounded-full bg-surface-container/90 backdrop-blur-xl px-space-md shadow-[0_12px_32px_rgba(0,0,0,0.8)] flex items-center justify-between relative"><a class="flex flex-col items-center justify-center min-w-[48px] h-12 gap-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="explore-map" href="#"><span class="material-symbols-outlined text-[22px]">explore</span><span class="font-label-caps text-label-caps tracking-wider">EXPLORE</span></a><a class="flex flex-col items-center justify-center min-w-[48px] h-12 gap-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="training-schedule" href="#"><span class="material-symbols-outlined text-[22px]">calendar_today</span><span class="font-label-caps text-label-caps tracking-wider">SCHEDULE</span></a><div class="flex items-center justify-center -translate-y-4"><a aria-label="Start Run" class="w-16 h-16 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-[0_0_24px_rgba(219,237,82,0.45)] hover:scale-105 active:scale-95 transition-transform" data-path="live-session" href="#"><span class="material-symbols-outlined text-[32px]">play_arrow</span></a></div><a class="flex flex-col items-center justify-center min-w-[48px] h-12 gap-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="performance-telemetry" href="#"><span class="material-symbols-outlined text-[22px]">insights</span><span class="font-label-caps text-label-caps tracking-wider">METRICS</span></a><a class="flex flex-col items-center justify-center min-w-[48px] h-12 gap-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="athlete-profile" href="#"><span class="material-symbols-outlined text-[22px]">tune</span><span class="font-label-caps text-label-caps tracking-wider">PROFILE</span></a></div></div></nav></body></html>

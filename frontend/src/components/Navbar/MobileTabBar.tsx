@@ -9,7 +9,7 @@ import {
   Home,
   Loader2,
   Menu,
-  Plus,
+  Play,
   RefreshCw,
   Settings2,
   Trophy,
@@ -89,89 +89,137 @@ export function MobileTabBar() {
   })
 
   const moreItems = [
-    { icon: Flame, title: "Planes de Entrenamiento", path: "/routines", color: "text-amber-400", bg: "bg-amber-500/15" },
-    { icon: Trophy, title: "Carreras & Objetivos", path: "/races", color: "text-yellow-400", bg: "bg-yellow-500/15" },
-    { icon: Footprints, title: "Gestión de Calzado", path: "/shoes", color: "text-cyan-400", bg: "bg-cyan-500/15" },
-    { icon: Calculator, title: "Calculadoras & Herramientas", path: "/tools", color: "text-blue-400", bg: "bg-blue-500/15" },
-    { icon: Settings2, title: "Configuración del Sistema", path: "/settings", color: "text-purple-400", bg: "bg-purple-500/15" },
+    {
+      icon: Flame,
+      title: "Planes de Entrenamiento",
+      path: "/routines",
+      color: "text-amber-400",
+      bg: "bg-amber-500/15",
+    },
+    {
+      icon: Trophy,
+      title: "Carreras & Objetivos",
+      path: "/races",
+      color: "text-yellow-400",
+      bg: "bg-yellow-500/15",
+    },
+    {
+      icon: Footprints,
+      title: "Gestión de Calzado",
+      path: "/shoes",
+      color: "text-cyan-400",
+      bg: "bg-cyan-500/15",
+    },
+    {
+      icon: Calculator,
+      title: "Calculadoras & Herramientas",
+      path: "/tools",
+      color: "text-blue-400",
+      bg: "bg-blue-500/15",
+    },
+    {
+      icon: Settings2,
+      title: "Configuración del Sistema",
+      path: "/settings",
+      color: "text-purple-400",
+      bg: "bg-purple-500/15",
+    },
   ]
 
   const isMoreActive = moreItems.some((item) => currentPath === item.path)
 
   return (
     <>
-      <nav className="md:hidden fixed inset-x-0 bottom-0 z-50 flex items-end justify-around bg-slate-950/85 backdrop-blur-xl border-t border-slate-800/80 px-2 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-2xl">
-        {/* Tab 1: Inicio */}
-        <RouterLink
-          to="/"
-          className={cn(
-            "flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors flex-1 py-1",
-            currentPath === "/" ? "text-emerald-400 font-bold" : "text-slate-400 hover:text-slate-200",
-          )}
-        >
-          <Home className="size-5 shrink-0" strokeWidth={currentPath === "/" ? 2.5 : 1.8} />
-          <span>Inicio</span>
-        </RouterLink>
-
-        {/* Tab 2: Actividades */}
-        <RouterLink
-          to="/activities"
-          className={cn(
-            "flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors flex-1 py-1",
-            currentPath === "/activities" ? "text-emerald-400 font-bold" : "text-slate-400 hover:text-slate-200",
-          )}
-        >
-          <CalendarDays className="size-5 shrink-0" strokeWidth={currentPath === "/activities" ? 2.5 : 1.8} />
-          <span>Historial</span>
-        </RouterLink>
-
-        {/* Tab 3: Botón Central Flotante "Nuevo" (+) (OpenGym .start style) */}
-        <button
-          type="button"
-          onClick={() => setNewActionOpen(true)}
-          className="flex flex-col items-center justify-center cursor-pointer -mt-6 flex-1 group"
-        >
-          <div className="flex size-13 items-center justify-center rounded-full bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/40 ring-4 ring-slate-950 transition-transform active:scale-95 group-hover:scale-105">
-            {isUploading || syncMutation.isPending ? (
-              <Loader2 className="size-6 animate-spin text-slate-950" />
-            ) : (
-              <Plus className="size-7 stroke-[2.5]" />
+      <div className="md:hidden fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
+        <nav className="flex w-full max-w-[400px] items-center justify-between bg-surface-container/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-2 shadow-card">
+          {/* Tab 1: Inicio */}
+          <RouterLink
+            to="/"
+            className={cn(
+              "flex flex-col items-center justify-center p-2 rounded-full transition-colors",
+              currentPath === "/"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground",
             )}
-          </div>
-          <span className="text-[10px] font-bold text-emerald-400 mt-0.5">
-            Nuevo
-          </span>
-        </button>
+          >
+            <Home
+              className="size-6 shrink-0"
+              strokeWidth={currentPath === "/" ? 2.5 : 1.8}
+            />
+          </RouterLink>
 
-        {/* Tab 4: Analítica */}
-        <RouterLink
-          to="/analytics"
-          className={cn(
-            "flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors flex-1 py-1",
-            currentPath === "/analytics" ? "text-emerald-400 font-bold" : "text-slate-400 hover:text-slate-200",
-          )}
-        >
-          <BarChart3 className="size-5 shrink-0" strokeWidth={currentPath === "/analytics" ? 2.5 : 1.8} />
-          <span>Analítica</span>
-        </RouterLink>
+          {/* Tab 2: Actividades */}
+          <RouterLink
+            to="/activities"
+            className={cn(
+              "flex flex-col items-center justify-center p-2 rounded-full transition-colors",
+              currentPath === "/activities"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <CalendarDays
+              className="size-6 shrink-0"
+              strokeWidth={currentPath === "/activities" ? 2.5 : 1.8}
+            />
+          </RouterLink>
 
-        {/* Tab 5: Más / Menú */}
-        <button
-          type="button"
-          onClick={() => setMenuOpen(true)}
-          className={cn(
-            "flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors flex-1 py-1",
-            isMoreActive ? "text-emerald-400 font-bold" : "text-slate-400 hover:text-slate-200",
-          )}
-        >
-          <Menu className="size-5 shrink-0" strokeWidth={isMoreActive ? 2.5 : 1.8} />
-          <span>Más</span>
-        </button>
-      </nav>
+          {/* Tab 3: Botón Central Flotante "Play" */}
+          <button
+            type="button"
+            onClick={() => setNewActionOpen(true)}
+            className="flex items-center justify-center cursor-pointer group -mt-10"
+          >
+            <div className="flex size-[64px] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow transition-transform active:scale-95 group-hover:scale-105">
+              {isUploading || syncMutation.isPending ? (
+                <Loader2 className="size-6 animate-spin text-primary-foreground" />
+              ) : (
+                <Play className="size-8 fill-current stroke-none ml-1" />
+              )}
+            </div>
+          </button>
+
+          {/* Tab 4: Analítica */}
+          <RouterLink
+            to="/analytics"
+            className={cn(
+              "flex flex-col items-center justify-center p-2 rounded-full transition-colors",
+              currentPath === "/analytics"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <BarChart3
+              className="size-6 shrink-0"
+              strokeWidth={currentPath === "/analytics" ? 2.5 : 1.8}
+            />
+          </RouterLink>
+
+          {/* Tab 5: Más / Menú */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            className={cn(
+              "flex flex-col items-center justify-center p-2 rounded-full transition-colors",
+              isMoreActive
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Menu
+              className="size-6 shrink-0"
+              strokeWidth={isMoreActive ? 2.5 : 1.8}
+            />
+          </button>
+        </nav>
+      </div>
 
       {/* Action Sheet for "Nuevo" (+) */}
       <Sheet open={newActionOpen} onOpenChange={setNewActionOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl border-slate-800 bg-slate-950 p-4 pb-8 max-w-lg mx-auto">
+        <SheetContent
+          side="bottom"
+          className="rounded-t-3xl border-slate-800 bg-slate-950 p-4 pb-8 max-w-lg mx-auto"
+        >
           <SheetHeader className="p-0 pb-3 border-b border-slate-800/80">
             <SheetTitle className="text-lg font-bold text-slate-100">
               Registrar / Importar Actividad
@@ -234,7 +282,10 @@ export function MobileTabBar() {
 
       {/* Secondary Navigation Menu ("Más") */}
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl border-slate-800 bg-slate-950 p-4 pb-8 max-w-lg mx-auto">
+        <SheetContent
+          side="bottom"
+          className="rounded-t-3xl border-slate-800 bg-slate-950 p-4 pb-8 max-w-lg mx-auto"
+        >
           <SheetHeader className="p-0 pb-3 border-b border-slate-800/80">
             <SheetTitle className="text-lg font-bold text-slate-100">
               Navegación & Herramientas

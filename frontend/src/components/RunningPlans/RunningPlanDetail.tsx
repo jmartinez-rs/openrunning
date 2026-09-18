@@ -69,7 +69,12 @@ function StatChip({
     <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-800/60 px-3.5 py-2 transition-colors">
       {Icon && <Icon className="size-4 text-slate-400 shrink-0" />}
       <div className="flex flex-col">
-        <span className={cn("text-sm font-extrabold text-white leading-tight", className)}>
+        <span
+          className={cn(
+            "text-sm font-extrabold text-white leading-tight",
+            className,
+          )}
+        >
           {value}
         </span>
         <span className="text-[11px] text-slate-400 leading-tight font-medium">
@@ -232,9 +237,11 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                   distance_m: block.distance_m,
                   duration_seconds: block.duration_seconds,
                   pace_seconds_per_km: block.pace_seconds_per_km,
-                  pace_range_end_seconds_per_km: block.pace_range_end_seconds_per_km,
+                  pace_range_end_seconds_per_km:
+                    block.pace_range_end_seconds_per_km,
                   recovery_seconds: block.recovery_seconds,
-                  recovery_type: block.recovery_type === "walk" ? "walk" : "jog",
+                  recovery_type:
+                    block.recovery_type === "walk" ? "walk" : "jog",
                   notes: block.notes,
                 })),
               })),
@@ -325,7 +332,7 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                 <h1 className="truncate text-2xl font-bold tracking-tight">
                   {plan.name}
                 </h1>
-                
+
                 {/* Interactive Status Changer */}
                 <Select
                   value={plan.status}
@@ -343,13 +350,22 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active" className="font-bold text-emerald-600 dark:text-emerald-400">
+                    <SelectItem
+                      value="active"
+                      className="font-bold text-emerald-600 dark:text-emerald-400"
+                    >
                       🟢 Activo (En curso)
                     </SelectItem>
-                    <SelectItem value="planned" className="font-bold text-amber-600 dark:text-amber-400">
+                    <SelectItem
+                      value="planned"
+                      className="font-bold text-amber-600 dark:text-amber-400"
+                    >
                       ⏸️ Pausado / Planificado
                     </SelectItem>
-                    <SelectItem value="completed" className="font-bold text-sky-600 dark:text-sky-400">
+                    <SelectItem
+                      value="completed"
+                      className="font-bold text-sky-600 dark:text-sky-400"
+                    >
                       🏁 Finalizado (Concluido)
                     </SelectItem>
                   </SelectContent>
@@ -412,11 +428,15 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
               <div className="flex h-full">
                 <div
                   className="h-full rounded-l-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-500"
-                  style={{ width: `${(progress.completed / (progress.total || 1)) * 100}%` }}
+                  style={{
+                    width: `${(progress.completed / (progress.total || 1)) * 100}%`,
+                  }}
                 />
                 <div
                   className="h-full bg-red-500/70 transition-all duration-500"
-                  style={{ width: `${(progress.missed / (progress.total || 1)) * 100}%` }}
+                  style={{
+                    width: `${(progress.missed / (progress.total || 1)) * 100}%`,
+                  }}
                 />
               </div>
             </div>
@@ -457,11 +477,7 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
 
         {/* Quick Stats Chips */}
         <div className="flex flex-wrap gap-2.5">
-          <StatChip
-            label="Semanas"
-            value={summary.weeks}
-            icon={CalendarDays}
-          />
+          <StatChip label="Semanas" value={summary.weeks} icon={CalendarDays} />
           <StatChip
             label="Sesiones total"
             value={summary.sessions}
@@ -515,10 +531,15 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="font-bold text-base text-white">{phase.name}</h2>
+                    <h2 className="font-bold text-base text-white">
+                      {phase.name}
+                    </h2>
                     <Badge
                       variant="secondary"
-                      className={cn("shrink-0 text-xs font-semibold", phaseColor.badge)}
+                      className={cn(
+                        "shrink-0 text-xs font-semibold",
+                        phaseColor.badge,
+                      )}
                     >
                       Semanas {phase.start_week}–{phase.end_week}
                     </Badge>
@@ -543,7 +564,8 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                       key={week.id}
                       className={cn(
                         "rounded-xl border border-slate-800 bg-slate-900/80 transition-all duration-200 overflow-hidden shadow-md",
-                        isCurrentWeek && "ring-2 ring-emerald-500 border-emerald-500/50 shadow-lg",
+                        isCurrentWeek &&
+                          "ring-2 ring-emerald-500 border-emerald-500/50 shadow-lg",
                       )}
                     >
                       {/* Week Accordion Header */}
@@ -568,9 +590,7 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                               </span>
                             )}
                             {isCurrentWeek && (
-                              <Badge
-                                className="bg-emerald-500 text-slate-950 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md"
-                              >
+                              <Badge className="bg-emerald-500 text-slate-950 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md">
                                 Semana Actual
                               </Badge>
                             )}
@@ -579,7 +599,8 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
 
                         <span className="shrink-0 text-xs font-semibold text-slate-400">
                           {formatDateRange(week.start_date, week.end_date)}
-                          {workouts.length > 0 && ` · ${workouts.length} sesiones`}
+                          {workouts.length > 0 &&
+                            ` · ${workouts.length} sesiones`}
                         </span>
                       </button>
 

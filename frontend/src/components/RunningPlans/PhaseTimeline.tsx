@@ -20,10 +20,7 @@ export function PhaseTimeline({
 }: PhaseTimelineProps) {
   if (!phases || phases.length === 0) return null
 
-  const totalWeeks = Math.max(
-    ...phases.map((p) => p.end_week ?? 1),
-    1,
-  )
+  const totalWeeks = Math.max(...phases.map((p) => p.end_week ?? 1), 1)
 
   return (
     <div className="flex flex-col gap-3.5 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl backdrop-blur-sm">
@@ -51,7 +48,7 @@ export function PhaseTimeline({
       {/* Visual Phase Progress Bar */}
       <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-800 border border-slate-700/60 p-0.5">
         {phases.map((phase) => {
-          const phaseWeeks = (phase.end_week - phase.start_week + 1) || 1
+          const phaseWeeks = phase.end_week - phase.start_week + 1 || 1
           const widthPct = (phaseWeeks / totalWeeks) * 100
           const phaseColor =
             PHASE_COLORS[phase.color as PhaseColor] ?? PHASE_COLORS.slate
@@ -64,14 +61,13 @@ export function PhaseTimeline({
           return (
             <div
               key={phase.id}
-              onClick={() =>
-                onSelectPhase(isSelected ? null : phase.id)
-              }
+              onClick={() => onSelectPhase(isSelected ? null : phase.id)}
               title={`${phase.name}: Semanas ${phase.start_week}-${phase.end_week}`}
               className={cn(
                 "group relative h-full cursor-pointer transition-all duration-200 hover:brightness-125 rounded-sm",
                 phaseColor.bar,
-                isCurrentPhase && "ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-900 z-10",
+                isCurrentPhase &&
+                  "ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-900 z-10",
                 selectedPhaseId && !isSelected && "opacity-35",
               )}
               style={{ width: `${widthPct}%` }}
@@ -126,9 +122,7 @@ export function PhaseTimeline({
                 (S{phase.start_week}-{phase.end_week})
               </span>
               {isCurrentPhase && (
-                <Badge
-                  className="ml-1 border-emerald-500/40 bg-emerald-500/20 px-1.5 py-0 text-[10px] text-emerald-400 font-extrabold"
-                >
+                <Badge className="ml-1 border-emerald-500/40 bg-emerald-500/20 px-1.5 py-0 text-[10px] text-emerald-400 font-extrabold">
                   Actual
                 </Badge>
               )}

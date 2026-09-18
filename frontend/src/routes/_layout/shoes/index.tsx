@@ -23,10 +23,7 @@ import { useMemo, useState } from "react"
 import { type ShoePublic, ShoesService } from "@/client"
 import { ShoeCard } from "@/components/Shoes/ShoeCard"
 import { ShoeFormDialog } from "@/components/Shoes/ShoeFormDialog"
-import {
-  getFoamHealth,
-  SHOE_CATEGORIES,
-} from "@/components/Shoes/shoe-utils"
+import { getFoamHealth, SHOE_CATEGORIES } from "@/components/Shoes/shoe-utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -148,7 +145,8 @@ function Shoes() {
             </Badge>
           </div>
           <p className="text-xs text-slate-400 font-medium mt-0.5">
-            Seguimiento de amortiguación, desgaste de espuma EVA/PEBA y recomendación por sesión.
+            Seguimiento de amortiguación, desgaste de espuma EVA/PEBA y
+            recomendación por sesión.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -184,7 +182,8 @@ function Shoes() {
             Pares Activos
           </div>
           <span className="text-xl font-extrabold text-white">
-            {lockerSummary.activeCount} <span className="text-xs font-normal text-slate-400">pares</span>
+            {lockerSummary.activeCount}{" "}
+            <span className="text-xs font-normal text-slate-400">pares</span>
           </span>
         </div>
 
@@ -194,7 +193,8 @@ function Shoes() {
             Km Acumulados
           </div>
           <span className="text-xl font-extrabold text-emerald-400">
-            {lockerSummary.totalKmTracked} <span className="text-xs font-normal text-slate-400">km</span>
+            {lockerSummary.totalKmTracked}{" "}
+            <span className="text-xs font-normal text-slate-400">km</span>
           </span>
         </div>
 
@@ -214,7 +214,8 @@ function Shoes() {
             Pares Retirados
           </div>
           <span className="text-xl font-extrabold text-slate-300">
-            {lockerSummary.retiredCount} <span className="text-xs font-normal text-slate-400">pares</span>
+            {lockerSummary.retiredCount}{" "}
+            <span className="text-xs font-normal text-slate-400">pares</span>
           </span>
         </div>
       </div>
@@ -251,7 +252,8 @@ function Shoes() {
           </div>
 
           <span className="text-xs font-semibold text-slate-400">
-            Mostrando {displayShoes.length} {displayShoes.length === 1 ? "zapatilla" : "zapatillas"}
+            Mostrando {displayShoes.length}{" "}
+            {displayShoes.length === 1 ? "zapatilla" : "zapatillas"}
           </span>
         </div>
 
@@ -279,7 +281,10 @@ function Shoes() {
       {shoesQuery.isLoading ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-56 w-full rounded-2xl bg-slate-800/80" />
+            <Skeleton
+              key={i}
+              className="h-56 w-full rounded-2xl bg-slate-800/80"
+            />
           ))}
         </div>
       ) : shoesQuery.isError ? (
@@ -323,7 +328,8 @@ function Shoes() {
               className="mt-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 rounded-xl cursor-pointer"
               onClick={() => setFormOpen(true)}
             >
-              <Plus className="mr-2 size-4 stroke-[3]" /> Registrar primera zapatilla
+              <Plus className="mr-2 size-4 stroke-[3]" /> Registrar primera
+              zapatilla
             </Button>
           )}
         </div>

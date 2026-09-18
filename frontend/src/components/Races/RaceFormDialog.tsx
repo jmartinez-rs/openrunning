@@ -1,6 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ImagePlus, Loader2, X, ChevronDown, ChevronUp, MapPin, Flag, Target, Navigation, Trophy, Camera } from "lucide-react"
-import { useRef, useState, useEffect } from "react"
+import {
+  Camera,
+  ChevronDown,
+  ChevronUp,
+  Flag,
+  ImagePlus,
+  Loader2,
+  MapPin,
+  Navigation,
+  Target,
+  Trophy,
+  X,
+} from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 
 import {
   ActivitiesService,
@@ -22,8 +34,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { parseRaceNotes, type RaceMeta, stringifyRaceNotes } from "./race-meta"
 import { parseRaceTime, secondsToTimeInput } from "./race-utils"
-import { parseRaceNotes, stringifyRaceNotes, type RaceMeta } from "./race-meta"
 
 interface RaceFormDialogProps {
   open: boolean
@@ -32,11 +44,23 @@ interface RaceFormDialogProps {
   defaultActivityId?: string
 }
 
-function Section({ title, icon: Icon, open, onToggle, children }: { title: string, icon: any, open: boolean, onToggle: () => void, children: React.ReactNode }) {
+function Section({
+  title,
+  icon: Icon,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string
+  icon: any
+  open: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
   return (
     <div className="border border-slate-800 rounded-2xl bg-slate-900/50 overflow-hidden transition-all">
-      <button 
-        type="button" 
+      <button
+        type="button"
         onClick={onToggle}
         className="w-full flex items-center justify-between p-4 bg-slate-900 hover:bg-slate-800/80 transition-colors focus:outline-none"
       >
@@ -44,7 +68,11 @@ function Section({ title, icon: Icon, open, onToggle, children }: { title: strin
           <Icon className="size-4 text-orange-500" />
           <span className="font-bold text-white tracking-tight">{title}</span>
         </div>
-        {open ? <ChevronUp className="size-4 text-slate-400" /> : <ChevronDown className="size-4 text-slate-400" />}
+        {open ? (
+          <ChevronUp className="size-4 text-slate-400" />
+        ) : (
+          <ChevronDown className="size-4 text-slate-400" />
+        )}
       </button>
       {open && (
         <div className="p-4 border-t border-slate-800 bg-slate-950 flex flex-col gap-4 animate-in slide-in-from-top-2 duration-300">
@@ -68,38 +96,64 @@ export function RaceFormDialog({
 
   // 1. Esencial
   const [eventName, setEventName] = useState(race?.event_name ?? "")
-  const [distanceKm, setDistanceKm] = useState(race?.distance_km != null ? String(race.distance_km) : "")
+  const [distanceKm, setDistanceKm] = useState(
+    race?.distance_km != null ? String(race.distance_km) : "",
+  )
   const [date, setDate] = useState(race?.date ? race.date.slice(0, 10) : "")
   const [startTime, setStartTime] = useState(initialMeta.start_time ?? "")
   const [location, setLocation] = useState(race?.location ?? "")
-  const [surfaceType, setSurfaceType] = useState<RaceMeta["surface_type"]>(initialMeta.surface_type ?? "")
-  const [elevationProfile, setElevationProfile] = useState<RaceMeta["elevation_profile"]>(initialMeta.elevation_profile ?? "")
+  const [surfaceType, setSurfaceType] = useState<RaceMeta["surface_type"]>(
+    initialMeta.surface_type ?? "",
+  )
+  const [elevationProfile, setElevationProfile] = useState<
+    RaceMeta["elevation_profile"]
+  >(initialMeta.elevation_profile ?? "")
 
   // 2. Prioridad y Plan
-  const [priority, setPriority] = useState<RaceMeta["priority"]>(initialMeta.priority ?? "")
+  const [priority, setPriority] = useState<RaceMeta["priority"]>(
+    initialMeta.priority ?? "",
+  )
   const [linkToPlan, setLinkToPlan] = useState(false) // Fake for now
 
   // 3. Objetivos de Rendimiento
-  const [goalType, setGoalType] = useState<RaceMeta["goal_type"]>(initialMeta.goal_type ?? "")
+  const [goalType, setGoalType] = useState<RaceMeta["goal_type"]>(
+    initialMeta.goal_type ?? "",
+  )
   const [targetTime, setTargetTime] = useState(initialMeta.target_time ?? "")
   const [targetPace, setTargetPace] = useState(initialMeta.target_pace ?? "")
   const [shoeId, setShoeId] = useState(race?.shoe_id ?? "")
-  
+
   // 4. Logística
   const [bibNumber, setBibNumber] = useState(race?.bib_number ?? "")
   const [corral, setCorral] = useState(initialMeta.corral ?? "")
-  const [kitRetrievalInfo, setKitRetrievalInfo] = useState(initialMeta.kit_retrieval_info ?? "")
+  const [kitRetrievalInfo, setKitRetrievalInfo] = useState(
+    initialMeta.kit_retrieval_info ?? "",
+  )
   const [webLink, setWebLink] = useState(initialMeta.web_link ?? "")
-  const [status, setStatus] = useState<RaceMeta["status"]>(initialMeta.status ?? "")
-  const [splitsStrategy, setSplitsStrategy] = useState(initialMeta.splits_strategy ?? "")
-  const [nutritionPlan, setNutritionPlan] = useState(initialMeta.nutrition_plan ?? "")
+  const [status, setStatus] = useState<RaceMeta["status"]>(
+    initialMeta.status ?? "",
+  )
+  const [splitsStrategy, setSplitsStrategy] = useState(
+    initialMeta.splits_strategy ?? "",
+  )
+  const [nutritionPlan, setNutritionPlan] = useState(
+    initialMeta.nutrition_plan ?? "",
+  )
 
   // 5. Post-Carrera (Resultados)
-  const [officialTime, setOfficialTime] = useState(secondsToTimeInput(race?.official_time_seconds))
-  const [chipTime, setChipTime] = useState(secondsToTimeInput(race?.chip_time_seconds))
-  const [position, setPosition] = useState(race?.position != null ? String(race.position) : "")
+  const [officialTime, setOfficialTime] = useState(
+    secondsToTimeInput(race?.official_time_seconds),
+  )
+  const [chipTime, setChipTime] = useState(
+    secondsToTimeInput(race?.chip_time_seconds),
+  )
+  const [position, setPosition] = useState(
+    race?.position != null ? String(race.position) : "",
+  )
   const [category, setCategory] = useState(race?.category ?? "")
-  const [activityId, setActivityId] = useState(race?.activity_id ?? defaultActivityId ?? "")
+  const [activityId, setActivityId] = useState(
+    race?.activity_id ?? defaultActivityId ?? "",
+  )
   const [notes, setNotes] = useState(initialMeta.raw_notes ?? "")
   const [photos, setPhotos] = useState<string[]>(race?.photos_urls ?? [])
 
@@ -116,7 +170,7 @@ export function RaceFormDialog({
   })
 
   const toggleSection = (key: keyof typeof openSections) => {
-    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }))
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
   // Automatic target pace calculation
@@ -125,24 +179,30 @@ export function RaceFormDialog({
       const parts = targetTime.split(":")
       let seconds = 0
       if (parts.length === 3) {
-        seconds = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2])
+        seconds =
+          parseInt(parts[0], 10) * 3600 +
+          parseInt(parts[1], 10) * 60 +
+          parseInt(parts[2], 10)
       } else if (parts.length === 2) {
-        seconds = parseInt(parts[0]) * 60 + parseInt(parts[1])
+        seconds = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10)
       }
-      
+
       const dist = parseFloat(distanceKm)
       if (dist > 0 && seconds > 0) {
         const paceSecs = Math.floor(seconds / dist)
         const pm = Math.floor(paceSecs / 60)
         const ps = paceSecs % 60
-        setTargetPace(`${pm.toString().padStart(2, '0')}:${ps.toString().padStart(2, '0')}`)
+        setTargetPace(
+          `${pm.toString().padStart(2, "0")}:${ps.toString().padStart(2, "0")}`,
+        )
       }
     }
   }, [targetTime, distanceKm, goalType])
 
   const activitiesQuery = useQuery({
     queryKey: ["activities", "strava"],
-    queryFn: () => ActivitiesService.readActivities({ sourceType: "strava", limit: 100 }),
+    queryFn: () =>
+      ActivitiesService.readActivities({ sourceType: "strava", limit: 100 }),
     enabled: open,
   })
 
@@ -156,7 +216,9 @@ export function RaceFormDialog({
     mutationFn: () => {
       const payload = {
         event_name: eventName,
-        date: date ? new Date(`${date}T12:00:00`).toISOString() : new Date().toISOString(),
+        date: date
+          ? new Date(`${date}T12:00:00`).toISOString()
+          : new Date().toISOString(),
         distance_km: Number(distanceKm) || 0,
         location: location || null,
         official_time_seconds: parseRaceTime(officialTime),
@@ -185,7 +247,10 @@ export function RaceFormDialog({
         photos_urls: photos,
       }
       if (race) {
-        return RacesService.updateRace({ raceId: race.id, requestBody: payload })
+        return RacesService.updateRace({
+          raceId: race.id,
+          requestBody: payload,
+        })
       }
       return RacesService.createRace({ requestBody: payload })
     },
@@ -204,7 +269,9 @@ export function RaceFormDialog({
     if (!file) return
     setUploading(true)
     try {
-      const result = await StorageService.uploadFile({ formData: { file: file as unknown as string } })
+      const result = await StorageService.uploadFile({
+        formData: { file: file as unknown as string },
+      })
       const url = String((result as Record<string, string>).url ?? "")
       if (url) setPhotos((prev) => [...prev, url])
     } catch (error) {
@@ -227,11 +294,17 @@ export function RaceFormDialog({
         </DialogHeader>
 
         <div className="p-6 flex flex-col gap-4">
-          
           {/* Bloque 1: Esencial */}
-          <Section title="1. Datos del Evento" icon={Flag} open={openSections.esencial} onToggle={() => toggleSection("esencial")}>
+          <Section
+            title="1. Datos del Evento"
+            icon={Flag}
+            open={openSections.esencial}
+            onToggle={() => toggleSection("esencial")}
+          >
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nombre de la Carrera</Label>
+              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Nombre de la Carrera
+              </Label>
               <Input
                 className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
                 value={eventName}
@@ -239,10 +312,12 @@ export function RaceFormDialog({
                 placeholder="Buscador predictivo o texto libre (Ej: NB 15K)"
               />
             </div>
-            
+
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Distancia Oficial (km)</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Distancia Oficial (km)
+                </Label>
                 <div className="flex gap-2">
                   <select
                     className="w-24 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
@@ -266,9 +341,11 @@ export function RaceFormDialog({
                   />
                 </div>
               </div>
-              
+
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ubicación</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Ubicación
+                </Label>
                 <Input
                   className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
                   value={location}
@@ -278,7 +355,9 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Fecha
+                </Label>
                 <Input
                   className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
                   type="date"
@@ -288,7 +367,9 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tipo de Superficie</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Tipo de Superficie
+                </Label>
                 <select
                   className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                   value={surfaceType || ""}
@@ -303,7 +384,9 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Perfil de Altimetría</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Perfil de Altimetría
+                </Label>
                 <select
                   className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                   value={elevationProfile || ""}
@@ -319,23 +402,38 @@ export function RaceFormDialog({
           </Section>
 
           {/* Bloque 2: Prioridad */}
-          <Section title="2. Prioridad y Plan de Entrenamiento" icon={MapPin} open={openSections.prioridad} onToggle={() => toggleSection("prioridad")}>
-             <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Prioridad de la Carrera</Label>
+          <Section
+            title="2. Prioridad y Plan de Entrenamiento"
+            icon={MapPin}
+            open={openSections.prioridad}
+            onToggle={() => toggleSection("prioridad")}
+          >
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Prioridad de la Carrera
+              </Label>
               <select
                 className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                 value={priority || ""}
                 onChange={(e) => setPriority(e.target.value as any)}
               >
                 <option value="">No definida</option>
-                <option value="A">🥇 Objetivo A (Principal de temporada)</option>
-                <option value="B">🥈 Objetivo B (Preparatoria / Tune-up)</option>
-                <option value="C">🥉 Objetivo C (Recreativa / Acompañamiento)</option>
+                <option value="A">
+                  🥇 Objetivo A (Principal de temporada)
+                </option>
+                <option value="B">
+                  🥈 Objetivo B (Preparatoria / Tune-up)
+                </option>
+                <option value="C">
+                  🥉 Objetivo C (Recreativa / Acompañamiento)
+                </option>
               </select>
             </div>
-            
+
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vincular a Plan de Entrenamiento</Label>
+              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Vincular a Plan de Entrenamiento
+              </Label>
               <select
                 className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                 value={linkToPlan ? "yes" : "no"}
@@ -344,30 +442,46 @@ export function RaceFormDialog({
                 <option value="no">Sin plan asociado (por defecto)</option>
                 <option value="yes">Sí, crear/integrar al plan actual</option>
               </select>
-              <span className="text-xs text-slate-500 mt-1">La integración con el calendario ajustará los días de descarga (*tapering*).</span>
+              <span className="text-xs text-slate-500 mt-1">
+                La integración con el calendario ajustará los días de descarga
+                (*tapering*).
+              </span>
             </div>
           </Section>
 
           {/* Bloque 3: Objetivos */}
-          <Section title="3. Objetivos de Rendimiento" icon={Target} open={openSections.objetivos} onToggle={() => toggleSection("objetivos")}>
+          <Section
+            title="3. Objetivos de Rendimiento"
+            icon={Target}
+            open={openSections.objetivos}
+            onToggle={() => toggleSection("objetivos")}
+          >
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tipo de Meta</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Tipo de Meta
+                </Label>
                 <select
                   className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                   value={goalType || ""}
                   onChange={(e) => setGoalType(e.target.value as any)}
                 >
                   <option value="">Seleccionar...</option>
-                  <option value="completar">Completar la distancia (Sin presión de tiempo)</option>
-                  <option value="tiempo">Buscar marca / Tiempo objetivo (Time Goal)</option>
+                  <option value="completar">
+                    Completar la distancia (Sin presión de tiempo)
+                  </option>
+                  <option value="tiempo">
+                    Buscar marca / Tiempo objetivo (Time Goal)
+                  </option>
                 </select>
               </div>
 
               {goalType === "tiempo" && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tiempo Objetivo</Label>
+                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Tiempo Objetivo
+                    </Label>
                     <Input
                       className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
                       value={targetTime}
@@ -376,7 +490,9 @@ export function RaceFormDialog({
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ritmo Promedio Proyectado</Label>
+                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Ritmo Promedio Proyectado
+                    </Label>
                     <Input
                       className="bg-slate-950 border-slate-800 text-slate-400 focus-visible:ring-orange-500/50 rounded-xl cursor-not-allowed font-medium"
                       value={targetPace ? `${targetPace} /km` : "--:-- /km"}
@@ -387,7 +503,9 @@ export function RaceFormDialog({
               )}
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Calzado a utilizar</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Calzado a utilizar
+                </Label>
                 <select
                   className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                   value={shoeId}
@@ -408,10 +526,17 @@ export function RaceFormDialog({
           </Section>
 
           {/* Bloque 4: Logística */}
-          <Section title="4. Logística y Evento (Opcional)" icon={Navigation} open={openSections.logistica} onToggle={() => toggleSection("logistica")}>
+          <Section
+            title="4. Logística y Evento (Opcional)"
+            icon={Navigation}
+            open={openSections.logistica}
+            onToggle={() => toggleSection("logistica")}
+          >
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Horario de Largada</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Horario de Largada
+                </Label>
                 <Input
                   className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
                   type="time"
@@ -420,7 +545,9 @@ export function RaceFormDialog({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado de Inscripción</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Estado de Inscripción
+                </Label>
                 <select
                   className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                   value={status || ""}
@@ -432,9 +559,11 @@ export function RaceFormDialog({
                   <option value="pending_kit">Retiro de kit pendiente</option>
                 </select>
               </div>
-              
+
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dorsal / Bib Number</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Dorsal / Bib Number
+                </Label>
                 <Input
                   className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
                   value={bibNumber}
@@ -443,7 +572,9 @@ export function RaceFormDialog({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Corral / Cajón de salida</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Corral / Cajón de salida
+                </Label>
                 <Input
                   className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
                   value={corral}
@@ -453,7 +584,9 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lugar y Fecha de Retiro de Kit</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Lugar y Fecha de Retiro de Kit
+                </Label>
                 <Input
                   className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
                   value={kitRetrievalInfo}
@@ -463,7 +596,9 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Web oficial o Comprobante (URL)</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Web oficial o Comprobante (URL)
+                </Label>
                 <Input
                   className="bg-slate-950 border-slate-800 text-white focus-visible:ring-orange-500/50 rounded-xl"
                   value={webLink}
@@ -473,7 +608,9 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estrategia: Splits (Opcional)</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Estrategia: Splits (Opcional)
+                </Label>
                 <textarea
                   className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white min-h-[60px]"
                   value={splitsStrategy}
@@ -481,9 +618,11 @@ export function RaceFormDialog({
                   placeholder="Ej: km 1-5 suave, km 6-12 ritmo crucero..."
                 />
               </div>
-              
+
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estrategia: Nutrición (Opcional)</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Estrategia: Nutrición (Opcional)
+                </Label>
                 <textarea
                   className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white min-h-[60px]"
                   value={nutritionPlan}
@@ -495,10 +634,17 @@ export function RaceFormDialog({
           </Section>
 
           {/* Bloque 5: Post-Carrera */}
-          <Section title="5. Resultados y Post-Carrera" icon={Trophy} open={openSections.post} onToggle={() => toggleSection("post")}>
+          <Section
+            title="5. Resultados y Post-Carrera"
+            icon={Trophy}
+            open={openSections.post}
+            onToggle={() => toggleSection("post")}
+          >
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tiempo Oficial</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Tiempo Oficial
+                </Label>
                 <Input
                   className="bg-slate-950 border-slate-800 text-white rounded-xl"
                   value={officialTime}
@@ -507,7 +653,9 @@ export function RaceFormDialog({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tiempo Neto (Chip)</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Tiempo Neto (Chip)
+                </Label>
                 <Input
                   className="bg-slate-950 border-slate-800 text-white rounded-xl"
                   value={chipTime}
@@ -516,7 +664,9 @@ export function RaceFormDialog({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Puesto General</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Puesto General
+                </Label>
                 <Input
                   className="bg-slate-950 border-slate-800 text-white rounded-xl"
                   type="number"
@@ -526,7 +676,9 @@ export function RaceFormDialog({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Categoría</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Categoría
+                </Label>
                 <Input
                   className="bg-slate-950 border-slate-800 text-white rounded-xl"
                   value={category}
@@ -536,7 +688,9 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2 mt-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Actividad de Strava vinculada</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Actividad de Strava vinculada
+                </Label>
                 <select
                   className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                   value={activityId}
@@ -563,7 +717,9 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bitácora y Notas Personales</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Bitácora y Notas Personales
+                </Label>
                 <textarea
                   className="flex min-h-[80px] w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white shadow-sm"
                   value={notes}
@@ -573,7 +729,9 @@ export function RaceFormDialog({
               </div>
 
               <div className="flex flex-col gap-1.5 sm:col-span-2">
-                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Camera className="size-3" /> Fotos del Evento</Label>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                  <Camera className="size-3" /> Fotos del Evento
+                </Label>
                 <div className="flex flex-wrap gap-2">
                   {photos.map((url, index) => (
                     <div
@@ -589,7 +747,9 @@ export function RaceFormDialog({
                         type="button"
                         className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white"
                         onClick={() =>
-                          setPhotos((prev) => prev.filter((_, i) => i !== index))
+                          setPhotos((prev) =>
+                            prev.filter((_, i) => i !== index),
+                          )
                         }
                       >
                         <X className="size-3" />
@@ -613,7 +773,6 @@ export function RaceFormDialog({
               </div>
             </div>
           </Section>
-
         </div>
 
         <div className="p-6 border-t border-slate-800 bg-slate-900 sticky bottom-0 z-10 flex gap-3 justify-end rounded-b-2xl">

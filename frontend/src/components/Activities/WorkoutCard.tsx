@@ -1,5 +1,5 @@
-import { ActivityPublic } from "@/client"
-import { Calendar, Clock, Footprints, Flame } from "lucide-react"
+import { Calendar, Clock, Flame, Footprints } from "lucide-react"
+import type { ActivityPublic } from "@/client"
 
 interface WorkoutCardProps {
   activity: ActivityPublic
@@ -10,38 +10,43 @@ export function WorkoutCard({ activity, isActive = false }: WorkoutCardProps) {
   // Use emerald-400 as the "neon" accent color to match OpenRunning's palette
   const accentColor = isActive ? "text-emerald-400" : "text-slate-300"
   const borderColor = isActive ? "border-emerald-400" : "border-slate-800"
-  const badgeBg = isActive ? "bg-emerald-400 text-slate-950" : "bg-transparent border border-slate-700 text-slate-400"
-  
+  const badgeBg = isActive
+    ? "bg-emerald-400 text-slate-950"
+    : "bg-transparent border border-slate-700 text-slate-400"
+
   // Format Distance
-  const distance = activity.cardio?.distance_meters 
-    ? (activity.cardio.distance_meters / 1000).toFixed(2) 
+  const distance = activity.cardio?.distance_meters
+    ? (activity.cardio.distance_meters / 1000).toFixed(2)
     : "0.00"
-  
+
   // Format Duration
   const durSeconds = activity.duration_seconds || 0
   const h = Math.floor(durSeconds / 3600)
   const m = Math.floor((durSeconds % 3600) / 60)
   const s = durSeconds % 60
-  const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  const timeStr = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
 
   // Format Date
   const dateObj = new Date(activity.timestamp)
-  const dateStr = dateObj.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit"
-  }).replace(/\//g, '.') // e.g. 23.04.24
-  
+  const dateStr = dateObj
+    .toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    })
+    .replace(/\//g, ".") // e.g. 23.04.24
+
   let dayName = dateObj.toLocaleDateString("es-AR", { weekday: "long" })
   dayName = dayName.charAt(0).toUpperCase() + dayName.slice(1)
 
   return (
-    <div 
+    <div
       className={`relative flex flex-col items-center justify-center min-w-[140px] px-4 py-6 rounded-[2rem] border-2 bg-slate-950 transition-all z-10 ${borderColor}`}
     >
       {/* Icon at top */}
       <div className={`mb-3 ${accentColor}`}>
-        {activity.sport_type?.toLowerCase().includes("walk") || activity.sport_type?.toLowerCase().includes("hike") ? (
+        {activity.sport_type?.toLowerCase().includes("walk") ||
+        activity.sport_type?.toLowerCase().includes("hike") ? (
           <Footprints className="size-6" />
         ) : activity.source_type === "hevy" ? (
           <Flame className="size-6" />
@@ -65,19 +70,27 @@ export function WorkoutCard({ activity, isActive = false }: WorkoutCardProps) {
       </div>
 
       {/* Main Stat (Distance) */}
-      <div className={`text-2xl sm:text-3xl font-extrabold tracking-tight mb-4 ${accentColor}`}>
+      <div
+        className={`text-2xl sm:text-3xl font-extrabold tracking-tight mb-4 ${accentColor}`}
+      >
         {distance} <span className="text-lg sm:text-xl font-bold">KM</span>
       </div>
 
       {/* Badges */}
       <div className="flex flex-col gap-2 w-full mt-1">
-        <div className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 px-3 text-xs font-semibold ${badgeBg}`}>
+        <div
+          className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 px-3 text-xs font-semibold ${badgeBg}`}
+        >
           <Clock className="size-3.5" />
           {timeStr}
         </div>
-        <div className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 px-3 text-xs font-semibold ${badgeBg}`}>
+        <div
+          className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 px-3 text-xs font-semibold ${badgeBg}`}
+        >
           <Calendar className="size-3.5 shrink-0" />
-          <span className="truncate">{dayName} {dateStr}</span>
+          <span className="truncate">
+            {dayName} {dateStr}
+          </span>
         </div>
       </div>
     </div>

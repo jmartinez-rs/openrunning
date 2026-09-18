@@ -1,4 +1,4 @@
-import { Medal, Map } from "lucide-react"
+import { Map as MapIcon, Medal } from "lucide-react"
 
 import type { RacePublic } from "@/client"
 
@@ -34,26 +34,29 @@ function MetricCard({
 
 export function RaceGlobalMetrics({ completedRaces }: RaceGlobalMetricsProps) {
   const totalRaces = completedRaces.length
-  const totalKm = completedRaces.reduce((acc, race) => acc + race.distance_km, 0)
+  const totalKm = completedRaces.reduce(
+    (acc, race) => acc + race.distance_km,
+    0,
+  )
 
   // Medals by distance
   const medals: Record<string, number> = {
-    "Maratón": 0,
+    Maratón: 0,
     "Media Maratón": 0,
     "15K": 0,
     "10K": 0,
     "5K": 0,
-    "Otras": 0,
+    Otras: 0,
   }
 
   completedRaces.forEach((race) => {
     const km = race.distance_km
-    if (km >= 42) medals["Maratón"]++
+    if (km >= 42) medals.Maratón++
     else if (km >= 21) medals["Media Maratón"]++
     else if (km >= 15) medals["15K"]++
     else if (km >= 10) medals["10K"]++
     else if (km >= 5) medals["5K"]++
-    else medals["Otras"]++
+    else medals.Otras++
   })
 
   return (
@@ -69,13 +72,15 @@ export function RaceGlobalMetrics({ completedRaces }: RaceGlobalMetricsProps) {
           value={
             <>
               {totalKm % 1 === 0 ? totalKm.toFixed(0) : totalKm.toFixed(1)}
-              <span className="text-sm ml-1 text-slate-400 font-medium">km</span>
+              <span className="text-sm ml-1 text-slate-400 font-medium">
+                km
+              </span>
             </>
           }
-          icon={<Map className="size-6" />}
+          icon={<MapIcon className="size-6" />}
         />
         <div className="flex flex-col justify-center rounded-2xl bg-slate-900/80 border border-slate-800 p-4 shadow-lg h-full">
-           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-1">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 px-1">
             Medallero
           </p>
           <div className="flex flex-wrap gap-2">
@@ -90,7 +95,9 @@ export function RaceGlobalMetrics({ completedRaces }: RaceGlobalMetricsProps) {
                 </span>
               ))}
             {totalRaces === 0 && (
-              <span className="text-xs font-medium text-slate-500">Sin medallas aún</span>
+              <span className="text-xs font-medium text-slate-500">
+                Sin medallas aún
+              </span>
             )}
           </div>
         </div>

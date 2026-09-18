@@ -26,7 +26,7 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
   onSelectDay,
 }) => {
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-md">
+    <div className="bg-card/90 border border-white/5 rounded-2xl p-4 shadow-card backdrop-blur-md">
       {/* Header with week navigation */}
       <div className="flex items-center justify-between mb-3">
         <button
@@ -38,7 +38,7 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
           <ChevronLeft className="w-5 h-5" />
         </button>
 
-        <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+        <span className="text-xs font-semibold uppercase tracking-wider text-primary">
           {weekLabel}
         </span>
 
@@ -56,8 +56,8 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
       <div className="grid grid-cols-7 gap-1.5 text-center">
         {days.map((day) => {
           let dotColor = "bg-transparent";
-          if (day.status === "done") dotColor = "bg-emerald-400 shadow-sm shadow-emerald-500/50";
-          else if (day.status === "plan") dotColor = "bg-teal-400";
+          if (day.status === "done") dotColor = "bg-primary shadow-sm shadow-glow";
+          else if (day.status === "plan") dotColor = "bg-primary/70";
           else if (day.status === "ovr") dotColor = "bg-amber-400";
 
           return (
@@ -67,14 +67,14 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
               onClick={() => onSelectDay(day)}
               className={`flex flex-col items-center py-2 px-1 rounded-xl transition-all cursor-pointer select-none ${
                 day.isToday
-                  ? "bg-emerald-500/15 border border-emerald-500/40 text-white font-bold"
-                  : "bg-slate-800/40 hover:bg-slate-800 border border-slate-800/60 text-slate-300"
+                  ? "bg-primary/15 border border-primary/40 text-white font-bold"
+                  : "bg-surface-dim hover:bg-surface border border-white/5 text-muted-foreground"
               }`}
             >
-              <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                 {day.dayName}
               </span>
-              <span className="text-base font-extrabold mt-0.5 my-0.5">
+              <span className="text-base font-display font-bold mt-0.5 my-0.5 text-white">
                 {day.dayNumber}
               </span>
               <span className={`w-2 h-2 rounded-full mt-0.5 ${dotColor}`} />

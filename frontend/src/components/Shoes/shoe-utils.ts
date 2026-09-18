@@ -14,7 +14,8 @@ export const SHOE_CATEGORIES: ShoeCategoryOption[] = [
     value: "easy",
     label: "Rodajes Suaves / Z2 (Easy)",
     shortLabel: "Rodaje Z2",
-    description: "Máxima amortiguación para entrenamientos regenerativos y cómodos",
+    description:
+      "Máxima amortiguación para entrenamientos regenerativos y cómodos",
     badgeClass: "bg-teal-500/15 text-teal-400 border-teal-500/30",
     recommendedTypes: ["easy_run", "recovery"],
   },
@@ -30,7 +31,8 @@ export const SHOE_CATEGORIES: ShoeCategoryOption[] = [
     value: "mixed",
     label: "Series & Tempo (Mixtas / Calidad)",
     shortLabel: "Series / Tempo",
-    description: "Calzado reactivo y ligero para series de velocidad y ritmo umbral",
+    description:
+      "Calzado reactivo y ligero para series de velocidad y ritmo umbral",
     badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/30",
     recommendedTypes: ["tempo", "intervals", "fartlek", "activation"],
   },
@@ -38,7 +40,8 @@ export const SHOE_CATEGORIES: ShoeCategoryOption[] = [
     value: "race",
     label: "Competencia / Carbono (Race Day)",
     shortLabel: "Competencia",
-    description: "Zapatillas voladoras con placa de carbono para días de carrera",
+    description:
+      "Zapatillas voladoras con placa de carbono para días de carrera",
     badgeClass: "bg-purple-500/15 text-purple-400 border-purple-500/30",
     recommendedTypes: ["race", "time_trial"],
   },
@@ -183,7 +186,12 @@ export function getShoeRecommendation(
 
   // Priority mapping based on workout type
   let targetCategory: "easy" | "training" | "mixed" | "race" | "trail" = "easy"
-  if (type === "tempo" || type === "intervals" || type === "activation" || type === "fartlek") {
+  if (
+    type === "tempo" ||
+    type === "intervals" ||
+    type === "activation" ||
+    type === "fartlek"
+  ) {
     targetCategory = "mixed"
   } else if (type === "race" || type === "time_trial") {
     targetCategory = "race"
@@ -197,7 +205,10 @@ export function getShoeRecommendation(
   const categoryMatch = activeShoes.find((s) => {
     if (s.category !== targetCategory) return false
     const stats = statsMap?.get(s.id)
-    const health = getFoamHealth(stats?.total_distance_meters, s.target_distance_km)
+    const health = getFoamHealth(
+      stats?.total_distance_meters,
+      s.target_distance_km,
+    )
     return health.status !== "critical"
   })
 
@@ -211,11 +222,15 @@ export function getShoeRecommendation(
   }
 
   // Fallback to any active shoe with healthy foam
-  const healthyShoe = activeShoes.find((s) => {
-    const stats = statsMap?.get(s.id)
-    const health = getFoamHealth(stats?.total_distance_meters, s.target_distance_km)
-    return health.status !== "critical"
-  }) ?? activeShoes[0]
+  const healthyShoe =
+    activeShoes.find((s) => {
+      const stats = statsMap?.get(s.id)
+      const health = getFoamHealth(
+        stats?.total_distance_meters,
+        s.target_distance_km,
+      )
+      return health.status !== "critical"
+    }) ?? activeShoes[0]
 
   return {
     recommendedShoe: healthyShoe,
@@ -235,7 +250,11 @@ export interface RotationAlert {
 
 export function checkRotationAlert(
   shoeId: string,
-  recentSessions: Array<{ date: string; shoe_id?: string | null; type?: string | null }>,
+  recentSessions: Array<{
+    date: string
+    shoe_id?: string | null
+    type?: string | null
+  }>,
 ): RotationAlert {
   if (!recentSessions || recentSessions.length === 0) {
     return { needsRest: false, reason: null }
@@ -251,13 +270,17 @@ export function checkRotationAlert(
     (s) =>
       s.shoe_id === shoeId &&
       (s.date === yesterdayIso || s.date === todayIso) &&
-      (s.type === "intervals" || s.type === "tempo" || s.type === "race" || s.type === "long_run"),
+      (s.type === "intervals" ||
+        s.type === "tempo" ||
+        s.type === "race" ||
+        s.type === "long_run"),
   )
 
   if (yesterdayWorkout) {
     return {
       needsRest: true,
-      reason: "⚠️ Alerta de Rotación: Se usó en un entreno exigente recientemente. Alterná a otro par para permitir que la espuma recupere su resiliencia.",
+      reason:
+        "⚠️ Alerta de Rotación: Se usó en un entreno exigente recientemente. Alterná a otro par para permitir que la espuma recupere su resiliencia.",
     }
   }
 

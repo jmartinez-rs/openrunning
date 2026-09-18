@@ -1,4 +1,4 @@
-import { Dumbbell, Trophy, Weight, Layers } from "lucide-react"
+import { Dumbbell, Layers, Trophy, Weight } from "lucide-react"
 
 import type { ActivityStrengthBase } from "@/client"
 import { muscleGroupForExercise } from "./muscles"
@@ -77,7 +77,9 @@ export function StrengthDetail({
             <div className="p-2 sm:p-2.5 rounded-xl bg-purple-500/15 text-purple-400 shrink-0">
               <Weight className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate min-w-0">Volumen Total</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate min-w-0">
+              Volumen Total
+            </p>
           </div>
           <p className="text-base sm:text-lg md:text-xl font-black text-purple-400 tracking-tight truncate">
             {Math.round(strength.total_volume_kg ?? 0)} kg
@@ -89,10 +91,13 @@ export function StrengthDetail({
             <div className="p-2 sm:p-2.5 rounded-xl bg-cyan-500/15 text-cyan-400 shrink-0">
               <Dumbbell className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate min-w-0">Series & RPE</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate min-w-0">
+              Series & RPE
+            </p>
           </div>
           <p className="text-base sm:text-lg md:text-xl font-black text-white tracking-tight truncate">
-            {strength.total_sets ?? 0} {strength.avg_rpe ? `· RPE ${strength.avg_rpe}` : ""}
+            {strength.total_sets ?? 0}{" "}
+            {strength.avg_rpe ? `· RPE ${strength.avg_rpe}` : ""}
           </p>
         </div>
       </div>
@@ -160,7 +165,8 @@ export function StrengthDetail({
                       <SetTypeBadge setType={set.set_type} />
                       <div className="flex items-center gap-3 font-mono text-xs">
                         <span className="font-bold text-white">
-                          {set.weight_kg ? `${set.weight_kg} kg` : "—"} × {set.reps ?? "—"}
+                          {set.weight_kg ? `${set.weight_kg} kg` : "—"} ×{" "}
+                          {set.reps ?? "—"}
                         </span>
                         {set.rpe ? (
                           <span className="text-slate-400 text-[11px]">
@@ -179,4 +185,3 @@ export function StrengthDetail({
     </div>
   )
 }
-

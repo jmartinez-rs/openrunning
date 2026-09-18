@@ -102,7 +102,9 @@ export function RaceHeroCard({
         </div>
 
         <div>
-          <h2 className="text-3xl font-black text-white tracking-tight">{race.event_name}</h2>
+          <h2 className="text-3xl font-black text-white tracking-tight">
+            {race.event_name}
+          </h2>
           <p className="mt-1 text-sm font-medium text-orange-400">
             {formatRaceDate(race.date)}
           </p>

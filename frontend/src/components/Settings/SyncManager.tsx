@@ -2,10 +2,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Loader2, RefreshCw } from "lucide-react"
 
 import { SyncService } from "@/client"
-import { SettingsRow } from "./SettingsSection"
 import { Button } from "@/components/ui/button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { SettingsRow } from "./SettingsSection"
 
 export function SyncManager() {
   const queryClient = useQueryClient()

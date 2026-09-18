@@ -79,7 +79,8 @@ function Login() {
               Iniciá sesión en tu cuenta
             </h1>
             <p className="text-body-md text-on-surface-variant">
-              Ingresá tus datos para acceder a tu centro de entrenamiento de running.
+              Ingresá tus datos para acceder a tu centro de entrenamiento de
+              running.
             </p>
           </div>
 

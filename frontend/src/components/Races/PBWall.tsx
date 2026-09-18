@@ -1,7 +1,7 @@
 import { Flame } from "lucide-react"
 
 import type { RacePublic } from "@/client"
-import { formatRaceTime, formatRacePace } from "./race-utils"
+import { formatRacePace, formatRaceTime } from "./race-utils"
 
 interface PBWallProps {
   completedRaces: RacePublic[]
@@ -28,12 +28,15 @@ export function PBWall({ completedRaces, onOpenMemoryModal }: PBWallProps) {
 
   categories.forEach((cat) => {
     const racesInCat = completedRaces.filter(
-      (r) => r.distance_km >= cat.min && r.distance_km <= cat.max && r.official_time_seconds
+      (r) =>
+        r.distance_km >= cat.min &&
+        r.distance_km <= cat.max &&
+        r.official_time_seconds,
     )
     if (racesInCat.length > 0) {
       // Find the one with the minimum time
-      const best = racesInCat.reduce((prev, curr) => 
-        (curr.official_time_seconds! < prev.official_time_seconds!) ? curr : prev
+      const best = racesInCat.reduce((prev, curr) =>
+        curr.official_time_seconds! < prev.official_time_seconds! ? curr : prev,
       )
       pbs.push({
         distanceLabel: cat.label,
@@ -51,7 +54,9 @@ export function PBWall({ completedRaces, onOpenMemoryModal }: PBWallProps) {
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <Flame className="size-5 text-orange-500" />
-        <h3 className="text-lg font-bold text-white tracking-tight">Mejores Marcas (PB Wall)</h3>
+        <h3 className="text-lg font-bold text-white tracking-tight">
+          Mejores Marcas (PB Wall)
+        </h3>
       </div>
       <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
         {pbs.map((pb) => (
@@ -74,7 +79,7 @@ export function PBWall({ completedRaces, onOpenMemoryModal }: PBWallProps) {
                   {pb.race.date.slice(0, 4)}
                 </div>
               </div>
-              
+
               <div>
                 <div className="text-3xl font-black text-white tabular-nums tracking-tighter">
                   {formatRaceTime(pb.race.official_time_seconds)}

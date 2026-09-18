@@ -4,7 +4,11 @@ import { Footprints, MapPin, Pencil, Trash2, TrendingUp } from "lucide-react"
 import type { RunningPlanSummaryPublic } from "@/client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { computeProgress, formatDateRange, PLAN_STATUS_META } from "./running-utils"
+import {
+  computeProgress,
+  formatDateRange,
+  PLAN_STATUS_META,
+} from "./running-utils"
 
 export function RunningPlanCard({
   plan,
@@ -43,7 +47,8 @@ export function RunningPlanCard({
           <span
             className={cn(
               "inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-bold border",
-              status.className || "bg-slate-800 text-slate-300 border-slate-700",
+              status.className ||
+                "bg-slate-800 text-slate-300 border-slate-700",
             )}
           >
             {status.label}

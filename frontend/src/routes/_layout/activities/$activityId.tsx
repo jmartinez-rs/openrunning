@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowLeft, Check, Dumbbell, Footprints, Calendar, Clock, Trophy } from "lucide-react"
+import {
+  ArrowLeft,
+  Calendar,
+  Check,
+  Clock,
+  Dumbbell,
+  Footprints,
+  Trophy,
+} from "lucide-react"
 import { useState } from "react"
 
 import { ActivitiesService, AnalyticsService, ShoesService } from "@/client"
@@ -16,8 +24,8 @@ import {
   type ExerciseRecord,
   StrengthDetail,
 } from "@/components/Activities/StrengthDetail"
-import { Skeleton } from "@/components/ui/skeleton"
 import { RaceFormDialog } from "@/components/Races/RaceFormDialog"
+import { Skeleton } from "@/components/ui/skeleton"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
@@ -63,7 +71,9 @@ function ShoeSelector({
           <div className="p-2 rounded-xl bg-slate-800 text-slate-400">
             <Footprints className="w-4 h-4" />
           </div>
-          <span className="text-xs font-semibold text-slate-400">Cargando zapatillas...</span>
+          <span className="text-xs font-semibold text-slate-400">
+            Cargando zapatillas...
+          </span>
         </div>
       </div>
     )
@@ -78,7 +88,10 @@ function ShoeSelector({
           </div>
           <span className="text-xs font-medium text-slate-400">
             Sin calzado disponible.{" "}
-            <Link to="/shoes" className="text-orange-400 font-semibold hover:underline">
+            <Link
+              to="/shoes"
+              className="text-orange-400 font-semibold hover:underline"
+            >
               Crear calzado
             </Link>
           </span>
@@ -94,8 +107,12 @@ function ShoeSelector({
           <Footprints className="w-4 h-4" />
         </div>
         <div>
-          <p className="text-xs font-bold text-white tracking-tight">Calzado de la sesión</p>
-          <p className="text-[11px] font-medium text-slate-400">Asigná las zapatillas usadas</p>
+          <p className="text-xs font-bold text-white tracking-tight">
+            Calzado de la sesión
+          </p>
+          <p className="text-[11px] font-medium text-slate-400">
+            Asigná las zapatillas usadas
+          </p>
         </div>
       </div>
 
@@ -166,9 +183,12 @@ function ActivityDetail() {
         <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400">
           <Footprints className="w-8 h-8 text-slate-500" />
         </div>
-        <h3 className="text-xl font-bold text-white">No se pudo cargar la actividad</h3>
+        <h3 className="text-xl font-bold text-white">
+          No se pudo cargar la actividad
+        </h3>
         <p className="text-xs text-slate-400 max-w-sm">
-          La actividad no existe o hubo un error al obtener la información desde el servidor.
+          La actividad no existe o hubo un error al obtener la información desde
+          el servidor.
         </p>
         <Link
           to="/activities"
@@ -203,7 +223,8 @@ function ActivityDetail() {
           <div className="space-y-1">
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                {activity.name || (isStrength ? "Sesión de fuerza" : "Sesión cardio")}
+                {activity.name ||
+                  (isStrength ? "Sesión de fuerza" : "Sesión cardio")}
               </h1>
               <span
                 className={
@@ -226,7 +247,8 @@ function ActivityDetail() {
             <div className="flex items-center gap-3 text-xs font-medium text-slate-400 flex-wrap">
               <span className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                {formatDate(activity.timestamp)} · {formatTime(activity.timestamp)}
+                {formatDate(activity.timestamp)} ·{" "}
+                {formatTime(activity.timestamp)}
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
@@ -271,10 +293,7 @@ function ActivityDetail() {
               <CardioDetail cardio={activity.cardio} />
             </div>
           ) : activity.strength ? (
-            <StrengthDetail
-              strength={activity.strength}
-              records={records}
-            />
+            <StrengthDetail strength={activity.strength} records={records} />
           ) : (
             <div className="p-8 bg-slate-900/80 border border-slate-800 rounded-2xl text-center text-slate-400 text-xs font-medium">
               Sin métricas cargadas para esta sesión.
@@ -304,4 +323,3 @@ function ActivityDetail() {
     </div>
   )
 }
-

@@ -29,7 +29,9 @@ function StatCard({
           {label}
         </p>
       </div>
-      <p className={`text-base sm:text-lg md:text-xl font-black tracking-tight truncate ${accentColorClass}`}>
+      <p
+        className={`text-base sm:text-lg md:text-xl font-black tracking-tight truncate ${accentColorClass}`}
+      >
         {value}
       </p>
     </div>
@@ -78,7 +80,12 @@ export function CardioDetail({ cardio }: { cardio: ActivityCardioBase }) {
       {cardio.elevation_gain_meters ? (
         <div className="flex items-center gap-2 px-3.5 py-2 bg-slate-900/80 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300 w-fit max-w-full truncate">
           <Mountain className="w-4 h-4 text-cyan-400 shrink-0" />
-          <span className="truncate">Desnivel acumulado: <strong className="text-white">{Math.round(cardio.elevation_gain_meters)} m</strong></span>
+          <span className="truncate">
+            Desnivel acumulado:{" "}
+            <strong className="text-white">
+              {Math.round(cardio.elevation_gain_meters)} m
+            </strong>
+          </span>
         </div>
       ) : null}
 
@@ -91,5 +98,3 @@ export function CardioDetail({ cardio }: { cardio: ActivityCardioBase }) {
     </div>
   )
 }
-
-

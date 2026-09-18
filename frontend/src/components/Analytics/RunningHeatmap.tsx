@@ -74,9 +74,7 @@ export function RunningHeatmap({ data, onDay }: RunningHeatmapProps) {
     .filter((v) => v > 0)
     .sort((a, b) => a - b)
   const q = (p: number) =>
-    kms.length
-      ? kms[Math.min(kms.length - 1, Math.floor(p * kms.length))]
-      : 0
+    kms.length ? kms[Math.min(kms.length - 1, Math.floor(p * kms.length))] : 0
   const t1 = q(0.25)
   const t2 = q(0.5)
   const t3 = q(0.75)
@@ -164,8 +162,7 @@ export function RunningHeatmap({ data, onDay }: RunningHeatmapProps) {
         </div>
       </div>
       <div className="hm-legend">
-        Menos km{" "}
-        <div className="hm-c l0" />
+        Menos km <div className="hm-c l0" />
         <div className="hm-c l1" />
         <div className="hm-c l2" />
         <div className="hm-c l3" />

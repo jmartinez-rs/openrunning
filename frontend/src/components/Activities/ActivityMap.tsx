@@ -16,11 +16,14 @@ export function ActivityMap({ encoded }: { encoded: string }) {
       scrollWheelZoom: false,
     }).setView(points[0], 13)
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      maxZoom: 19,
-    }).addTo(map)
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+      {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 19,
+      },
+    ).addTo(map)
 
     const cardioColor = "#f97316" // Orange accent matching Strava/Cardio
 
@@ -41,4 +44,3 @@ export function ActivityMap({ encoded }: { encoded: string }) {
 
   return <div ref={containerRef} className="h-80 w-full rounded-2xl z-0" />
 }
-

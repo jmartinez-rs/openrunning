@@ -45,7 +45,8 @@ export function WeekSessionCard({ workout, onClick }: WeekSessionCardProps) {
       onClick={onClick}
       className={cn(
         "group relative flex flex-col gap-2.5 rounded-xl border border-slate-800 bg-slate-900/90 p-3.5 shadow-md transition-all duration-200 hover:border-emerald-500/40 hover:bg-slate-900 cursor-pointer",
-        workout.status === "completed" && "border-emerald-500/40 bg-emerald-950/20",
+        workout.status === "completed" &&
+          "border-emerald-500/40 bg-emerald-950/20",
         workout.status === "missed" && "border-red-500/40 bg-red-950/20",
         workout.cancelled && "opacity-60",
       )}
@@ -81,7 +82,10 @@ export function WeekSessionCard({ workout, onClick }: WeekSessionCardProps) {
             </span>
           )}
           {workout.status === "planned" && (
-            <Badge variant="outline" className="text-[11px] font-normal border-slate-700 text-slate-300">
+            <Badge
+              variant="outline"
+              className="text-[11px] font-normal border-slate-700 text-slate-300"
+            >
               Planificada
             </Badge>
           )}
@@ -122,9 +126,7 @@ export function WeekSessionCard({ workout, onClick }: WeekSessionCardProps) {
       {/* Metrics Row (Distance, Pace, Duration) */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 pt-1.5 border-t border-slate-800">
         {distanceText && (
-          <span className="font-extrabold text-white">
-            {distanceText}
-          </span>
+          <span className="font-extrabold text-white">{distanceText}</span>
         )}
         {paceText && paceText !== "—" && (
           <span>

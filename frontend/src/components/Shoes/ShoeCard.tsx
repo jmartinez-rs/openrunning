@@ -46,7 +46,8 @@ export function ShoeCard({
                       background: `linear-gradient(135deg, ${shoe.color} 25%, #0f172a 100%)`,
                     }
                   : {
-                      background: "linear-gradient(135deg, #1e293b 0%, #064e3b 100%)",
+                      background:
+                        "linear-gradient(135deg, #1e293b 0%, #064e3b 100%)",
                     }
               }
             >
@@ -56,7 +57,12 @@ export function ShoeCard({
 
           {/* Top badges over photo */}
           <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5 z-10">
-            <Badge className={cn("text-[10px] font-extrabold uppercase border px-2 py-0.5", categoryMeta.badgeClass)}>
+            <Badge
+              className={cn(
+                "text-[10px] font-extrabold uppercase border px-2 py-0.5",
+                categoryMeta.badgeClass,
+              )}
+            >
               {categoryMeta.shortLabel}
             </Badge>
 
@@ -69,7 +75,12 @@ export function ShoeCard({
 
           {/* Foam Health Pill */}
           <div className="absolute right-2.5 top-2.5 z-10">
-            <Badge className={cn("text-[10px] font-extrabold border px-2 py-0.5 shadow-md", health.badgeClass)}>
+            <Badge
+              className={cn(
+                "text-[10px] font-extrabold border px-2 py-0.5 shadow-md",
+                health.badgeClass,
+              )}
+            >
               {health.percent}% salud
             </Badge>
           </div>
@@ -82,7 +93,8 @@ export function ShoeCard({
               {shoe.name}
             </h3>
             <p className="truncate text-xs font-medium text-slate-400 mt-0.5">
-              {[shoe.brand, shoe.model].filter(Boolean).join(" · ") || "Sin especificación de modelo"}
+              {[shoe.brand, shoe.model].filter(Boolean).join(" · ") ||
+                "Sin especificación de modelo"}
             </p>
           </div>
 
@@ -108,7 +120,16 @@ export function ShoeCard({
             </div>
 
             <div className="flex items-center justify-between text-[11px]">
-              <span className={cn("font-bold", health.status === "optimal" ? "text-emerald-400" : health.status === "warning" ? "text-amber-400" : "text-red-400")}>
+              <span
+                className={cn(
+                  "font-bold",
+                  health.status === "optimal"
+                    ? "text-emerald-400"
+                    : health.status === "warning"
+                      ? "text-amber-400"
+                      : "text-red-400",
+                )}
+              >
                 ● {health.statusLabel}
               </span>
               <span className="text-slate-400 font-medium">
@@ -121,7 +142,9 @@ export function ShoeCard({
           {rotationAlert.needsRest && (
             <div className="flex items-center gap-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 p-2 text-[11px] font-semibold text-amber-400">
               <AlertTriangle className="size-3.5 shrink-0" />
-              <span className="truncate">Rotación sugerida por entreno reciente</span>
+              <span className="truncate">
+                Rotación sugerida por entreno reciente
+              </span>
             </div>
           )}
 
@@ -129,7 +152,8 @@ export function ShoeCard({
           <div className="flex items-center justify-between border-t border-slate-800 pt-2.5 text-xs text-slate-400 font-medium">
             <span className="flex items-center gap-1 text-slate-300">
               <Footprints className="size-3.5 text-slate-500" />
-              {stats?.sessions ?? 0} {stats?.sessions === 1 ? "sesión" : "sesiones"}
+              {stats?.sessions ?? 0}{" "}
+              {stats?.sessions === 1 ? "sesión" : "sesiones"}
             </span>
 
             {stats?.avg_pace_seconds_per_km ? (

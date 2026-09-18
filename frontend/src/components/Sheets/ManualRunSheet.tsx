@@ -1,21 +1,22 @@
-import React, { useState } from "react";
-import { X, Check, Activity, Footprints } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { ShoesService, type ShoePublic } from "@/client";
-import { Stepper } from "../ui/Stepper";
-import { formatPace } from "../../lib/running-math";
+import { useQuery } from "@tanstack/react-query"
+import { Activity, Check, Footprints, X } from "lucide-react"
+import type React from "react"
+import { useState } from "react"
+import { type ShoePublic, ShoesService } from "@/client"
+import { formatPace } from "../../lib/running-math"
+import { Stepper } from "../ui/Stepper"
 
 interface ManualRunSheetProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean
+  onClose: () => void
   onSubmit: (data: {
-    date: string;
-    distanceKm: number;
-    durationSeconds: number;
-    rpe: number;
-    shoeId?: string;
-    notes?: string;
-  }) => void;
+    date: string
+    distanceKm: number
+    durationSeconds: number
+    rpe: number
+    shoeId?: string
+    notes?: string
+  }) => void
 }
 
 export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
@@ -23,43 +24,61 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
   onClose,
   onSubmit,
 }) => {
-  const [distanceKm, setDistanceKm] = useState<number>(5.0);
-  const [durationMinutes, setDurationMinutes] = useState<number>(25);
-  const [rpe, setRpe] = useState<number>(5);
-  const [notes, setNotes] = useState<string>("");
-  const [shoeId, setShoeId] = useState<string>("");
+  const [distanceKm, setDistanceKm] = useState<number>(5.0)
+  const [durationMinutes, setDurationMinutes] = useState<number>(25)
+  const [rpe, setRpe] = useState<number>(5)
+  const [notes, setNotes] = useState<string>("")
+  const [shoeId, setShoeId] = useState<string>("")
   const [dateStr, setDateStr] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
+    new Date().toISOString().split("T")[0],
+  )
 
   const { data: shoesData } = useQuery({
     queryKey: ["shoes"],
     queryFn: () => ShoesService.readShoes({}),
     enabled: isOpen,
-  });
+  })
 
   const activeShoes: ShoePublic[] = (shoesData?.data ?? []).filter(
-    (s) => s.is_active !== false
-  );
+    (s) => s.is_active !== false,
+  )
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
-  const durationSeconds = durationMinutes * 60;
-  const paceSecondsPerKm =
-    distanceKm > 0 ? durationSeconds / distanceKm : 0;
+  const durationSeconds = durationMinutes * 60
+  const paceSecondsPerKm = distanceKm > 0 ? durationSeconds / distanceKm : 0
 
   const getRpeBadge = (val: number) => {
-    if (val <= 3) return { text: "Muy Suave / Regenerativo", color: "text-blue-400 bg-blue-500/10" };
-    if (val <= 5) return { text: "Z2 Cómodo / Rodaje", color: "text-emerald-400 bg-emerald-500/10" };
-    if (val <= 7) return { text: "Z3 Tempo / Ritmo Cruzero", color: "text-amber-400 bg-amber-500/10" };
-    if (val <= 9) return { text: "Z4 Umbral / Series", color: "text-orange-400 bg-orange-500/10" };
-    return { text: "Z5 Esfuerzo Máximo / Carrera", color: "text-red-400 bg-red-500/10" };
-  };
+    if (val <= 3)
+      return {
+        text: "Muy Suave / Regenerativo",
+        color: "text-blue-400 bg-blue-500/10",
+      }
+    if (val <= 5)
+      return {
+        text: "Z2 Cómodo / Rodaje",
+        color: "text-emerald-400 bg-emerald-500/10",
+      }
+    if (val <= 7)
+      return {
+        text: "Z3 Tempo / Ritmo Cruzero",
+        color: "text-amber-400 bg-amber-500/10",
+      }
+    if (val <= 9)
+      return {
+        text: "Z4 Umbral / Series",
+        color: "text-orange-400 bg-orange-500/10",
+      }
+    return {
+      text: "Z5 Esfuerzo Máximo / Carrera",
+      color: "text-red-400 bg-red-500/10",
+    }
+  }
 
-  const rpeBadge = getRpeBadge(rpe);
+  const rpeBadge = getRpeBadge(rpe)
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     onSubmit({
       date: dateStr,
       distanceKm,
@@ -67,9 +86,9 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
       rpe,
       shoeId: shoeId || undefined,
       notes,
-    });
-    onClose();
-  };
+    })
+    onClose()
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
@@ -80,8 +99,12 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
               <Activity className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Registrar Carrera Manual</h2>
-              <p className="text-xs text-slate-400">Sin necesidad de reloj GPS ni Strava</p>
+              <h2 className="text-base font-bold text-white">
+                Registrar Carrera Manual
+              </h2>
+              <p className="text-xs text-slate-400">
+                Sin necesidad de reloj GPS ni Strava
+              </p>
             </div>
           </div>
           <button
@@ -96,7 +119,9 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {/* Date Picker */}
           <div>
-            <label className="text-xs font-medium text-slate-400 mb-1 block">Fecha de entrenamiento</label>
+            <label className="text-xs font-medium text-slate-400 mb-1 block">
+              Fecha de entrenamiento
+            </label>
             <input
               type="date"
               value={dateStr}
@@ -128,17 +153,24 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
 
           {/* Calculated Pace Preview */}
           <div className="flex items-center justify-between bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
-            <div className="text-xs text-slate-400 font-medium">Ritmo Medio Calculado</div>
+            <div className="text-xs text-slate-400 font-medium">
+              Ritmo Medio Calculado
+            </div>
             <div className="text-base font-extrabold text-emerald-400">
-              {formatPace(paceSecondsPerKm)} <span className="text-xs font-normal text-slate-400">/km</span>
+              {formatPace(paceSecondsPerKm)}{" "}
+              <span className="text-xs font-normal text-slate-400">/km</span>
             </div>
           </div>
 
           {/* RPE Stepper & Badge */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-medium text-slate-400">Esfuerzo Percibido (RPE 1-10)</label>
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${rpeBadge.color}`}>
+              <label className="text-xs font-medium text-slate-400">
+                Esfuerzo Percibido (RPE 1-10)
+              </label>
+              <span
+                className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${rpeBadge.color}`}
+              >
                 {rpeBadge.text}
               </span>
             </div>
@@ -156,7 +188,8 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
           {/* Shoe Selector */}
           <div>
             <label className="text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
-              <Footprints className="size-3.5 text-emerald-400" /> Calzado utilizado
+              <Footprints className="size-3.5 text-emerald-400" /> Calzado
+              utilizado
             </label>
             <select
               value={shoeId}
@@ -174,7 +207,9 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
 
           {/* Notes */}
           <div>
-            <label className="text-xs font-medium text-slate-400 mb-1 block">Notas y Sensaciones</label>
+            <label className="text-xs font-medium text-slate-400 mb-1 block">
+              Notas y Sensaciones
+            </label>
             <textarea
               rows={2}
               value={notes}
@@ -195,5 +230,5 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
         </form>
       </div>
     </div>
-  );
-};
+  )
+}

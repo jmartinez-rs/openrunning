@@ -3,13 +3,13 @@ import { Clock, Loader2 } from "lucide-react"
 import { useState } from "react"
 
 import { SettingsService, type SyncSchedulePublic } from "@/client"
-import { SettingsRow } from "./SettingsSection"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { SettingsRow } from "./SettingsSection"
 
 export function SyncScheduleSettings() {
   const queryClient = useQueryClient()
@@ -59,9 +59,7 @@ export function SyncScheduleSettings() {
   })
 
   if (query.isLoading) {
-    return (
-      <Skeleton className="h-14 w-full rounded-xl bg-slate-900/60" />
-    )
+    return <Skeleton className="h-14 w-full rounded-xl bg-slate-900/60" />
   }
 
   return (

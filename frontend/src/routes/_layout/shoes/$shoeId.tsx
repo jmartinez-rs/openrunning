@@ -9,8 +9,8 @@ import {
   Footprints,
   HeartPulse,
   Pencil,
-  Trophy,
   Trash2,
+  Trophy,
 } from "lucide-react"
 import { useState } from "react"
 
@@ -101,7 +101,12 @@ function ShoeDetail() {
         <p className="text-xs text-slate-400">
           La zapatilla no existe o fue removida.
         </p>
-        <Button type="button" variant="outline" asChild className="rounded-xl bg-slate-800 border-slate-700 text-white">
+        <Button
+          type="button"
+          variant="outline"
+          asChild
+          className="rounded-xl bg-slate-800 border-slate-700 text-white"
+        >
           <Link to="/shoes">
             <ArrowLeft className="mr-2 size-4" /> Volver a Calzado
           </Link>
@@ -154,7 +159,9 @@ function ShoeDetail() {
             }}
           >
             <Footprints className="size-14 text-white/30" />
-            <span className="absolute">{shoe.name.charAt(0).toUpperCase()}</span>
+            <span className="absolute">
+              {shoe.name.charAt(0).toUpperCase()}
+            </span>
           </div>
         )}
 
@@ -163,7 +170,12 @@ function ShoeDetail() {
             <h1 className="text-2xl font-black text-white tracking-tight">
               {shoe.name}
             </h1>
-            <Badge className={cn("text-xs font-extrabold border px-2.5 py-0.5", categoryMeta.badgeClass)}>
+            <Badge
+              className={cn(
+                "text-xs font-extrabold border px-2.5 py-0.5",
+                categoryMeta.badgeClass,
+              )}
+            >
               {categoryMeta.label}
             </Badge>
             {shoe.strava_gear_id && (
@@ -172,14 +184,18 @@ function ShoeDetail() {
               </Badge>
             )}
             {shoe.is_active === false && (
-              <Badge variant="outline" className="text-slate-400 border-slate-700">
+              <Badge
+                variant="outline"
+                className="text-slate-400 border-slate-700"
+              >
                 Retirada / Inactiva
               </Badge>
             )}
           </div>
 
           <p className="mt-1 text-sm font-semibold text-slate-300">
-            {[shoe.brand, shoe.model].filter(Boolean).join(" · ") || "Sin marca o modelo cargados"}
+            {[shoe.brand, shoe.model].filter(Boolean).join(" · ") ||
+              "Sin marca o modelo cargados"}
           </p>
 
           {shoe.purchase_date && (
@@ -241,7 +257,12 @@ function ShoeDetail() {
               Salud de la Espuma & Desgaste Estima
             </h2>
           </div>
-          <Badge className={cn("text-xs font-extrabold border px-3 py-1 w-fit", health.badgeClass)}>
+          <Badge
+            className={cn(
+              "text-xs font-extrabold border px-3 py-1 w-fit",
+              health.badgeClass,
+            )}
+          >
             ● {health.statusLabel}
           </Badge>
         </div>
@@ -250,7 +271,10 @@ function ShoeDetail() {
           <div className="flex items-center justify-between text-xs font-semibold">
             <span className="text-slate-400">Kilometraje Acumulado</span>
             <span className="text-white font-extrabold text-sm">
-              {health.usedKm} <span className="text-slate-400 text-xs font-normal">/ {health.targetKm} km</span>
+              {health.usedKm}{" "}
+              <span className="text-slate-400 text-xs font-normal">
+                / {health.targetKm} km
+              </span>
             </span>
           </div>
 
@@ -265,8 +289,18 @@ function ShoeDetail() {
           </div>
 
           <div className="flex items-center justify-between text-xs text-slate-400 font-medium pt-1">
-            <span>Uso: <strong className="text-white font-bold">{health.percent}%</strong></span>
-            <span>Vida útil restante estimada: <strong className="text-emerald-400 font-bold">~{health.remainingKm} km</strong></span>
+            <span>
+              Uso:{" "}
+              <strong className="text-white font-bold">
+                {health.percent}%
+              </strong>
+            </span>
+            <span>
+              Vida útil restante estimada:{" "}
+              <strong className="text-emerald-400 font-bold">
+                ~{health.remainingKm} km
+              </strong>
+            </span>
           </div>
         </div>
       </div>
@@ -299,7 +333,10 @@ function ShoeDetail() {
         {activitiesQuery.isLoading ? (
           <div className="flex flex-col gap-3 pt-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-xl bg-slate-800" />
+              <Skeleton
+                key={i}
+                className="h-16 w-full rounded-xl bg-slate-800"
+              />
             ))}
           </div>
         ) : activities.length === 0 ? (
@@ -330,13 +367,19 @@ function ShoeDetail() {
                   </div>
                   <div className="flex shrink-0 items-center gap-4 text-xs font-semibold text-slate-300">
                     {activity.cardio?.distance_meters != null && (
-                      <span className="text-emerald-400 font-extrabold">{formatKm(activity.cardio.distance_meters)}</span>
+                      <span className="text-emerald-400 font-extrabold">
+                        {formatKm(activity.cardio.distance_meters)}
+                      </span>
                     )}
                     {activity.cardio?.avg_pace_seconds_per_km != null && (
-                      <span>{formatPace(activity.cardio.avg_pace_seconds_per_km)}</span>
+                      <span>
+                        {formatPace(activity.cardio.avg_pace_seconds_per_km)}
+                      </span>
                     )}
                     {activity.cardio?.avg_hr != null && (
-                      <span className="text-amber-400">{Math.round(activity.cardio.avg_hr)} bpm</span>
+                      <span className="text-amber-400">
+                        {Math.round(activity.cardio.avg_hr)} bpm
+                      </span>
                     )}
                   </div>
                 </Link>

@@ -55,13 +55,16 @@ export function WeekVolumeChart({
 
         const isCompleted = workout?.status === "completed"
         const isMissed = workout?.status === "missed"
-        const isCancelled = workout?.cancelled || workout?.status === "cancelled"
-        
+        const isCancelled =
+          workout?.cancelled || workout?.status === "cancelled"
+
         const distance = workout?.distance_km || 0
         const hasWorkout = !!workout && distance > 0 && !isCancelled
-        
+
         // Calculate how many segments should be filled based on distance
-        const percent = hasWorkout ? Math.min(100, (distance / maxDistance) * 100) : 0
+        const percent = hasWorkout
+          ? Math.min(100, (distance / maxDistance) * 100)
+          : 0
         const activeSegments = Math.ceil((percent / 100) * TOTAL_SEGMENTS)
 
         return (
@@ -87,7 +90,7 @@ export function WeekVolumeChart({
                     key={i}
                     className={cn(
                       "w-full flex-1 rounded-sm transition-all",
-                      bgColor
+                      bgColor,
                     )}
                   />
                 )

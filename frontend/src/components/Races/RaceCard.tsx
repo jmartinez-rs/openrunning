@@ -53,7 +53,9 @@ export function RaceCard({ race }: { race: RacePublic }) {
 
           <div className="flex items-center justify-between gap-4 border-t border-slate-800/80 pt-3">
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tiempo</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Tiempo
+              </p>
               <p className="mt-0.5 text-xl font-bold text-white tabular-nums">
                 {formatRaceTime(race.official_time_seconds)}
               </p>

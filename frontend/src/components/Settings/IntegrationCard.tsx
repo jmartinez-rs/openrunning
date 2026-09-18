@@ -3,11 +3,11 @@ import { Loader2, Plug, PlugZap, Unplug } from "lucide-react"
 import type { ReactNode } from "react"
 
 import { SettingsService } from "@/client"
-import { SettingsRow } from "./SettingsSection"
 import { Button } from "@/components/ui/button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
+import { SettingsRow } from "./SettingsSection"
 
 interface IntegrationCardProps {
   provider: "strava" | "hevy"

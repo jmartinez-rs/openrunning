@@ -36,10 +36,11 @@ export function QuickCreateActivityDialog({
 
   const distMeters = Number(distanceKm) * 1000
   const durSec = Number(durationMin) * 60
-  const paceSecPerKm = distMeters > 0 && durSec > 0 ? durSec / (distMeters / 1000) : 0
+  const paceSecPerKm =
+    distMeters > 0 && durSec > 0 ? durSec / (distMeters / 1000) : 0
 
   const formatPace = (sec: number) => {
-    if (!sec || !isFinite(sec)) return "—"
+    if (!sec || !Number.isFinite(sec)) return "—"
     const m = Math.floor(sec / 60)
     const s = Math.round(sec % 60)
     return `${m}:${String(s).padStart(2, "0")} /km`
@@ -98,7 +99,8 @@ export function QuickCreateActivityDialog({
             </DialogTitle>
           </div>
           <DialogDescription className="text-xs text-slate-400">
-            Ingresá los datos de tu sesión de running para incluirla en tus estadísticas.
+            Ingresá los datos de tu sesión de running para incluirla en tus
+            estadísticas.
           </DialogDescription>
         </DialogHeader>
 

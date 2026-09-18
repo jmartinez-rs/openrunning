@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&family=Space+Grotesk:wght@100..900&display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary-fixed-variant": "#494644", "surface-container-high": "#2a2a2a", "tertiary": "#ffffff", "tertiary-fixed": "#e7e1de", "surface-container-lowest": "#0e0e0e", "on-error": "#690005", "on-secondary-container": "#b4b5b5", "primary-fixed-dim": "#bfd037", "on-primary": "#2e3300", "error-container": "#93000a", "on-primary-fixed": "#1a1e00", "on-secondary-fixed": "#1a1c1c", "on-error-container": "#ffdad6", "surface-container": "#201f1f", "primary": "#ffffff", "primary-fixed": "#dbed52", "on-primary-container": "#606a00", "inverse-surface": "#e5e2e1", "outline": "#91927c", "surface-tint": "#bfd037", "error": "#ffb4ab", "surface-variant": "#353534", "surface-container-low": "#1c1b1b", "surface-container-highest": "#353534", "outline-variant": "#464835", "on-background": "#e5e2e1", "on-surface": "#e5e2e1", "background": "#131313", "inverse-on-surface": "#313030", "surface": "#131313", "surface-dim": "#131313", "inverse-primary": "#5a6400", "tertiary-fixed-dim": "#cac6c2", "primary-container": "#dbed52", "on-primary-fixed-variant": "#434b00", "secondary-fixed-dim": "#c6c6c7", "on-secondary": "#2f3131", "secondary-container": "#454747", "surface-bright": "#393939", "secondary-fixed": "#e2e2e2", "on-tertiary-fixed": "#1d1b1a", "secondary": "#c6c6c7", "on-surface-variant": "#c7c8af", "on-secondary-fixed-variant": "#454747", "tertiary-container": "#e7e1de", "on-tertiary-container": "#676461", "on-tertiary": "#32302e" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xl": "2rem", "space-sm": "0.5rem", "space-xs": "0.25rem", "space-md": "1rem", "space-lg": "1.5rem", "margin": "1.25rem", "gutter": "1rem" }, "fontFamily": { "display-hero": ["Space Grotesk"], "headline-md": ["Space Grotesk"], "headline-lg": ["Space Grotesk"], "label-lg": ["Space Grotesk"], "label-caps": ["Space Grotesk"], "body-sm": ["Plus Jakarta Sans"], "stat-metric": ["Space Grotesk"], "label-md": ["Space Grotesk"], "display-hero-mobile": ["Space Grotesk"], "headline-sm": ["Space Grotesk"], "body-md": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"] }, "fontSize": { "display-hero": ["48px", { "lineHeight": "52px", "fontWeight": "700" }], "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }], "headline-lg": ["28px", { "lineHeight": "34px", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "18px", "fontWeight": "600" }], "label-caps": ["11px", { "lineHeight": "14px", "fontWeight": "700" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "stat-metric": ["24px", { "lineHeight": "28px", "fontWeight": "700" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "600" }], "display-hero-mobile": ["36px", { "lineHeight": "40px", "fontWeight": "700" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "500" }] } } } };</script><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#131313;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.5)]"><div class="h-16 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col"><span class="font-label-caps text-label-caps uppercase tracking-wider text-on-surface-variant">Athletic Telemetry</span><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight">Explore Map</h1></div></div><div class="flex items-center gap-space-xs"><button aria-label="GPS Telemetry Active" class="w-11 h-11 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px] text-primary-container animate-pulse">satellite_alt</span></button><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span></button></div></div></header><main class="flex-1 w-full bg-surface pt-16 pb-28"><div class="flex flex-col w-full relative">
+<!-- Interactive Map Canvas Layer -->
+<div class="relative w-full h-[580px] rounded-3xl overflow-hidden bg-surface-container-lowest shadow-[0_12px_40px_rgba(0,0,0,0.85)] select-none">
+<!-- Stylized Dark Mode Vector Map with Streets and Route -->
+<svg class="absolute inset-0 w-full h-full object-cover" fill="none" preserveaspectratio="xMidYMid slice" viewbox="0 0 400 580" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<radialgradient cx="50%" cy="50%" id="mapVignette" r="65%">
+<stop offset="0%" stop-color="#1e1e1e" stop-opacity="0.2"></stop>
+<stop offset="70%" stop-color="#0e0e0e" stop-opacity="0.8"></stop>
+<stop offset="100%" stop-color="#0a0a0a" stop-opacity="0.95"></stop>
+</radialgradient>
+<lineargradient gradientunits="userSpaceOnUse" id="routeGlow" x1="120" x2="260" y1="460" y2="210">
+<stop stop-color="#464835" stop-opacity="0.4"></stop>
+<stop offset="60%" stop-color="#dbed52" stop-opacity="0.9"></stop>
+<stop offset="100%" stop-color="#dbed52"></stop>
+</lineargradient>
+<filter height="200%" id="neonPuckGlow" width="200%" x="-50%" y="-50%">
+<fegaussianblur in="SourceGraphic" result="blur" stddeviation="6"></fegaussianblur>
+<femerge>
+<femergenode in="blur"></femergenode>
+<femergenode in="SourceGraphic"></femergenode>
+</femerge>
+</filter>
+</defs>
+<!-- District Fill Areas -->
+<path d="M-10 -10L180 -10L240 180L-10 240Z" fill="#151515"></path>
+<path d="M240 180L410 80L410 320L190 380Z" fill="#181818"></path>
+<path d="M-10 240L190 380L140 590L-10 590Z" fill="#141414"></path>
+<path d="M190 380L410 320L410 590L140 590Z" fill="#171717"></path>
+<!-- Secondary Arterials / City Grid Lines -->
+<g opacity="0.85" stroke="#262626" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+<path d="M-20 80C60 90 140 85 220 50L420 120"></path>
+<path d="M40 0L30 300L70 590"></path>
+<path d="M140 -20L130 190L190 380L210 600"></path>
+<path d="M-10 340C70 330 160 360 250 330L420 370"></path>
+<path d="M280 -10L260 210L330 390L320 600"></path>
+<path d="M-10 480L160 450L300 520L420 500"></path>
+<path d="M60 170L390 140"></path>
+<path d="M80 250L220 280"></path>
+<path d="M190 420L380 430"></path>
+<path d="M260 80L380 20"></path>
+</g>
+<!-- Primary Roads / Boulevards -->
+<g opacity="0.95" stroke="#323232" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+<path d="M-10 140L120 180L240 210L420 260"></path>
+<path d="M110 -10L140 150L185 320L215 590"></path>
+<path d="M-20 420L120 400L260 460L420 420"></path>
+<path d="M240 210L290 330L380 440"></path>
+</g>
+<!-- Active Running Path (Recorded Stride) -->
+<path d="M130 460L160 420L185 320L220 280L215 255" fill="none" stroke="url(#routeGlow)" stroke-dasharray="2 0" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.5"></path>
+<!-- Elevation Elevation/Mile Rings (Decor) -->
+<circle cx="215" cy="255" fill="none" opacity="0.35" r="32" stroke="#dbed52" stroke-dasharray="3 3" stroke-width="0.75"></circle>
+<circle cx="215" cy="255" fill="none" opacity="0.2" r="54" stroke="#dbed52" stroke-dasharray="2 4" stroke-width="0.5"></circle>
+<!-- Map Labels (Subtle Telemetry) -->
+<text fill="#464835" font-family="'Space Grotesk', sans-serif" font-size="9" font-weight="700" letter-spacing="1.5" x="35" y="132">ROCK ST</text>
+<text fill="#464835" font-family="'Space Grotesk', sans-serif" font-size="9" font-weight="700" letter-spacing="1.5" x="50" y="275">FARLEY ST</text>
+<text fill="#464835" font-family="'Space Grotesk', sans-serif" font-size="9" font-weight="700" letter-spacing="1.5" x="55" y="380">VILLA ST</text>
+<text fill="#464835" font-family="'Space Grotesk', sans-serif" font-size="9" font-weight="700" letter-spacing="1.5" x="290" y="315">BAY SHORE</text>
+<!-- Real-time Location Puck with Glow -->
+<g filter="url(#neonPuckGlow)">
+<circle cx="215" cy="255" fill="#131313" r="14"></circle>
+<circle cx="215" cy="255" fill="#dbed52" r="10"></circle>
+<polygon fill="#131313" points="215,249 219,258 215,256 211,258"></polygon>
+</g>
+<!-- Soft Edge Vignette -->
+<rect fill="url(#mapVignette)" height="580" width="400"></rect>
+</svg>
+<!-- Top Floating Athlete Greeting & Status Bar Overlay -->
+<div class="relative z-10 pt-space-md px-margin flex items-center justify-between">
+<div class="flex items-center gap-3 bg-surface-container/80 backdrop-blur-md py-1.5 px-3 rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
+<div class="relative w-8 h-8 rounded-full overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Athletic runner male portrait in high key urban lighting with subtle sweat and focused expression, dressed in black tech activewear." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQdD5EeptCohxnxR5cA-50gsgotFLbaFUE4FNv2tdyXHmBjvaErmF5HILpftojduWK9mVob25nvaX7IaOK12wqNbUrQK3VUk7EppDMbXFXa-UVJEebzvsrRG5_DwK7ivhQN1WgpkXpvF72_isVQxdNfZxoLrFZjOPN3dRUEvYcM8ZG4VXSsPxPh8W3WGRPtA0cKEsGd4bJRJe8uZg0EhdU84XD4aAXZtmREySPU5ihsaiozEArlNwX"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-primary tracking-tight leading-none">Hello David!</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-wider uppercase pt-0.5">Fleet Runner</span>
+</div>
+</div>
+<!-- Mode & Quick Route Action -->
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high/90 backdrop-blur-md">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-ping"></span>
+<span class="font-label-caps text-label-caps text-primary uppercase">GPS LOCK</span>
+</div>
+</div>
+</div>
+<!-- Dual Floating Telemetry Cards (Month Stats) -->
+<div class="relative z-10 px-margin mt-space-md grid grid-cols-2 gap-space-sm">
+<!-- Distance Pod -->
+<div class="p- space-md rounded-2xl bg-surface-container/80 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.6)] flex flex-col justify-between h-28 group transition-all duration-300 active:scale-[0.98]">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">MONTH</span>
+<span class="px-2 py-0.5 rounded bg-primary-container/20 text-primary-container font-label-caps text-label-caps">+14%</span>
+</div>
+<div>
+<div class="flex items-baseline gap-1">
+<span class="font-stat-metric text-stat-metric text-primary tracking-tight font-bold">24.41</span>
+<span class="font-label-lg text-label-lg text-primary-container">km</span>
+</div>
+<div class="w-full bg-surface-variant h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 68%;"></div>
+</div>
+</div>
+</div>
+<!-- Energy Pod with Micro Bar Graph -->
+<div class="p-space-md rounded-2xl bg-surface-container/80 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.6)] flex flex-col justify-between h-28 group transition-all duration-300 active:scale-[0.98]">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">PROGRESS</span>
+<span class="material-symbols-outlined text-[16px] text-primary-container">local_fire_department</span>
+</div>
+<div class="flex items-end justify-between gap-1">
+<div>
+<div class="flex items-baseline gap-1">
+<span class="font-stat-metric text-stat-metric text-primary tracking-tight font-bold">431</span>
+<span class="font-label-md text-label-md text-on-surface-variant">kcal</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Burn Velocity</span>
+</div>
+<!-- Inline Spark Bar Chart -->
+<div class="flex items-end gap-1 pb-1">
+<div class="w-1.5 h-3 rounded-full bg-surface-variant"></div>
+<div class="w-1.5 h-5 rounded-full bg-surface-variant"></div>
+<div class="w-1.5 h-4 rounded-full bg-primary-container/60"></div>
+<div class="w-1.5 h-7 rounded-full bg-primary-container"></div>
+<div class="w-1.5 h-6 rounded-full bg-primary-container"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Audio Mini HUD (Behance Style Deck Player) -->
+<div class="relative z-10 px-margin mt-space-md">
+<div class="w-full p-2.5 rounded-2xl bg-surface-container-high/90 backdrop-blur-xl shadow-[0_8px_20px_rgba(0,0,0,0.7)] flex items-center justify-between">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-xl overflow-hidden bg-surface-container-lowest flex-shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="Stylized music album art with high contrast neon yellow and deep black abstract geometry for high cadence running." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzZo5YLSbXUcUNq6WBaY_BV1GQ7xeauWaZ_stFz7Kb2yRFSnrlKPU-xOWA2vOrCuRN-whTloryzTF4jFRPT7VMJ4kx-ZcoEHKZu1xdnyA1KGLmwbNbww01mG7o42mdIc63CqoKMlTVGVgNMiOpUuABy88QCcbXPnlc_cVusyM8ZgDa5FCNfP6nbmRIBo12m22UEBBbSaJGUY8id5MNM3nbJArjWJjTyTPhTE9y3GA5dpKzH9_DB0h5"/>
+<div class="absolute inset-0 bg-primary-container/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-container text-[18px]">graphic_eq</span>
+</div>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+<span class="font-headline-sm text-label-lg text-primary truncate leading-tight">Miss You</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Oliver Tree • 164 BPM</span>
+</div>
+</div>
+<div class="flex items-center gap-1 pl-2">
+<button aria-label="Favorite Track" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+</button>
+<button aria-label="Play/Pause" class="w-9 h-9 rounded-full bg-primary-container text-on-primary flex items-center justify-center shadow-[0_0_12px_rgba(219,237,82,0.4)] active:scale-95 transition-transform" id="audio-toggle-btn">
+<span class="material-symbols-outlined text-[22px]" id="audio-icon">pause</span>
+</button>
+<button aria-label="Next Track" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">skip_next</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Lateral Floating Tactical Map Controls -->
+<div class="absolute right-margin bottom-28 z-10 flex flex-col gap-2.5">
+<button aria-label="Layers & Map Style" class="w-11 h-11 rounded-full bg-surface-container-high/90 backdrop-blur-md flex items-center justify-center text-primary shadow-[0_4px_16px_rgba(0,0,0,0.6)] active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[20px]">layers</span>
+</button>
+<button aria-label="Recenter Current Location" class="w-11 h-11 rounded-full bg-surface-container-high/90 backdrop-blur-md flex items-center justify-center text-primary shadow-[0_4px_16px_rgba(0,0,0,0.6)] active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[20px] text-primary-container">my_location</span>
+</button>
+<button aria-label="Route Terrain Elevation" class="w-11 h-11 rounded-full bg-surface-container-high/90 backdrop-blur-md flex items-center justify-center text-primary shadow-[0_4px_16px_rgba(0,0,0,0.6)] active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[20px]">elevation</span>
+</button>
+</div>
+<!-- Active Route Context Pill (Anchored above start button) -->
+<div class="absolute left-margin bottom-6 z-10">
+<div class="flex flex-col bg-surface-container-high/90 backdrop-blur-xl px-4 py-2.5 rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.6)]">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary-container">near_me</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">CURRENT ROUTE</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-primary tracking-tight">Mountain View Loop</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">5.2 km • Rolling Hills</span>
+</div>
+</div>
+</div>
+<!-- Hero Session Launcher Strip -->
+<div class="w-full px-margin mt-space-md flex items-center justify-between gap-space-sm">
+<!-- Sport Selection Pill Rail -->
+<div class="flex-1 bg-surface-container p-1 rounded-full flex items-center shadow-md overflow-x-auto">
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-label-lg text-label-lg whitespace-nowrap transition-all shadow-sm">
+<span class="material-symbols-outlined text-[18px]">directions_run</span>
+<span>Run</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-2 rounded-full text-on-surface-variant hover:text-on-surface font-label-lg text-label-lg whitespace-nowrap transition-all">
+<span class="material-symbols-outlined text-[18px]">directions_walk</span>
+<span>Walk</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-2 rounded-full text-on-surface-variant hover:text-on-surface font-label-lg text-label-lg whitespace-nowrap transition-all">
+<span class="material-symbols-outlined text-[18px]">directions_bike</span>
+<span>Cycle</span>
+</button>
+</div>
+<!-- Circular Volt Trigger (Quick Start Hero Interaction) -->
+<div class="relative flex items-center justify-center">
+<div class="absolute -inset-2 bg-primary-container/20 rounded-full blur-md animate-pulse"></div>
+<button aria-label="Fast Launch Workout" class="relative w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-[0_0_20px_rgba(219,237,82,0.4)] active:scale-95 transition-transform" id="quick-start-trigger">
+<span class="material-symbols-outlined text-[32px] font-bold">bolt</span>
+</button>
+</div>
+</div>
+<!-- Training Highlights / Recent Splitting Modular Mosaic -->
+<div class="w-full px-margin mt-space-lg flex flex-col gap-space-md pb-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-4 bg-primary-container rounded-full"></span>
+<h2 class="font-headline-sm text-headline-sm text-primary tracking-tight">Recent Sessions</h2>
+</div>
+<a class="font-label-caps text-label-caps text-primary-container uppercase tracking-wider hover:underline" href="#">VIEW ALL (18)</a>
+</div>
+<!-- Activity Item 1 -->
+<div class="w-full p-4 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-colors flex items-center justify-between shadow-md">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-xl bg-surface-container-high flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-[24px]">timer</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-label-lg text-label-lg text-primary">Tempo Stride</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant px-1.5 py-0.5 rounded bg-surface-variant">YESTERDAY</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">4:48 min/km • 168 avg bpm</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-stat-metric text-headline-sm text-primary font-bold">10.06 <span class="font-label-md text-label-md text-on-surface-variant">km</span></span>
+<span class="font-label-caps text-label-caps text-primary-container font-semibold">48:13 min</span>
+</div>
+</div>
+<!-- Activity Item 2 -->
+<div class="w-full p-4 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-colors flex items-center justify-between shadow-md">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[24px]">terrain</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-label-lg text-label-lg text-primary">Shoreline Intervals</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant px-1.5 py-0.5 rounded bg-surface-variant">19 MAY</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">5:12 min/km • 120m Elevation</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-stat-metric text-headline-sm text-primary font-bold">4.56 <span class="font-label-md text-label-md text-on-surface-variant">km</span></span>
+<span class="font-label-caps text-label-caps text-primary-container font-semibold">23:45 min</span>
+</div>
+</div>
+<!-- Gear & Shoe Mileage Banner -->
+<div class="w-full p-4 rounded-2xl bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">fitness_center</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-primary">Nike Vaporfly Next% 3</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">324 / 600 km active lifespan</span>
+</div>
+</div>
+<span class="font-label-caps text-label-caps text-primary-container uppercase tracking-wider">HEALTHY</span>
+</div>
+</div>
+</div>
+<script>
+  // Simple micro-interactions for map audio HUD and quick start
+  const audioToggle = document.getElementById('audio-toggle-btn');
+  const audioIcon = document.getElementById('audio-icon');
+  let isPlaying = true;
+
+  if (audioToggle && audioIcon) {
+    audioToggle.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      audioIcon.textContent = isPlaying ? 'pause' : 'play_arrow';
+    });
+  }
+
+  const quickStart = document.getElementById('quick-start-trigger');
+  if (quickStart) {
+    quickStart.addEventListener('click', () => {
+      quickStart.classList.add('scale-110');
+      setTimeout(() => {
+        quickStart.classList.remove('scale-110');
+      }, 150);
+    });
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe pointer-events-none" data-active-classes="text-primary-container font-headline-sm"><div class="px-margin pb-space-sm"><div class="pointer-events-auto h-20 rounded-full bg-surface-container/90 backdrop-blur-xl px-space-md shadow-[0_12px_32px_rgba(0,0,0,0.8)] flex items-center justify-between relative"><a aria-current="page" class="flex flex-col items-center justify-center min-w-[48px] h-12 gap-1 transition-colors text-primary-container font-headline-sm" data-path="explore-map" href="#"><span class="material-symbols-outlined text-[22px]">explore</span><span class="font-label-caps text-label-caps tracking-wider">EXPLORE</span></a><a class="flex flex-col items-center justify-center min-w-[48px] h-12 gap-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="training-schedule" href="#"><span class="material-symbols-outlined text-[22px]">calendar_today</span><span class="font-label-caps text-label-caps tracking-wider">SCHEDULE</span></a><div class="flex items-center justify-center -translate-y-4"><a aria-label="Start Run" class="w-16 h-16 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-[0_0_24px_rgba(219,237,82,0.45)] hover:scale-105 active:scale-95 transition-transform" data-path="live-session" href="#"><span class="material-symbols-outlined text-[32px]">play_arrow</span></a></div><a class="flex flex-col items-center justify-center min-w-[48px] h-12 gap-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="performance-telemetry" href="#"><span class="material-symbols-outlined text-[22px]">insights</span><span class="font-label-caps text-label-caps tracking-wider">METRICS</span></a><a class="flex flex-col items-center justify-center min-w-[48px] h-12 gap-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="athlete-profile" href="#"><span class="material-symbols-outlined text-[22px]">tune</span><span class="font-label-caps text-label-caps tracking-wider">PROFILE</span></a></div></div></nav></body></html>

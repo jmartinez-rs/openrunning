@@ -41,9 +41,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import useCustomToast from "@/hooks/useCustomToast"
 import {
   calculateVDOT,
-  formatPace as mathFormatPace,
   formatTime,
   getTrainingPaces,
+  formatPace as mathFormatPace,
   parsePace as mathParsePace,
   predictTimeRiegel,
 } from "@/lib/running-math"
@@ -56,11 +56,11 @@ import {
   durationInputToSeconds,
   formatShortDate,
   type Intensity,
+  PHASE_COLORS,
   type PhaseColor,
   type PlanStatus,
   WORKOUT_TYPE_META,
   type WorkoutType,
-  PHASE_COLORS,
 } from "./running-utils"
 
 // ---------------------------------------------------------------------------
@@ -141,7 +141,11 @@ const ONBOARDING_STEPS = [
   { id: 2, title: "2. Nivel & VDOT", desc: "Marca reciente y ritmos" },
   { id: 3, title: "3. Volumen Actual", desc: "Kilometraje habitual" },
   { id: 4, title: "4. Disponibilidad", desc: "Frecuencia y Tirada Larga" },
-  { id: 5, title: "5. Motor Algorítmico", desc: "Generar plan con estructurado" },
+  {
+    id: 5,
+    title: "5. Motor Algorítmico",
+    desc: "Generar plan con estructurado",
+  },
 ] as const
 
 const DAYS_OF_WEEK = [
@@ -325,7 +329,8 @@ function generateRunnaPlanStructure({
   selectedDays: number[]
   longRunDay: number
 }): PlanDraft {
-  const startDateISO = draft.start_date || new Date().toISOString().split("T")[0]
+  const startDateISO =
+    draft.start_date || new Date().toISOString().split("T")[0]
   const calculatedEndDate = addDaysToIso(startDateISO, numWeeks * 7 - 1)
 
   // Calculate VDOT & Paces using Jack Daniels formulas
@@ -384,7 +389,8 @@ function generateRunnaPlanStructure({
       color: "sky" as PhaseColor,
       start: p3End + 1,
       end: p4End,
-      objective: "Descarga de volumen (-40%), afinamiento de ritmo y día del objetivo",
+      objective:
+        "Descarga de volumen (-40%), afinamiento de ritmo y día del objetivo",
     },
   ].filter((p) => p.start <= p.end)
 
@@ -406,7 +412,9 @@ function generateRunnaPlanStructure({
       const progressRatio = wNum / numWeeks
       const baseLongKm = Math.max(longestRunKm, 6)
       const targetLongKm = Math.min(targetKm * 0.85, 32)
-      let weekLongKm = Math.round(baseLongKm + progressRatio * (targetLongKm - baseLongKm))
+      let weekLongKm = Math.round(
+        baseLongKm + progressRatio * (targetLongKm - baseLongKm),
+      )
 
       // Tapering phase reduces volume
       if (phaseIdx === 3 && wNum < numWeeks) {
@@ -421,19 +429,28 @@ function generateRunnaPlanStructure({
         const offset = dayId === 0 ? 6 : dayId - 1
         const workoutDate = addDaysToIso(weekMonday, offset)
 
-        const isLongRunDay = dayId === longRunDay || (dayIdx === sortedDays.length - 1 && !sortedDays.includes(longRunDay))
-        const isQualityDay = dayIdx === 1 || (sortedDays.length > 3 && dayIdx === 2)
+        const isLongRunDay =
+          dayId === longRunDay ||
+          (dayIdx === sortedDays.length - 1 && !sortedDays.includes(longRunDay))
+        const isQualityDay =
+          dayIdx === 1 || (sortedDays.length > 3 && dayIdx === 2)
 
         let type: WorkoutType = "easy_run"
         let name = "Rodaje Suave Aeróbico"
-        let distKm = Math.max(5, Math.round(currentWeeklyKm / sortedDays.length))
+        let distKm = Math.max(
+          5,
+          Math.round(currentWeeklyKm / sortedDays.length),
+        )
         let targetPace = easyPaceSec
         let intensity: Intensity = "easy"
         let blocks: BlockDraft[] = []
 
         if (isLongRunDay) {
           type = wNum === numWeeks ? "race" : "long_run"
-          name = wNum === numWeeks ? `Día de Carrera Objetivo (${targetKm} km)` : `Tirada Larga de Fondo (${weekLongKm} km)`
+          name =
+            wNum === numWeeks
+              ? `Día de Carrera Objetivo (${targetKm} km)`
+              : `Tirada Larga de Fondo (${weekLongKm} km)`
           distKm = weekLongKm
           targetPace = wNum === numWeeks ? predictedPaceSec : longRunPaceSec
           intensity = wNum === numWeeks ? "hard" : "moderate"
@@ -708,13 +725,14 @@ function generateRunnaPlanStructure({
 
   // Format plan name automatically if empty
   const planName =
-    draft.name.trim() ||
-    `Plan ${targetKm}K — Runna Engine (${numWeeks} sem)`
+    draft.name.trim() || `Plan ${targetKm}K — Runna Engine (${numWeeks} sem)`
 
   return {
     ...draft,
     name: planName,
-    goal: draft.goal || `Completar ${targetKm} km en ${formatTime(predictedFinishSec)} (${mathFormatPace(predictedPaceSec)}/km)`,
+    goal:
+      draft.goal ||
+      `Completar ${targetKm} km en ${formatTime(predictedFinishSec)} (${mathFormatPace(predictedPaceSec)}/km)`,
     distance_km: targetKm,
     target_time_seconds: predictedFinishSec,
     target_pace_seconds_per_km: predictedPaceSec,
@@ -760,7 +778,8 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
   )
 
   const predictedRaceSec = useMemo(
-    () => predictTimeRiegel(refDistanceKm * 1000, refTimeSeconds, targetKm * 1000),
+    () =>
+      predictTimeRiegel(refDistanceKm * 1000, refTimeSeconds, targetKm * 1000),
     [refDistanceKm, refTimeSeconds, targetKm],
   )
 
@@ -798,7 +817,10 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
 
   const updateMutation = useMutation({
     mutationFn: (payload: RunningPlanCreate) =>
-      RunningPlansService.replacePlan({ planId: editId!, requestBody: payload }),
+      RunningPlansService.replacePlan({
+        planId: editId!,
+        requestBody: payload,
+      }),
     onSuccess: () => {
       showSuccessToast("Plan actualizado")
       queryClient.invalidateQueries({ queryKey: ["running-plans"] })
@@ -850,7 +872,9 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
     })
 
     setDraft(generated)
-    showSuccessToast("¡Algoritmo Runna ejecutado! Plan generado con bloques exactos.")
+    showSuccessToast(
+      "¡Algoritmo Runna ejecutado! Plan generado con bloques exactos.",
+    )
     setStep(6) // Jump to Unified Editor & Preview
   }
 
@@ -885,7 +909,12 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl" asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl"
+            asChild
+          >
             <Link to="/routines">
               <ArrowLeft className="size-5" />
             </Link>
@@ -893,14 +922,17 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight text-white">
-                {editId ? "Editar Plan de Running" : "Creador de Planes Estilo Runna"}
+                {editId
+                  ? "Editar Plan de Running"
+                  : "Creador de Planes Estilo Runna"}
               </h1>
               <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 gap-1 text-[11px] font-bold">
                 <Sparkles className="size-3" /> Algoritmo VDOT
               </Badge>
             </div>
             <p className="text-xs text-slate-400">
-              Respondé las preguntas clave y el algoritmo calculará matemáticamente tus cargas, ritmos y bloques.
+              Respondé las preguntas clave y el algoritmo calculará
+              matemáticamente tus cargas, ritmos y bloques.
             </p>
           </div>
         </div>
@@ -966,7 +998,9 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           <CardContent className="px-0 flex flex-col gap-6">
             {/* Plan Type Cards */}
             <div className="flex flex-col gap-3">
-              <Label className="font-semibold text-xs text-slate-300">¿Cuál es tu tipo de objetivo?</Label>
+              <Label className="font-semibold text-xs text-slate-300">
+                ¿Cuál es tu tipo de objetivo?
+              </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
                   {
@@ -1005,10 +1039,21 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                         : "border-slate-800 bg-slate-800/40 text-slate-300 hover:bg-slate-800 hover:border-slate-700",
                     )}
                   >
-                    <type.icon className={cn("size-6", planType === type.id ? "text-emerald-400" : "text-slate-400")} />
+                    <type.icon
+                      className={cn(
+                        "size-6",
+                        planType === type.id
+                          ? "text-emerald-400"
+                          : "text-slate-400",
+                      )}
+                    />
                     <div>
-                      <h4 className="font-bold text-sm text-white">{type.title}</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">{type.desc}</p>
+                      <h4 className="font-bold text-sm text-white">
+                        {type.title}
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {type.desc}
+                      </p>
                     </div>
                   </button>
                 ))}
@@ -1017,7 +1062,9 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
 
             {/* Distance Target Selection */}
             <div className="flex flex-col gap-3 border-t border-slate-800 pt-4">
-              <Label className="font-semibold text-xs text-slate-300">Distancia Objetivo</Label>
+              <Label className="font-semibold text-xs text-slate-300">
+                Distancia Objetivo
+              </Label>
               <div className="flex flex-wrap gap-2">
                 {[
                   { label: "5K", km: 5 },
@@ -1050,22 +1097,40 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-800 pt-4">
               {planType === "race" && (
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="race-select" className="font-semibold text-xs text-slate-300">
+                  <Label
+                    htmlFor="race-select"
+                    className="font-semibold text-xs text-slate-300"
+                  >
                     Carrera Objetivo Guardada
                   </Label>
                   <Select
                     value={draft.race_id ?? "none"}
                     onValueChange={(val) =>
-                      setDraft({ ...draft, race_id: val === "none" ? null : val })
+                      setDraft({
+                        ...draft,
+                        race_id: val === "none" ? null : val,
+                      })
                     }
                   >
-                    <SelectTrigger id="race-select" className="bg-slate-800 border-slate-700 text-white rounded-xl">
+                    <SelectTrigger
+                      id="race-select"
+                      className="bg-slate-800 border-slate-700 text-white rounded-xl"
+                    >
                       <SelectValue placeholder="Seleccionar de tus carreras" />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                      <SelectItem value="none" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">Sin carrera vinculada</SelectItem>
+                      <SelectItem
+                        value="none"
+                        className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200"
+                      >
+                        Sin carrera vinculada
+                      </SelectItem>
                       {(racesQuery.data?.data ?? []).map((r: RacePublic) => (
-                        <SelectItem key={r.id} value={r.id} className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">
+                        <SelectItem
+                          key={r.id}
+                          value={r.id}
+                          className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200"
+                        >
                           {r.event_name} ({r.distance_km} km)
                         </SelectItem>
                       ))}
@@ -1075,29 +1140,64 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               )}
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="num-weeks-select" className="font-semibold text-xs text-slate-300">
+                <Label
+                  htmlFor="num-weeks-select"
+                  className="font-semibold text-xs text-slate-300"
+                >
                   Duración del Bloque (Semanas)
                 </Label>
                 <Select
                   value={numWeeks.toString()}
                   onValueChange={(val) => setNumWeeks(parseInt(val, 10))}
                 >
-                  <SelectTrigger id="num-weeks-select" className="bg-slate-800 border-slate-700 text-white rounded-xl">
+                  <SelectTrigger
+                    id="num-weeks-select"
+                    className="bg-slate-800 border-slate-700 text-white rounded-xl"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                    <SelectItem value="6" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">6 Semanas (Expreso)</SelectItem>
-                    <SelectItem value="8" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">8 Semanas (Corto)</SelectItem>
-                    <SelectItem value="12" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">12 Semanas (Recomendado Runna)</SelectItem>
-                    <SelectItem value="16" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">16 Semanas (Maratón 42K)</SelectItem>
-                    <SelectItem value="20" className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200">20 Semanas (Ultra / Bloque Extendido)</SelectItem>
+                    <SelectItem
+                      value="6"
+                      className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200"
+                    >
+                      6 Semanas (Expreso)
+                    </SelectItem>
+                    <SelectItem
+                      value="8"
+                      className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200"
+                    >
+                      8 Semanas (Corto)
+                    </SelectItem>
+                    <SelectItem
+                      value="12"
+                      className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200"
+                    >
+                      12 Semanas (Recomendado Runna)
+                    </SelectItem>
+                    <SelectItem
+                      value="16"
+                      className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200"
+                    >
+                      16 Semanas (Maratón 42K)
+                    </SelectItem>
+                    <SelectItem
+                      value="20"
+                      className="focus:bg-slate-800 focus:text-emerald-400 text-slate-200"
+                    >
+                      20 Semanas (Ultra / Bloque Extendido)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="flex justify-end pt-2">
-              <Button type="button" onClick={() => setStep(2)} className="gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 rounded-xl cursor-pointer">
+              <Button
+                type="button"
+                onClick={() => setStep(2)}
+                className="gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 rounded-xl cursor-pointer"
+              >
                 <span>Siguiente: Nivel & Ritmos VDOT</span>
                 <ChevronRight className="size-4" />
               </Button>
@@ -1118,7 +1218,9 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           <CardContent className="px-0 flex flex-col gap-6">
             {/* Level selection */}
             <div className="flex flex-col gap-3">
-              <Label className="font-semibold text-sm text-slate-300">Tu Nivel Auto-Percibido</Label>
+              <Label className="font-semibold text-sm text-slate-300">
+                Tu Nivel Auto-Percibido
+              </Label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
                   { id: "beginner", label: "Principiante" },
@@ -1146,14 +1248,20 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
             {/* Reference Performance Input */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-800 pt-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="ref-dist" className="font-semibold text-slate-300">
+                <Label
+                  htmlFor="ref-dist"
+                  className="font-semibold text-slate-300"
+                >
                   Distancia de Referencia Reciente
                 </Label>
                 <Select
                   value={refDistanceKm.toString()}
                   onValueChange={(val) => setRefDistanceKm(parseFloat(val))}
                 >
-                  <SelectTrigger id="ref-dist" className="bg-slate-800/80 border-slate-700 text-white">
+                  <SelectTrigger
+                    id="ref-dist"
+                    className="bg-slate-800/80 border-slate-700 text-white"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
@@ -1166,7 +1274,10 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="ref-time" className="font-semibold text-slate-300">
+                <Label
+                  htmlFor="ref-time"
+                  className="font-semibold text-slate-300"
+                >
                   Mejor Tiempo Reciente (hh:mm:ss o mm:ss)
                 </Label>
                 <Input
@@ -1187,11 +1298,15 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                     VDOT: {calculatedVdot}
                   </Badge>
                   <span className="text-xs font-bold text-white">
-                    Ritmos de Entrenamiento Calculados por Algoritmo (Jack Daniels)
+                    Ritmos de Entrenamiento Calculados por Algoritmo (Jack
+                    Daniels)
                   </span>
                 </div>
 
-                <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-400">
+                <Badge
+                  variant="outline"
+                  className="text-xs border-emerald-500/40 text-emerald-400"
+                >
                   {refDistanceKm}K en {formatTime(refTimeSeconds)}
                 </Badge>
               </div>
@@ -1236,10 +1351,19 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
             </div>
 
             <div className="flex justify-between border-t border-slate-800 pt-4">
-              <Button type="button" variant="outline" className="border-slate-700 text-slate-300" onClick={() => setStep(1)}>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-slate-700 text-slate-300"
+                onClick={() => setStep(1)}
+              >
                 Atrás
               </Button>
-              <Button type="button" onClick={() => setStep(3)} className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold">
+              <Button
+                type="button"
+                onClick={() => setStep(3)}
+                className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold"
+              >
                 <span>Siguiente: Volumen Actual</span>
                 <ChevronRight className="size-4" />
               </Button>
@@ -1260,43 +1384,64 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           <CardContent className="px-0 flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="current-weekly" className="font-semibold text-slate-300">
+                <Label
+                  htmlFor="current-weekly"
+                  className="font-semibold text-slate-300"
+                >
                   Kilometraje Semanal Promedio Actual ({currentWeeklyKm} km/sem)
                 </Label>
                 <Input
                   id="current-weekly"
                   type="number"
                   value={currentWeeklyKm}
-                  onChange={(e) => setCurrentWeeklyKm(parseInt(e.target.value, 10) || 10)}
+                  onChange={(e) =>
+                    setCurrentWeeklyKm(parseInt(e.target.value, 10) || 10)
+                  }
                   className="font-extrabold text-base bg-slate-800/80 border-slate-700 text-white"
                 />
                 <p className="text-xs text-slate-400">
-                  El algoritmo usará este dato para que el volumen de la Semana 1 no supere un incremento del 10-15%.
+                  El algoritmo usará este dato para que el volumen de la Semana
+                  1 no supere un incremento del 10-15%.
                 </p>
               </div>
 
               <div className="flex flex-col gap-3">
-                <Label htmlFor="longest-run" className="font-semibold text-slate-300">
+                <Label
+                  htmlFor="longest-run"
+                  className="font-semibold text-slate-300"
+                >
                   Tirada Más Larga Reciente del Último Mes ({longestRunKm} km)
                 </Label>
                 <Input
                   id="longest-run"
                   type="number"
                   value={longestRunKm}
-                  onChange={(e) => setLongestRunKm(parseInt(e.target.value, 10) || 5)}
+                  onChange={(e) =>
+                    setLongestRunKm(parseInt(e.target.value, 10) || 5)
+                  }
                   className="font-extrabold text-base bg-slate-800/80 border-slate-700 text-white"
                 />
                 <p className="text-xs text-slate-400">
-                  Permite escalar la distancia de la tirada larga del fin de semana progresivamente.
+                  Permite escalar la distancia de la tirada larga del fin de
+                  semana progresivamente.
                 </p>
               </div>
             </div>
 
             <div className="flex justify-between border-t border-slate-800 pt-4">
-              <Button type="button" variant="outline" className="border-slate-700 text-slate-300" onClick={() => setStep(2)}>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-slate-700 text-slate-300"
+                onClick={() => setStep(2)}
+              >
                 Atrás
               </Button>
-              <Button type="button" onClick={() => setStep(4)} className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold">
+              <Button
+                type="button"
+                onClick={() => setStep(4)}
+                className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold"
+              >
                 <span>Siguiente: Disponibilidad Semanal</span>
                 <ChevronRight className="size-4" />
               </Button>
@@ -1317,7 +1462,9 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           <CardContent className="px-0 flex flex-col gap-6">
             {/* Days Selection */}
             <div className="flex flex-col gap-3">
-              <Label className="font-semibold text-sm text-slate-300">Seleccioná los Días en los que Podés Salir a Correr</Label>
+              <Label className="font-semibold text-sm text-slate-300">
+                Seleccioná los Días en los que Podés Salir a Correr
+              </Label>
               <div className="flex flex-wrap gap-2">
                 {DAYS_OF_WEEK.map((d) => {
                   const isSelected = selectedDays.includes(d.id)
@@ -1348,14 +1495,20 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
 
             {/* Long Run Day selector */}
             <div className="flex flex-col gap-3 border-t border-slate-800 pt-4">
-              <Label htmlFor="long-run-day" className="font-semibold text-slate-300">
+              <Label
+                htmlFor="long-run-day"
+                className="font-semibold text-slate-300"
+              >
                 Día Preferido para la Tirada Larga (Fondo)
               </Label>
               <Select
                 value={longRunDay.toString()}
                 onValueChange={(val) => setLongRunDay(parseInt(val, 10))}
               >
-                <SelectTrigger id="long-run-day" className="w-64 bg-slate-800/80 border-slate-700 text-white">
+                <SelectTrigger
+                  id="long-run-day"
+                  className="w-64 bg-slate-800/80 border-slate-700 text-white"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-white">
@@ -1367,10 +1520,19 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
             </div>
 
             <div className="flex justify-between border-t border-slate-800 pt-4">
-              <Button type="button" variant="outline" className="border-slate-700 text-slate-300" onClick={() => setStep(3)}>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-slate-700 text-slate-300"
+                onClick={() => setStep(3)}
+              >
                 Atrás
               </Button>
-              <Button type="button" onClick={() => setStep(5)} className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold">
+              <Button
+                type="button"
+                onClick={() => setStep(5)}
+                className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold"
+              >
                 <span>Siguiente: Resumen & Algoritmo Runna</span>
                 <ChevronRight className="size-4" />
               </Button>
@@ -1391,16 +1553,28 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           <CardContent className="px-0 flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-800/60 border border-slate-700">
               <div className="flex flex-col">
-                <span className="text-xs text-slate-400">Distancia & Bloque</span>
-                <span className="font-extrabold text-white">{targetKm} km en {numWeeks} Semanas</span>
+                <span className="text-xs text-slate-400">
+                  Distancia & Bloque
+                </span>
+                <span className="font-extrabold text-white">
+                  {targetKm} km en {numWeeks} Semanas
+                </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-xs text-slate-400">Puntaje VDOT & Ritmos</span>
-                <span className="font-extrabold text-emerald-400">VDOT {calculatedVdot} ({calculatedPaces.easyMin} - {calculatedPaces.threshold}/km)</span>
+                <span className="text-xs text-slate-400">
+                  Puntaje VDOT & Ritmos
+                </span>
+                <span className="font-extrabold text-emerald-400">
+                  VDOT {calculatedVdot} ({calculatedPaces.easyMin} -{" "}
+                  {calculatedPaces.threshold}/km)
+                </span>
               </div>
               <div className="flex flex-col">
                 <span className="text-xs text-slate-400">Días Semanales</span>
-                <span className="font-extrabold text-white">{selectedDays.length} días/sem (Fondo: {DAYS_OF_WEEK.find(d => d.id === longRunDay)?.label})</span>
+                <span className="font-extrabold text-white">
+                  {selectedDays.length} días/sem (Fondo:{" "}
+                  {DAYS_OF_WEEK.find((d) => d.id === longRunDay)?.label})
+                </span>
               </div>
             </div>
 
@@ -1414,7 +1588,8 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                 <span>⚡ Ejecutar Algoritmo & Generar Plan Estructurado</span>
               </Button>
               <p className="text-xs text-slate-400">
-                Cada sesión del plan se creará con sus bloques exactos de calentamiento, ritmos objetivo, repeticiones y enfriamiento.
+                Cada sesión del plan se creará con sus bloques exactos de
+                calentamiento, ritmos objetivo, repeticiones y enfriamiento.
               </p>
             </div>
           </CardContent>
@@ -1431,8 +1606,13 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                 <TrendingUp className="size-4 text-emerald-400" />
                 Carga de Volumen Semanal Calculada (Km)
               </CardTitle>
-              <Badge variant="outline" className="text-xs font-bold border-emerald-500/30 text-emerald-400">
-                VDOT {calculatedVdot} · {draft.phases.reduce((acc, p) => acc + p.weeks.length, 0)} Semanas
+              <Badge
+                variant="outline"
+                className="text-xs font-bold border-emerald-500/30 text-emerald-400"
+              >
+                VDOT {calculatedVdot} ·{" "}
+                {draft.phases.reduce((acc, p) => acc + p.weeks.length, 0)}{" "}
+                Semanas
               </Badge>
             </CardHeader>
             <CardContent className="p-0">
@@ -1469,10 +1649,18 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               const phaseColor =
                 PHASE_COLORS[phase.color as PhaseColor] ?? PHASE_COLORS.emerald
               return (
-                <div key={pIdx} className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/90 p-4 shadow-lg">
+                <div
+                  key={pIdx}
+                  className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-900/90 p-4 shadow-lg"
+                >
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                     <div className="flex items-center gap-2">
-                      <span className={cn("size-3 rounded-full shrink-0", phaseColor.bar)} />
+                      <span
+                        className={cn(
+                          "size-3 rounded-full shrink-0",
+                          phaseColor.bar,
+                        )}
+                      />
                       <Input
                         value={phase.name}
                         onChange={(e) => {
@@ -1497,7 +1685,8 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-xs text-white">
-                            Semana {week.number} ({formatShortDate(week.start_date)} -{" "}
+                            Semana {week.number} (
+                            {formatShortDate(week.start_date)} -{" "}
                             {formatShortDate(week.end_date)})
                           </span>
                           <span className="text-xs font-semibold text-emerald-400">
@@ -1514,7 +1703,8 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-1">
                           {week.workouts.map((workout, wkIdx) => {
                             const typeMeta =
-                              WORKOUT_TYPE_META[workout.type] ?? WORKOUT_TYPE_META.easy_run
+                              WORKOUT_TYPE_META[workout.type] ??
+                              WORKOUT_TYPE_META.easy_run
                             return (
                               <div
                                 key={wkIdx}
@@ -1524,7 +1714,12 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                                   <span className="text-[10px] text-slate-400 font-semibold">
                                     {formatShortDate(workout.date)}
                                   </span>
-                                  <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-bold border", typeMeta.badgeClass)}>
+                                  <span
+                                    className={cn(
+                                      "px-1.5 py-0.5 rounded-full text-[10px] font-bold border",
+                                      typeMeta.badgeClass,
+                                    )}
+                                  >
                                     {typeMeta.emoji} {typeMeta.label}
                                   </span>
                                 </div>
@@ -1533,7 +1728,9 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                                   value={workout.name}
                                   onChange={(e) => {
                                     const newPhases = [...draft.phases]
-                                    newPhases[pIdx].weeks[wIdx].workouts[wkIdx].name = e.target.value
+                                    newPhases[pIdx].weeks[wIdx].workouts[
+                                      wkIdx
+                                    ].name = e.target.value
                                     setDraft({ ...draft, phases: newPhases })
                                   }}
                                   className="h-7 text-xs font-bold px-2 py-1 bg-slate-800 border-slate-700 text-white focus:border-emerald-500 rounded-lg"
@@ -1553,17 +1750,23 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                                         ].distance_km = e.target.value
                                           ? parseFloat(e.target.value)
                                           : null
-                                        setDraft({ ...draft, phases: newPhases })
+                                        setDraft({
+                                          ...draft,
+                                          phases: newPhases,
+                                        })
                                       }}
                                       className="h-6 text-xs w-16 px-1.5 py-0 bg-slate-800 border-slate-700 text-white font-extrabold focus:border-emerald-500 rounded-lg"
                                     />
-                                    <span className="text-[10px] text-slate-400">km</span>
+                                    <span className="text-[10px] text-slate-400">
+                                      km
+                                    </span>
                                   </div>
                                 </div>
 
                                 {workout.blocks.length > 0 && (
                                   <span className="text-[10px] text-emerald-400 font-mono truncate font-medium">
-                                    ✓ {workout.blocks.length} bloques estructurados
+                                    ✓ {workout.blocks.length} bloques
+                                    estructurados
                                   </span>
                                 )}
                               </div>
@@ -1579,7 +1782,12 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           </div>
 
           <div className="flex justify-between pt-4">
-            <Button type="button" variant="outline" className="border-slate-700 text-slate-300" onClick={() => setStep(5)}>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-slate-700 text-slate-300"
+              onClick={() => setStep(5)}
+            >
               Volver al Cuestionario
             </Button>
             <Button
@@ -1589,7 +1797,9 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold shadow-md gap-2 px-6 py-5 text-base"
             >
               {isPending && <Loader2 className="size-4 animate-spin" />}
-              <span>{editId ? "Guardar Cambios" : "Confirmar y Guardar Plan"}</span>
+              <span>
+                {editId ? "Guardar Cambios" : "Confirmar y Guardar Plan"}
+              </span>
             </Button>
           </div>
         </div>

@@ -1,5 +1,5 @@
-import { useEffect } from "react"
 import { useQueryClient } from "@tanstack/react-query"
+import { useEffect } from "react"
 
 import useCustomToast from "@/hooks/useCustomToast"
 import { HevyIntegration } from "./HevyIntegration"
@@ -16,10 +16,14 @@ export function IntegrationsSettings() {
     const params = new URLSearchParams(window.location.search)
     const stravaStatus = params.get("strava")
     if (stravaStatus === "connected") {
-      showSuccessToast("Strava conectado correctamente con permisos de carreras")
+      showSuccessToast(
+        "Strava conectado correctamente con permisos de carreras",
+      )
       queryClient.invalidateQueries()
     } else if (stravaStatus === "error") {
-      showErrorToast("No se pudo conectar con Strava. Verifica tu Client ID y Client Secret.")
+      showErrorToast(
+        "No se pudo conectar con Strava. Verifica tu Client ID y Client Secret.",
+      )
     }
     if (stravaStatus) {
       window.history.replaceState({}, "", window.location.pathname)

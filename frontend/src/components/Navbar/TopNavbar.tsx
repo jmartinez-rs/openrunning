@@ -1,5 +1,9 @@
 import { useMutation } from "@tanstack/react-query"
-import { Link as RouterLink, useRouterState, useNavigate } from "@tanstack/react-router"
+import {
+  Link as RouterLink,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router"
 import {
   BarChart3,
   Bell,
@@ -114,7 +118,10 @@ function RightActions() {
             <span className="absolute right-2 top-2 size-2 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 text-slate-300">
+        <DropdownMenuContent
+          align="end"
+          className="w-56 bg-slate-900 border-slate-800 text-slate-300"
+        >
           <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-slate-800" />
           <div className="p-4 text-center text-xs text-slate-500">
@@ -128,16 +135,21 @@ function RightActions() {
           <DropdownMenuTrigger asChild>
             <Avatar className="size-8 cursor-pointer ring-1 ring-emerald-500/30 transition-all hover:ring-emerald-400">
               <AvatarFallback className="bg-slate-900 text-emerald-400 font-bold">
-                {currentUser.full_name?.charAt(0) || <User className="size-4" />}
+                {currentUser.full_name?.charAt(0) || (
+                  <User className="size-4" />
+                )}
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-slate-900 border-slate-800 text-slate-300">
+          <DropdownMenuContent
+            align="end"
+            className="w-48 bg-slate-900 border-slate-800 text-slate-300"
+          >
             <DropdownMenuLabel className="text-white truncate">
               {currentUser.full_name || currentUser.email}
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-slate-800" />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               className="cursor-pointer hover:bg-slate-800 hover:text-white focus:bg-slate-800 focus:text-white"
               onClick={() => navigate({ to: "/settings" })}
             >
@@ -145,7 +157,7 @@ function RightActions() {
               Configuración
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-slate-800" />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               className="cursor-pointer text-red-400 hover:bg-slate-800 hover:text-red-300 focus:bg-slate-800 focus:text-red-300"
               onClick={() => logout()}
             >

@@ -6,13 +6,13 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { UsersService, type UserUpdateMe } from "@/client"
-import { SettingsRow } from "../Settings/SettingsSection"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { SettingsRow } from "../Settings/SettingsSection"
 
 const formSchema = z.object({
   full_name: z.string().max(30).optional(),

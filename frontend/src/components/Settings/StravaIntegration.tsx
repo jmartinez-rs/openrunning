@@ -7,12 +7,12 @@ import {
   SettingsService,
   type StravaCredentialsIn,
 } from "@/client"
-import { SettingsRow } from "./SettingsSection"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { SettingsRow } from "./SettingsSection"
 
 export function StravaIntegration() {
   const queryClient = useQueryClient()
@@ -20,7 +20,8 @@ export function StravaIntegration() {
 
   const statusQuery = useQuery({
     queryKey: ["integration-status", "strava"],
-    queryFn: () => SettingsService.readIntegrationStatus({ provider: "strava" }),
+    queryFn: () =>
+      SettingsService.readIntegrationStatus({ provider: "strava" }),
   })
 
   const connected = statusQuery.data?.connected ?? false
@@ -59,7 +60,8 @@ export function StravaIntegration() {
   })
 
   const disconnectMutation = useMutation({
-    mutationFn: () => SettingsService.disconnectIntegration({ provider: "strava" }),
+    mutationFn: () =>
+      SettingsService.disconnectIntegration({ provider: "strava" }),
     onSuccess: () => {
       showSuccessToast("Strava desconectado")
       queryClient.invalidateQueries({
@@ -175,7 +177,8 @@ export function StravaIntegration() {
                 Credenciales de Aplicación Strava API
               </h4>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Ingresá tus credenciales de Strava Developer para vincular y sincronizar la app.
+                Ingresá tus credenciales de Strava Developer para vincular y
+                sincronizar la app.
               </p>
             </div>
             {!connected && (
@@ -198,14 +201,19 @@ export function StravaIntegration() {
               Paso Requerido para Autorización de Carreras
             </p>
             <p className="text-[11px] text-slate-300 leading-relaxed">
-              Luego de guardar tu <strong>Client ID</strong> y <strong>Client Secret</strong>, hacé clic en el botón naranja <strong>"Conectar con OAuth"</strong> para autorizar en Strava el permiso de lectura de carreras (<code>activity:read</code>).
+              Luego de guardar tu <strong>Client ID</strong> y{" "}
+              <strong>Client Secret</strong>, hacé clic en el botón naranja{" "}
+              <strong>"Conectar con OAuth"</strong> para autorizar en Strava el
+              permiso de lectura de carreras (<code>activity:read</code>).
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs text-slate-300 font-semibold">Client ID *</label>
+                <label className="text-xs text-slate-300 font-semibold">
+                  Client ID *
+                </label>
                 <Input
                   value={clientId}
                   onChange={(e) => setClientId(e.target.value)}
@@ -214,7 +222,9 @@ export function StravaIntegration() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-slate-300 font-semibold">Client Secret *</label>
+                <label className="text-xs text-slate-300 font-semibold">
+                  Client Secret *
+                </label>
                 <PasswordInput
                   value={clientSecret}
                   onChange={(e) => setClientSecret(e.target.value)}
@@ -226,7 +236,9 @@ export function StravaIntegration() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs text-slate-400 font-medium">Access Token (opcional)</label>
+                <label className="text-xs text-slate-400 font-medium">
+                  Access Token (opcional)
+                </label>
                 <PasswordInput
                   value={accessToken}
                   onChange={(e) => setAccessToken(e.target.value)}
@@ -235,7 +247,9 @@ export function StravaIntegration() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-slate-400 font-medium">Refresh Token (opcional)</label>
+                <label className="text-xs text-slate-400 font-medium">
+                  Refresh Token (opcional)
+                </label>
                 <PasswordInput
                   value={refreshToken}
                   onChange={(e) => setRefreshToken(e.target.value)}
@@ -249,7 +263,10 @@ export function StravaIntegration() {
               <Button
                 type="submit"
                 size="sm"
-                disabled={saveMutation.isPending || (!clientId && !clientSecret && !accessToken)}
+                disabled={
+                  saveMutation.isPending ||
+                  (!clientId && !clientSecret && !accessToken)
+                }
                 className="h-9 px-4 rounded-xl bg-orange-500 text-slate-950 font-bold text-xs hover:bg-orange-400 cursor-pointer shadow-md shadow-orange-500/20"
               >
                 {saveMutation.isPending && (

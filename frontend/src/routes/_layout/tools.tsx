@@ -1,36 +1,41 @@
-import { useState, useMemo } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router"
 import {
+  ArrowRightLeft,
   Calculator,
   Flame,
-  HeartPulse,
   Gauge,
-  Trophy,
-  ArrowRightLeft,
-  Sparkles,
+  HeartPulse,
   Info,
-} from "lucide-react";
-
+  Sparkles,
+  Trophy,
+} from "lucide-react"
+import { useMemo, useState } from "react"
 import {
-  calculateVDOT,
-  getTrainingPaces,
-  predictTimeRiegel,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
   calculateHeartRateZones,
+  calculateVDOT,
   formatPace,
   formatTime,
+  getTrainingPaces,
   paceSecondsToKmh,
-} from "@/lib/running-math";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  predictTimeRiegel,
+} from "@/lib/running-math"
 
 export const Route = createFileRoute("/_layout/tools")({
   component: ToolsView,
   head: () => ({
     meta: [{ title: "Calculadoras de Running - OpenRunning" }],
   }),
-});
+})
 
 const STANDARD_DISTANCES = [
   { label: "5K (5.0 km)", meters: 5000 },
@@ -38,89 +43,90 @@ const STANDARD_DISTANCES = [
   { label: "15K (15.0 km)", meters: 15000 },
   { label: "21.1K (Media Maratón)", meters: 21097 },
   { label: "42.2K (Maratón)", meters: 42195 },
-];
+]
 
 function ToolsView() {
-  const [activeTab, setActiveTab] = useState("vdot");
+  const [activeTab, setActiveTab] = useState("vdot")
 
   // VDOT Calculator State
-  const [vdotDistanceMeters, setVdotDistanceMeters] = useState(10000);
-  const [vdotHours, setVdotHours] = useState(0);
-  const [vdotMinutes, setVdotMinutes] = useState(48);
-  const [vdotSeconds, setVdotSeconds] = useState(30);
+  const [vdotDistanceMeters, setVdotDistanceMeters] = useState(10000)
+  const [vdotHours, setVdotHours] = useState(0)
+  const [vdotMinutes, setVdotMinutes] = useState(48)
+  const [vdotSeconds, setVdotSeconds] = useState(30)
 
   const totalVdotTimeSeconds = useMemo(
     () => vdotHours * 3600 + vdotMinutes * 60 + vdotSeconds,
-    [vdotHours, vdotMinutes, vdotSeconds]
-  );
+    [vdotHours, vdotMinutes, vdotSeconds],
+  )
 
   const calculatedVdot = useMemo(
     () => calculateVDOT(vdotDistanceMeters, totalVdotTimeSeconds),
-    [vdotDistanceMeters, totalVdotTimeSeconds]
-  );
+    [vdotDistanceMeters, totalVdotTimeSeconds],
+  )
 
   const trainingPaces = useMemo(
     () => getTrainingPaces(calculatedVdot),
-    [calculatedVdot]
-  );
+    [calculatedVdot],
+  )
 
   // Riegel Predictor State
-  const [riegelDistanceMeters, setRiegelDistanceMeters] = useState(10000);
-  const [riegelHours, setRiegelHours] = useState(0);
-  const [riegelMinutes, setRiegelMinutes] = useState(48);
-  const [riegelSeconds, setRiegelSeconds] = useState(30);
+  const [riegelDistanceMeters, setRiegelDistanceMeters] = useState(10000)
+  const [riegelHours, setRiegelHours] = useState(0)
+  const [riegelMinutes, setRiegelMinutes] = useState(48)
+  const [riegelSeconds, setRiegelSeconds] = useState(30)
 
   const totalRiegelTimeSeconds = useMemo(
     () => riegelHours * 3600 + riegelMinutes * 60 + riegelSeconds,
-    [riegelHours, riegelMinutes, riegelSeconds]
-  );
+    [riegelHours, riegelMinutes, riegelSeconds],
+  )
 
   const riegelProjections = useMemo(() => {
     return STANDARD_DISTANCES.map((dist) => {
       const predictedSecs = predictTimeRiegel(
         riegelDistanceMeters,
         totalRiegelTimeSeconds,
-        dist.meters
-      );
-      const paceSecs = predictedSecs > 0 ? predictedSecs / (dist.meters / 1000) : 0;
+        dist.meters,
+      )
+      const paceSecs =
+        predictedSecs > 0 ? predictedSecs / (dist.meters / 1000) : 0
       return {
         label: dist.label,
         meters: dist.meters,
         timeFormatted: formatTime(predictedSecs),
         paceFormatted: formatPace(paceSecs),
-        speedKmh: (paceSecondsToKmh(paceSecs)).toFixed(1),
-      };
-    });
-  }, [riegelDistanceMeters, totalRiegelTimeSeconds]);
+        speedKmh: paceSecondsToKmh(paceSecs).toFixed(1),
+      }
+    })
+  }, [riegelDistanceMeters, totalRiegelTimeSeconds])
 
   // Heart Rate Zones State
-  const [maxHr, setMaxHr] = useState(185);
-  const [restHr, setRestHr] = useState(52);
+  const [maxHr, setMaxHr] = useState(185)
+  const [restHr, setRestHr] = useState(52)
 
   const hrZones = useMemo(
     () => calculateHeartRateZones(maxHr, restHr),
-    [maxHr, restHr]
-  );
+    [maxHr, restHr],
+  )
 
   // Converter State
-  const [paceMins, setPaceMins] = useState(5);
-  const [paceSecs, setPaceSecs] = useState(0);
+  const [paceMins, setPaceMins] = useState(5)
+  const [paceSecs, setPaceSecs] = useState(0)
 
   const converterPaceSecs = useMemo(
     () => paceMins * 60 + paceSecs,
-    [paceMins, paceSecs]
-  );
+    [paceMins, paceSecs],
+  )
 
   const converterKmh = useMemo(
-    () => (paceSecondsToKmh(converterPaceSecs)).toFixed(2),
-    [converterPaceSecs]
-  );
+    () => paceSecondsToKmh(converterPaceSecs).toFixed(2),
+    [converterPaceSecs],
+  )
 
   const converterPaceMile = useMemo(() => {
-    if (converterPaceSecs <= 0) return "--:--";
-    const secPerMile = converterPaceSecs * 1.60934;
-    return formatPace(secPerMile);
-  }, [converterPaceSecs]);
+    if (converterPaceSecs <= 0) return "--:--"
+    const secPerMile = converterPaceSecs * 1.60934
+    return formatPace(secPerMile)
+  }, [converterPaceSecs])
 
   return (
     <div className="flex flex-col gap-6 pb-20">
@@ -135,7 +141,8 @@ function ToolsView() {
           </h1>
         </div>
         <p className="text-sm text-slate-400">
-          Herramientas matemáticas para estimar ritmos de entrenamiento (VDOT), pronosticar marcas y calcular zonas cardíacas.
+          Herramientas matemáticas para estimar ritmos de entrenamiento (VDOT),
+          pronosticar marcas y calcular zonas cardíacas.
         </p>
       </div>
 
@@ -183,18 +190,24 @@ function ToolsView() {
                   Rendimiento Reciente
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-400">
-                  Ingresá el tiempo de tu mejor marca reciente para obtener tu VDOT (Jack Daniels) y ritmos exactos.
+                  Ingresá el tiempo de tu mejor marca reciente para obtener tu
+                  VDOT (Jack Daniels) y ritmos exactos.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="vdot-dist" className="text-xs font-semibold text-slate-300">
+                  <Label
+                    htmlFor="vdot-dist"
+                    className="text-xs font-semibold text-slate-300"
+                  >
                     Distancia de la marca
                   </Label>
                   <select
                     id="vdot-dist"
                     value={vdotDistanceMeters}
-                    onChange={(e) => setVdotDistanceMeters(Number(e.target.value))}
+                    onChange={(e) =>
+                      setVdotDistanceMeters(Number(e.target.value))
+                    }
                     className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     {STANDARD_DISTANCES.map((d) => (
@@ -211,35 +224,53 @@ function ToolsView() {
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">Horas</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                        Horas
+                      </span>
                       <Input
                         type="number"
                         min="0"
                         max="24"
                         value={vdotHours}
-                        onChange={(e) => setVdotHours(Math.max(0, parseInt(e.target.value) || 0))}
+                        onChange={(e) =>
+                          setVdotHours(
+                            Math.max(0, parseInt(e.target.value, 10) || 0),
+                          )
+                        }
                         className="bg-slate-950 border-slate-800 text-white font-mono text-center"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">Minutos</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                        Minutos
+                      </span>
                       <Input
                         type="number"
                         min="0"
                         max="59"
                         value={vdotMinutes}
-                        onChange={(e) => setVdotMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                        onChange={(e) =>
+                          setVdotMinutes(
+                            Math.max(0, parseInt(e.target.value, 10) || 0),
+                          )
+                        }
                         className="bg-slate-950 border-slate-800 text-white font-mono text-center"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">Segundos</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                        Segundos
+                      </span>
                       <Input
                         type="number"
                         min="0"
                         max="59"
                         value={vdotSeconds}
-                        onChange={(e) => setVdotSeconds(Math.max(0, parseInt(e.target.value) || 0))}
+                        onChange={(e) =>
+                          setVdotSeconds(
+                            Math.max(0, parseInt(e.target.value, 10) || 0),
+                          )
+                        }
                         className="bg-slate-950 border-slate-800 text-white font-mono text-center"
                       />
                     </div>
@@ -270,7 +301,8 @@ function ToolsView() {
                   </span>
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-400">
-                  Rangos de ritmo por kilómetro basados en la metodología de Jack Daniels para optimizar cada sesión.
+                  Rangos de ritmo por kilómetro basados en la metodología de
+                  Jack Daniels para optimizar cada sesión.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -280,13 +312,17 @@ function ToolsView() {
                       <span className="size-2 rounded-full bg-emerald-500" />
                       Easy / Rodaje Suave (Z2)
                     </div>
-                    <p className="text-[11px] text-slate-400">Desarrollo aeróbico base y recuperación.</p>
+                    <p className="text-[11px] text-slate-400">
+                      Desarrollo aeróbico base y recuperación.
+                    </p>
                   </div>
                   <div className="text-right">
                     <span className="text-base font-black font-mono text-white">
                       {trainingPaces.easyMin} – {trainingPaces.easyMax}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">min/km</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      min/km
+                    </span>
                   </div>
                 </div>
 
@@ -296,13 +332,17 @@ function ToolsView() {
                       <span className="size-2 rounded-full bg-teal-500" />
                       Marathon / Maratón (M)
                     </div>
-                    <p className="text-[11px] text-slate-400">Ritmo objetivo sostenido para 42K.</p>
+                    <p className="text-[11px] text-slate-400">
+                      Ritmo objetivo sostenido para 42K.
+                    </p>
                   </div>
                   <div className="text-right">
                     <span className="text-base font-black font-mono text-white">
                       {trainingPaces.marathon}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">min/km</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      min/km
+                    </span>
                   </div>
                 </div>
 
@@ -312,13 +352,17 @@ function ToolsView() {
                       <span className="size-2 rounded-full bg-amber-500" />
                       Threshold / Umbral Lactato (T)
                     </div>
-                    <p className="text-[11px] text-slate-400">Ritmo de tempo cómodo pero controlado.</p>
+                    <p className="text-[11px] text-slate-400">
+                      Ritmo de tempo cómodo pero controlado.
+                    </p>
                   </div>
                   <div className="text-right">
                     <span className="text-base font-black font-mono text-white">
                       {trainingPaces.threshold}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">min/km</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      min/km
+                    </span>
                   </div>
                 </div>
 
@@ -328,13 +372,17 @@ function ToolsView() {
                       <span className="size-2 rounded-full bg-orange-500" />
                       Interval / Series VO2 Max (I)
                     </div>
-                    <p className="text-[11px] text-slate-400">Series duras de 3 a 5 minutos (98-100% FC máx).</p>
+                    <p className="text-[11px] text-slate-400">
+                      Series duras de 3 a 5 minutos (98-100% FC máx).
+                    </p>
                   </div>
                   <div className="text-right">
                     <span className="text-base font-black font-mono text-white">
                       {trainingPaces.interval}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">min/km</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      min/km
+                    </span>
                   </div>
                 </div>
 
@@ -344,13 +392,18 @@ function ToolsView() {
                       <span className="size-2 rounded-full bg-rose-500" />
                       Repetition / Velocidad (R)
                     </div>
-                    <p className="text-[11px] text-slate-400">Repeticiones cortas (200m - 400m) para economía de carrera.</p>
+                    <p className="text-[11px] text-slate-400">
+                      Repeticiones cortas (200m - 400m) para economía de
+                      carrera.
+                    </p>
                   </div>
                   <div className="text-right">
                     <span className="text-base font-black font-mono text-white">
                       {trainingPaces.repetition}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">min/km</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      min/km
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -368,18 +421,24 @@ function ToolsView() {
                   Carrera de Referencia
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-400">
-                  Utilizá una carrera reciente para proyectar tiempos en otras distancias competitivas (Fórmula de Riegel).
+                  Utilizá una carrera reciente para proyectar tiempos en otras
+                  distancias competitivas (Fórmula de Riegel).
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="riegel-dist" className="text-xs font-semibold text-slate-300">
+                  <Label
+                    htmlFor="riegel-dist"
+                    className="text-xs font-semibold text-slate-300"
+                  >
                     Distancia base
                   </Label>
                   <select
                     id="riegel-dist"
                     value={riegelDistanceMeters}
-                    onChange={(e) => setRiegelDistanceMeters(Number(e.target.value))}
+                    onChange={(e) =>
+                      setRiegelDistanceMeters(Number(e.target.value))
+                    }
                     className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     {STANDARD_DISTANCES.map((d) => (
@@ -396,35 +455,53 @@ function ToolsView() {
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">Horas</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                        Horas
+                      </span>
                       <Input
                         type="number"
                         min="0"
                         max="24"
                         value={riegelHours}
-                        onChange={(e) => setRiegelHours(Math.max(0, parseInt(e.target.value) || 0))}
+                        onChange={(e) =>
+                          setRiegelHours(
+                            Math.max(0, parseInt(e.target.value, 10) || 0),
+                          )
+                        }
                         className="bg-slate-950 border-slate-800 text-white font-mono text-center"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">Minutos</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                        Minutos
+                      </span>
                       <Input
                         type="number"
                         min="0"
                         max="59"
                         value={riegelMinutes}
-                        onChange={(e) => setRiegelMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                        onChange={(e) =>
+                          setRiegelMinutes(
+                            Math.max(0, parseInt(e.target.value, 10) || 0),
+                          )
+                        }
                         className="bg-slate-950 border-slate-800 text-white font-mono text-center"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">Segundos</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                        Segundos
+                      </span>
                       <Input
                         type="number"
                         min="0"
                         max="59"
                         value={riegelSeconds}
-                        onChange={(e) => setRiegelSeconds(Math.max(0, parseInt(e.target.value) || 0))}
+                        onChange={(e) =>
+                          setRiegelSeconds(
+                            Math.max(0, parseInt(e.target.value, 10) || 0),
+                          )
+                        }
                         className="bg-slate-950 border-slate-800 text-white font-mono text-center"
                       />
                     </div>
@@ -434,7 +511,9 @@ function ToolsView() {
                 <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 flex items-start gap-2.5">
                   <Info className="size-4 text-emerald-400 shrink-0 mt-0.5" />
                   <span>
-                    Fórmula de Peter Riegel ($T_2 = T_1 \times (D_2 / D_1)^{1.06}$), asume una preparación aeróbica adecuada para la distancia proyectada.
+                    Fórmula de Peter Riegel ($T_2 = T_1 \times (D_2 / D_1)^
+                    {1.06}$), asume una preparación aeróbica adecuada para la
+                    distancia proyectada.
                   </span>
                 </div>
               </CardContent>
@@ -446,7 +525,8 @@ function ToolsView() {
                   Proyecciones Equivalentes
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-400">
-                  Tiempos objetivo estimados para distancias estándar de carrera.
+                  Tiempos objetivo estimados para distancias estándar de
+                  carrera.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -489,12 +569,16 @@ function ToolsView() {
                   Parámetros Cardíacos
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-400">
-                  Configurá tu FC máxima y de reposo para calcular tus 5 zonas según la fórmula de Karvonen.
+                  Configurá tu FC máxima y de reposo para calcular tus 5 zonas
+                  según la fórmula de Karvonen.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="max-hr" className="text-xs font-semibold text-slate-300">
+                  <Label
+                    htmlFor="max-hr"
+                    className="text-xs font-semibold text-slate-300"
+                  >
                     Frecuencia Cardíaca Máxima (bpm)
                   </Label>
                   <Input
@@ -503,16 +587,22 @@ function ToolsView() {
                     min="100"
                     max="230"
                     value={maxHr}
-                    onChange={(e) => setMaxHr(parseInt(e.target.value) || 180)}
+                    onChange={(e) =>
+                      setMaxHr(parseInt(e.target.value, 10) || 180)
+                    }
                     className="bg-slate-950 border-slate-800 text-white font-mono text-lg font-bold"
                   />
                   <p className="text-[11px] text-slate-400">
-                    Sugerencia: Medida en un test de esfuerzo o serie de sprint agudo.
+                    Sugerencia: Medida en un test de esfuerzo o serie de sprint
+                    agudo.
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="rest-hr" className="text-xs font-semibold text-slate-300">
+                  <Label
+                    htmlFor="rest-hr"
+                    className="text-xs font-semibold text-slate-300"
+                  >
                     Frecuencia Cardíaca en Reposo (bpm)
                   </Label>
                   <Input
@@ -521,11 +611,14 @@ function ToolsView() {
                     min="30"
                     max="100"
                     value={restHr}
-                    onChange={(e) => setRestHr(parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setRestHr(parseInt(e.target.value, 10) || 0)
+                    }
                     className="bg-slate-950 border-slate-800 text-white font-mono text-lg font-bold"
                   />
                   <p className="text-[11px] text-slate-400">
-                    Medida al despertar (dejar en 0 para cálculo estándar por FC máx).
+                    Medida al despertar (dejar en 0 para cálculo estándar por FC
+                    máx).
                   </p>
                 </div>
               </CardContent>
@@ -537,7 +630,8 @@ function ToolsView() {
                   Tus 5 Zonas de Frecuencia Cardíaca
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-400">
-                  Utilizá estas zonas para controlar la intensidad durante los rodajes y series.
+                  Utilizá estas zonas para controlar la intensidad durante los
+                  rodajes y series.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -547,13 +641,17 @@ function ToolsView() {
                     <span className="text-xs font-bold text-teal-400 uppercase tracking-wide block">
                       Z1 · Recuperación Activa (50-60%)
                     </span>
-                    <span className="text-xs text-slate-400">Trote suave de regeneración y calentamiento.</span>
+                    <span className="text-xs text-slate-400">
+                      Trote suave de regeneración y calentamiento.
+                    </span>
                   </div>
                   <div className="text-right">
                     <span className="text-lg font-black font-mono text-white">
                       {hrZones.z1Recovery[0]} – {hrZones.z1Recovery[1]}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">bpm</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      bpm
+                    </span>
                   </div>
                 </div>
 
@@ -563,13 +661,17 @@ function ToolsView() {
                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide block">
                       Z2 · Aeróbico / Rodaje Base (60-70%)
                     </span>
-                    <span className="text-xs text-slate-400">Zona principal de construcción aeróbica y quemagrasa.</span>
+                    <span className="text-xs text-slate-400">
+                      Zona principal de construcción aeróbica y quemagrasa.
+                    </span>
                   </div>
                   <div className="text-right">
                     <span className="text-lg font-black font-mono text-emerald-400">
                       {hrZones.z2Aerobic[0]} – {hrZones.z2Aerobic[1]}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">bpm</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      bpm
+                    </span>
                   </div>
                 </div>
 
@@ -579,13 +681,17 @@ function ToolsView() {
                     <span className="text-xs font-bold text-amber-400 uppercase tracking-wide block">
                       Z3 · Tempo / Ritmo Maratón (70-80%)
                     </span>
-                    <span className="text-xs text-slate-400">Desarrollo de eficiencia cardiovascular sostenida.</span>
+                    <span className="text-xs text-slate-400">
+                      Desarrollo de eficiencia cardiovascular sostenida.
+                    </span>
                   </div>
                   <div className="text-right">
                     <span className="text-lg font-black font-mono text-white">
                       {hrZones.z3Tempo[0]} – {hrZones.z3Tempo[1]}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">bpm</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      bpm
+                    </span>
                   </div>
                 </div>
 
@@ -595,13 +701,17 @@ function ToolsView() {
                     <span className="text-xs font-bold text-orange-400 uppercase tracking-wide block">
                       Z4 · Umbral Lactato (80-90%)
                     </span>
-                    <span className="text-xs text-slate-400">Ritmo de carrera 10K / 21K duro. Tolerancia al lactato.</span>
+                    <span className="text-xs text-slate-400">
+                      Ritmo de carrera 10K / 21K duro. Tolerancia al lactato.
+                    </span>
                   </div>
                   <div className="text-right">
                     <span className="text-lg font-black font-mono text-white">
                       {hrZones.z4Threshold[0]} – {hrZones.z4Threshold[1]}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">bpm</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      bpm
+                    </span>
                   </div>
                 </div>
 
@@ -611,13 +721,17 @@ function ToolsView() {
                     <span className="text-xs font-bold text-rose-400 uppercase tracking-wide block">
                       Z5 · Anaeróbico / VO2 Max (90-100%)
                     </span>
-                    <span className="text-xs text-slate-400">Esfuerzo máximo en series cortas y sprints finales.</span>
+                    <span className="text-xs text-slate-400">
+                      Esfuerzo máximo en series cortas y sprints finales.
+                    </span>
                   </div>
                   <div className="text-right">
                     <span className="text-lg font-black font-mono text-white">
                       {hrZones.z5Anaerobic[0]} – {hrZones.z5Anaerobic[1]}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">bpm</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      bpm
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -635,7 +749,8 @@ function ToolsView() {
                   Conversor Bidireccional
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-400">
-                  Ingresá el ritmo en min/km para obtener la velocidad en km/h y ritmo por milla.
+                  Ingresá el ritmo en min/km para obtener la velocidad en km/h y
+                  ritmo por milla.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -645,24 +760,36 @@ function ToolsView() {
                   </Label>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">Minutos</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                        Minutos
+                      </span>
                       <Input
                         type="number"
                         min="2"
                         max="20"
                         value={paceMins}
-                        onChange={(e) => setPaceMins(Math.max(1, parseInt(e.target.value) || 0))}
+                        onChange={(e) =>
+                          setPaceMins(
+                            Math.max(1, parseInt(e.target.value, 10) || 0),
+                          )
+                        }
                         className="bg-slate-950 border-slate-800 text-white font-mono text-center text-lg font-bold"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">Segundos</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                        Segundos
+                      </span>
                       <Input
                         type="number"
                         min="0"
                         max="59"
                         value={paceSecs}
-                        onChange={(e) => setPaceSecs(Math.max(0, parseInt(e.target.value) || 0))}
+                        onChange={(e) =>
+                          setPaceSecs(
+                            Math.max(0, parseInt(e.target.value, 10) || 0),
+                          )
+                        }
                         className="bg-slate-950 border-slate-800 text-white font-mono text-center text-lg font-bold"
                       />
                     </div>
@@ -677,7 +804,9 @@ function ToolsView() {
                     <span className="text-2xl font-black font-mono text-emerald-400">
                       {converterKmh}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">km/h</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      km/h
+                    </span>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
@@ -687,7 +816,9 @@ function ToolsView() {
                     <span className="text-2xl font-black font-mono text-emerald-400">
                       {converterPaceMile}
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-medium">min/mi</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      min/mi
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -699,7 +830,8 @@ function ToolsView() {
                   Tabla de Referencia Rápida
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-400">
-                  Equivalencias habituales entre ritmos de paso (min/km) y velocidad de cinta/reloj (km/h).
+                  Equivalencias habituales entre ritmos de paso (min/km) y
+                  velocidad de cinta/reloj (km/h).
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -724,22 +856,30 @@ function ToolsView() {
                         { min: 6, sec: 0 },
                         { min: 6, sec: 30 },
                       ].map((row) => {
-                        const secPerKm = row.min * 60 + row.sec;
-                        const kmh = (paceSecondsToKmh(secPerKm)).toFixed(1);
-                        const milePace = formatPace(secPerKm * 1.60934);
-                        const t5k = formatTime(secPerKm * 5);
-                        const t10k = formatTime(secPerKm * 10);
+                        const secPerKm = row.min * 60 + row.sec
+                        const kmh = paceSecondsToKmh(secPerKm).toFixed(1)
+                        const milePace = formatPace(secPerKm * 1.60934)
+                        const t5k = formatTime(secPerKm * 5)
+                        const t10k = formatTime(secPerKm * 10)
                         return (
                           <tr key={secPerKm} className="hover:bg-slate-800/40">
                             <td className="py-2.5 px-3 font-bold text-emerald-400">
                               {formatPace(secPerKm)}
                             </td>
-                            <td className="py-2.5 px-3 text-white">{kmh} km/h</td>
-                            <td className="py-2.5 px-3 text-slate-400">{milePace}</td>
-                            <td className="py-2.5 px-3 text-slate-400">{t5k}</td>
-                            <td className="py-2.5 px-3 text-slate-400">{t10k}</td>
+                            <td className="py-2.5 px-3 text-white">
+                              {kmh} km/h
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-400">
+                              {milePace}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-400">
+                              {t5k}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-400">
+                              {t10k}
+                            </td>
                           </tr>
-                        );
+                        )
                       })}
                     </tbody>
                   </table>
@@ -750,5 +890,5 @@ function ToolsView() {
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }

@@ -13,10 +13,14 @@ import {
 import {
   ApiError,
   RunningPlansService,
-  ShoesService,
   type RunningWorkoutPublic,
+  ShoesService,
   type WorkoutBlockPublic,
 } from "@/client"
+import {
+  getShoeRecommendation,
+  SHOE_CATEGORIES,
+} from "@/components/Shoes/shoe-utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -56,7 +60,6 @@ import {
   WORKOUT_STATUS_META,
   WORKOUT_TYPE_META,
 } from "./running-utils"
-import { getShoeRecommendation, SHOE_CATEGORIES } from "@/components/Shoes/shoe-utils"
 
 type MatchedActivity = {
   activity_id?: string
@@ -216,7 +219,10 @@ export function WorkoutBlocksDrawer({
                 {statusMeta.label}
               </Badge>
               {workout.status_override != null ? (
-                <Badge variant="outline" className="text-slate-400 border-slate-700">
+                <Badge
+                  variant="outline"
+                  className="text-slate-400 border-slate-700"
+                >
                   Estado manual
                 </Badge>
               ) : null}
@@ -251,23 +257,33 @@ export function WorkoutBlocksDrawer({
                   <div className="flex items-center gap-3 bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/60">
                     <div className="size-10 rounded-lg bg-slate-800 flex items-center justify-center font-bold text-xs text-white shrink-0 overflow-hidden border border-slate-700">
                       {recommendedShoe.photo_url ? (
-                        <img src={recommendedShoe.photo_url} alt="" className="size-full object-cover" />
+                        <img
+                          src={recommendedShoe.photo_url}
+                          alt=""
+                          className="size-full object-cover"
+                        />
                       ) : (
                         <Footprints className="size-5 text-emerald-400" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold text-white truncate">
-                        {recommendedShoe.name || `${recommendedShoe.brand} ${recommendedShoe.model}`}
+                        {recommendedShoe.name ||
+                          `${recommendedShoe.brand} ${recommendedShoe.model}`}
                       </p>
                       <p className="text-[11px] text-slate-400">
-                        Categoría: {SHOE_CATEGORIES.find(c => c.value === recommendedShoe.category)?.label || "Entrenamiento"}
+                        Categoría:{" "}
+                        {SHOE_CATEGORIES.find(
+                          (c) => c.value === recommendedShoe.category,
+                        )?.label || "Entrenamiento"}
                       </p>
                     </div>
                   </div>
                 ) : (
                   <p className="text-xs text-slate-400">
-                    Asigna categorías en el <strong>Shoe Locker</strong> para recibir la recomendación ideal según la intensidad del entreno.
+                    Asigna categorías en el <strong>Shoe Locker</strong> para
+                    recibir la recomendación ideal según la intensidad del
+                    entreno.
                   </p>
                 )}
               </div>
@@ -278,7 +294,9 @@ export function WorkoutBlocksDrawer({
                 <h4 className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                   Objetivo Principal
                 </h4>
-                <p className="text-sm font-semibold text-white">{workout.objective}</p>
+                <p className="text-sm font-semibold text-white">
+                  {workout.objective}
+                </p>
               </div>
             ) : null}
 
@@ -295,19 +313,25 @@ export function WorkoutBlocksDrawer({
 
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-xl border border-slate-800 bg-slate-800/60 p-3">
-                <p className="text-[10px] uppercase font-bold text-slate-400">Distancia</p>
+                <p className="text-[10px] uppercase font-bold text-slate-400">
+                  Distancia
+                </p>
                 <p className="text-sm font-extrabold text-white">
                   {formatDistance(summaryDistance)}
                 </p>
               </div>
               <div className="rounded-xl border border-slate-800 bg-slate-800/60 p-3">
-                <p className="text-[10px] uppercase font-bold text-slate-400">Duración</p>
+                <p className="text-[10px] uppercase font-bold text-slate-400">
+                  Duración
+                </p>
                 <p className="text-sm font-extrabold text-white">
                   {formatDuration(workout.duration_seconds)}
                 </p>
               </div>
               <div className="rounded-xl border border-slate-800 bg-slate-800/60 p-3">
-                <p className="text-[10px] uppercase font-bold text-slate-400">Ritmo Medio</p>
+                <p className="text-[10px] uppercase font-bold text-slate-400">
+                  Ritmo Medio
+                </p>
                 <p className="text-sm font-extrabold text-emerald-400">
                   {formatPace(workout.pace_seconds_per_km)}
                 </p>
@@ -318,7 +342,9 @@ export function WorkoutBlocksDrawer({
               <div className="flex flex-col gap-3">
                 <h3 className="text-sm font-bold text-white flex items-center justify-between">
                   <span>Estructura de Bloques</span>
-                  <span className="text-xs font-semibold text-slate-400">{blocks.length} bloques</span>
+                  <span className="text-xs font-semibold text-slate-400">
+                    {blocks.length} bloques
+                  </span>
                 </h3>
                 <div className="flex flex-col gap-2">
                   {blocks.map((block) => (
@@ -347,30 +373,49 @@ export function WorkoutBlocksDrawer({
                     <TableHeader>
                       <TableRow className="border-slate-800">
                         <TableHead className="text-slate-400">Bloque</TableHead>
-                        <TableHead className="w-16 text-slate-400">Reps</TableHead>
-                        <TableHead className="text-slate-400">Distancia</TableHead>
-                        <TableHead className="text-slate-400">Duración</TableHead>
+                        <TableHead className="w-16 text-slate-400">
+                          Reps
+                        </TableHead>
+                        <TableHead className="text-slate-400">
+                          Distancia
+                        </TableHead>
+                        <TableHead className="text-slate-400">
+                          Duración
+                        </TableHead>
                         <TableHead className="text-slate-400">Ritmo</TableHead>
-                        <TableHead className="text-slate-400">Recuperación</TableHead>
+                        <TableHead className="text-slate-400">
+                          Recuperación
+                        </TableHead>
                         <TableHead className="text-slate-400">Notas</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {blocks.map((block) => (
-                        <TableRow key={block.id} className="hover:bg-slate-800/60 border-slate-800/80">
+                        <TableRow
+                          key={block.id}
+                          className="hover:bg-slate-800/60 border-slate-800/80"
+                        >
                           <TableCell className="font-bold text-white">
                             {BLOCK_TYPE_META[block.block_type].label}
                           </TableCell>
-                          <TableCell className="text-slate-300">{block.repeats}</TableCell>
+                          <TableCell className="text-slate-300">
+                            {block.repeats}
+                          </TableCell>
                           <TableCell className="text-slate-300">
                             {formatBlockDistance(block.distance_m)}
                           </TableCell>
                           <TableCell className="text-slate-300">
                             {formatDuration(block.duration_seconds)}
                           </TableCell>
-                          <TableCell className="text-emerald-400 font-semibold">{formatPaceRange(block)}</TableCell>
-                          <TableCell className="text-slate-300">{formatRecovery(block)}</TableCell>
-                          <TableCell className="text-slate-400">{block.notes ?? "—"}</TableCell>
+                          <TableCell className="text-emerald-400 font-semibold">
+                            {formatPaceRange(block)}
+                          </TableCell>
+                          <TableCell className="text-slate-300">
+                            {formatRecovery(block)}
+                          </TableCell>
+                          <TableCell className="text-slate-400">
+                            {block.notes ?? "—"}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -431,7 +476,10 @@ export function WorkoutBlocksDrawer({
                   statusMutation.mutate(value as StatusOption)
                 }
               >
-                <SelectTrigger id="workout-status" className="min-w-0 flex-1 bg-slate-800 border-slate-700 text-white rounded-xl">
+                <SelectTrigger
+                  id="workout-status"
+                  className="min-w-0 flex-1 bg-slate-800 border-slate-700 text-white rounded-xl"
+                >
                   {statusMutation.isPending ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : null}

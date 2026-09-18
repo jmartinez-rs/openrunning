@@ -28,20 +28,20 @@ import {
 import { ActivitiesService, AnalyticsService, RacesService } from "@/client"
 import { formatPace } from "@/components/Activities/activity-utils"
 import { ChartCard } from "@/components/Analytics/ChartCard"
-import { RunningHeatmap } from "@/components/Analytics/RunningHeatmap"
-import { StatTile } from "@/components/Analytics/StatTile"
 import {
   AXIS_TICK_STYLE,
   CHART_HEIGHTS,
   DOMAIN_COLORS,
   TOOLTIP_CONTENT_STYLE,
 } from "@/components/Analytics/chart-theme"
+import { RunningHeatmap } from "@/components/Analytics/RunningHeatmap"
+import { StatTile } from "@/components/Analytics/StatTile"
 import { Button } from "@/components/ui/button"
 
-export const Route = createFileRoute("/_layout/analytics/")(({
+export const Route = createFileRoute("/_layout/analytics/")({
   component: RunningStats,
   head: () => ({ meta: [{ title: "Stats - OpenRunning" }] }),
-}))
+})
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -169,7 +169,7 @@ function RunningStats() {
   // ── Derived data ──
 
   const rawActivities = activitiesQuery.data?.data ?? []
-  
+
   const allRaces = racesQuery.data?.data ?? []
   const pastRaces = allRaces.filter((r) => new Date(r.date) <= new Date())
   const pastRacesCount = pastRaces.length
@@ -185,19 +185,26 @@ function RunningStats() {
       source_id: `race-${r.id}`,
       user_id: r.user_id,
       created_at: r.created_at,
-      duration_seconds: r.official_time_seconds || r.chip_time_seconds || (r as any).target_time_seconds || 0,
+      duration_seconds:
+        r.official_time_seconds ||
+        r.chip_time_seconds ||
+        (r as any).target_time_seconds ||
+        0,
       cardio: {
         distance_meters: r.distance_km * 1000,
-        avg_pace_seconds_per_km: r.official_pace_seconds_per_km || (r as any).target_pace_seconds_per_km || 0,
+        avg_pace_seconds_per_km:
+          r.official_pace_seconds_per_km ||
+          (r as any).target_pace_seconds_per_km ||
+          0,
       } as any,
     }))
-  
+
   const allActivities = [...rawActivities, ...unlinkedRacesAsActivities].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
   )
 
   const totalActivities = allActivities.length
-  
+
   const thisMonthKey = new Date().toISOString().slice(0, 7)
   const thisMonthRuns = allActivities.filter(
     (a) => a.timestamp?.slice(0, 7) === thisMonthKey,
@@ -240,20 +247,25 @@ function RunningStats() {
       km: Number(m.distance_meters ?? 0) / 1000,
       sessions: Number(m.sessions ?? 0),
     }))
-    
+
     // Add unlinked races to the monthly aggregations
     for (const r of unlinkedRacesAsActivities) {
       if (!r.cardio?.distance_meters) continue
       const monthKey = r.timestamp.slice(0, 7)
-      let bucket = backendData.find(b => b.monthKey === monthKey)
+      let bucket = backendData.find((b) => b.monthKey === monthKey)
       if (!bucket) {
-        bucket = { name: formatMonthLabel(monthKey), monthKey, km: 0, sessions: 0 }
+        bucket = {
+          name: formatMonthLabel(monthKey),
+          monthKey,
+          km: 0,
+          sessions: 0,
+        }
         backendData.push(bucket)
       }
       bucket.km += r.cardio.distance_meters / 1000
       bucket.sessions += 1
     }
-    
+
     return backendData.sort((a, b) => a.monthKey.localeCompare(b.monthKey))
   }, [cardioMonthlyQuery.data, unlinkedRacesAsActivities])
 
@@ -309,15 +321,17 @@ function RunningStats() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between pt-2">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Estadísticas</h1>
-          <p className="text-xs font-medium text-slate-400">
+          <h1 className="text-2xl font-black font-display text-foreground tracking-tight">
+            Estadísticas
+          </h1>
+          <p className="text-xs font-medium text-muted-foreground">
             Progreso e historial de rendimiento
           </p>
         </div>
         <Button
           variant="outline"
           size="sm"
-          className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white rounded-xl text-xs font-bold"
+          className="bg-secondary border-border text-muted-foreground hover:bg-surface-bright hover:text-foreground rounded-full text-xs font-bold"
           onClick={() => navigate({ to: "/activities" })}
         >
           Historial
@@ -346,20 +360,20 @@ function RunningStats() {
           icon={<Timer className="size-4" />}
           label="Ritmo 30d"
           value={avgPace30d ? formatPace(avgPace30d) : "—"}
-          valueColor={
-            avgPace30d ? DOMAIN_COLORS.cardio : undefined
-          }
+          valueColor={avgPace30d ? DOMAIN_COLORS.cardio : undefined}
         />
       </div>
 
       {/* ── Activity Heatmap ── */}
-      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4 sm:p-5 shadow-xl">
-        <h2 className="mb-3 text-xs font-extrabold uppercase tracking-wider text-slate-400">
+      <div className="rounded-2xl bg-card border border-border p-4 sm:p-5 shadow-card transition-all hover:border-primary/20">
+        <h2 className="mb-3 text-[11px] font-bold uppercase font-display tracking-wider text-muted-foreground">
           Actividad — últimos 12 meses{" "}
-          <span className="normal-case tracking-normal font-normal text-slate-500">· por distancia</span>
+          <span className="normal-case tracking-normal font-normal font-sans opacity-70">
+            · por distancia
+          </span>
         </h2>
         {activitiesQuery.isLoading ? (
-          <div className="h-28 animate-pulse rounded-xl bg-slate-800/60" />
+          <div className="h-28 animate-pulse rounded-xl bg-secondary" />
         ) : (
           <RunningHeatmap
             data={heatmapData}
@@ -387,15 +401,15 @@ function RunningStats() {
           {paces.map((pace, index) => (
             <div
               key={index}
-              className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-800/40 px-3.5 py-2.5"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-secondary/30 px-3.5 py-2.5"
             >
-              <span className="text-sm font-bold text-white">
+              <span className="text-sm font-bold font-display text-foreground">
                 {String(pace.distance_label)}
               </span>
-              <span className="text-lg font-black tabular-nums text-emerald-400">
+              <span className="text-lg font-black font-display tabular-nums text-primary">
                 {formatPace(Number(pace.pace_seconds_per_km))}
               </span>
-              <span className="text-xs font-medium text-slate-400">
+              <span className="text-xs font-medium text-muted-foreground">
                 {String(pace.date ?? "").slice(0, 10)}
               </span>
             </div>
@@ -479,10 +493,7 @@ function RunningStats() {
                     "Tiempo",
                   ]}
                 />
-                <Legend
-                  iconType="circle"
-                  wrapperStyle={{ fontSize: "12px" }}
-                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: "12px" }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -528,10 +539,7 @@ function RunningStats() {
                   tick={AXIS_TICK_STYLE}
                 />
                 <Tooltip contentStyle={TOOLTIP_CONTENT_STYLE} />
-                <Legend
-                  iconType="circle"
-                  wrapperStyle={{ fontSize: "12px" }}
-                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: "12px" }} />
                 <Line
                   type="monotone"
                   dataKey="maxHr"
@@ -675,13 +683,13 @@ function RunningStats() {
       {recentActivities.length > 0 && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+            <h3 className="text-[11px] font-bold font-display uppercase tracking-wider text-muted-foreground">
               Últimas carreras
             </h3>
             <Button
               variant="ghost"
               size="sm"
-              className="text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl"
+              className="text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full"
               onClick={() => navigate({ to: "/activities" })}
             >
               Todas ({totalActivities})
@@ -707,16 +715,16 @@ function RunningStats() {
                   key={activity.id}
                   to="/activities/$activityId"
                   params={{ activityId: activity.id }}
-                  className="flex items-center gap-3.5 rounded-2xl bg-slate-900 border border-slate-800 px-4 py-3 shadow-lg transition-all hover:bg-slate-800/60 hover:border-slate-700"
+                  className="flex items-center gap-3.5 rounded-2xl bg-card border border-border px-4 py-3 shadow-card transition-all hover:bg-secondary hover:border-primary/20 group"
                 >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 font-bold">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold group-hover:scale-110 transition-transform">
                     <MapPin className="size-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-bold text-white">
+                    <p className="truncate text-sm font-bold font-display text-foreground">
                       {activity.name || "Carrera"}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-muted-foreground">
                       {dateStr}
                       {km && ` · ${km} km`}
                       {activity.duration_seconds
@@ -725,11 +733,11 @@ function RunningStats() {
                     </p>
                   </div>
                   {pace && (
-                    <span className="shrink-0 text-xs font-extrabold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20 tabular-nums">
+                    <span className="shrink-0 text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20 tabular-nums">
                       {pace} /km
                     </span>
                   )}
-                  <ChevronRight className="size-4 shrink-0 text-slate-500" />
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                 </Link>
               )
             })}

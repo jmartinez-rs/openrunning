@@ -1,13 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { Globe, Moon, Scale } from "lucide-react"
 import { useState } from "react"
-
+import { IntegrationsSettings } from "@/components/Settings/IntegrationsSettings"
 import {
   SettingsRow,
   SettingsSection,
   SettingsSegmented,
 } from "@/components/Settings/SettingsSection"
-import { IntegrationsSettings } from "@/components/Settings/IntegrationsSettings"
 import { WeeklyGoals } from "@/components/Settings/WeeklyGoals"
 import { WeeklyPlan } from "@/components/Settings/WeeklyPlan"
 import ChangePassword from "@/components/UserSettings/ChangePassword"
@@ -43,7 +42,8 @@ function UserSettings() {
           Configuración
         </h1>
         <p className="mt-1 text-sm text-slate-400">
-          Gestioná tu perfil, preferencias del sistema, integraciones y objetivos.
+          Gestioná tu perfil, preferencias del sistema, integraciones y
+          objetivos.
         </p>
       </div>
 

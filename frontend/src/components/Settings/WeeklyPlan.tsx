@@ -8,7 +8,6 @@ import {
   RoutinesService,
   type TrainingPlanDayBase,
 } from "@/client"
-import { SettingsRow } from "./SettingsSection"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -21,6 +20,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { SettingsRow } from "./SettingsSection"
 
 type DayKind = "strength" | "running" | "rest"
 
@@ -189,7 +189,10 @@ export function WeeklyPlan() {
     return (
       <div className="space-y-2">
         {Array.from({ length: 7 }).map((_, index) => (
-          <Skeleton key={index} className="h-14 w-full rounded-xl bg-slate-900/60" />
+          <Skeleton
+            key={index}
+            className="h-14 w-full rounded-xl bg-slate-900/60"
+          />
         ))}
       </div>
     )
@@ -207,7 +210,8 @@ export function WeeklyPlan() {
           subtitle={
             day.kind === "rest"
               ? "Día de descanso"
-              : day.label || (day.kind === "running" ? "Carrera" : "Sesión de fuerza")
+              : day.label ||
+                (day.kind === "running" ? "Carrera" : "Sesión de fuerza")
           }
         >
           <div className="flex flex-wrap items-center gap-2">

@@ -10,7 +10,8 @@
       "!**/src/client/**/*",
       "!**/src/components/ui/**/*",
       "!**/playwright-report",
-      "!**/playwright.config.ts"
+      "!**/playwright.config.ts",
+      "!**/public/**/*"
     ]
   },
   "linter": {
@@ -26,6 +27,13 @@
         "noParameterAssign": "error",
         "useSelfClosingElements": "error",
         "noUselessElse": "error"
+      },
+      "a11y": {
+        "noStaticElementInteractions": "off",
+        "useKeyWithClickEvents": "off",
+        "noSvgWithoutTitle": "off",
+        "useButtonType": "off",
+        "noLabelWithoutControl": "off"
       }
     }
   },

@@ -3,11 +3,11 @@ import { Dumbbell, Loader2, Unplug } from "lucide-react"
 import { useState } from "react"
 
 import { type HevyCredentialsIn, SettingsService } from "@/client"
-import { SettingsRow } from "./SettingsSection"
 import { Button } from "@/components/ui/button"
 import { PasswordInput } from "@/components/ui/password-input"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { SettingsRow } from "./SettingsSection"
 
 export function HevyIntegration() {
   const queryClient = useQueryClient()
@@ -48,7 +48,8 @@ export function HevyIntegration() {
   })
 
   const disconnectMutation = useMutation({
-    mutationFn: () => SettingsService.disconnectIntegration({ provider: "hevy" }),
+    mutationFn: () =>
+      SettingsService.disconnectIntegration({ provider: "hevy" }),
     onSuccess: () => {
       showSuccessToast("Hevy desconectado")
       queryClient.invalidateQueries({

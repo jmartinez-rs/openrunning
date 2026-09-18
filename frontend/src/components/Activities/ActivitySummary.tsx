@@ -1,4 +1,4 @@
-import { Clock, Dumbbell, Layers, Weight, Activity } from "lucide-react"
+import { Activity, Clock, Dumbbell, Layers, Weight } from "lucide-react"
 
 import type { ActivityStrengthBase } from "@/client"
 
@@ -34,8 +34,12 @@ function StatItem({
         {icon}
       </div>
       <div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
-        <p className="text-xs sm:text-sm font-extrabold text-white tracking-tight">{value}</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          {label}
+        </p>
+        <p className="text-xs sm:text-sm font-extrabold text-white tracking-tight">
+          {value}
+        </p>
       </div>
     </div>
   )
@@ -62,7 +66,9 @@ export function ActivitySummary({
     <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-5">
       <div className="flex items-center gap-2 pb-1 border-b border-slate-800/80">
         <Activity className="w-4 h-4 text-purple-400" />
-        <h2 className="text-sm font-bold text-white tracking-tight">Resumen de Sesión</h2>
+        <h2 className="text-sm font-bold text-white tracking-tight">
+          Resumen de Sesión
+        </h2>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -105,7 +111,9 @@ export function ActivitySummary({
                 <span className="font-semibold text-slate-300">
                   {SLUG_LABELS[slug] ?? slug}
                 </span>
-                <span className="font-bold text-purple-400 font-mono">{formatSets(value)} series</span>
+                <span className="font-bold text-purple-400 font-mono">
+                  {formatSets(value)} series
+                </span>
               </div>
               <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800/50">
                 <div
@@ -126,4 +134,3 @@ export function ActivitySummary({
     </div>
   )
 }
-

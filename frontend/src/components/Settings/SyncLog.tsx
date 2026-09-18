@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query"
 import { History, Loader2 } from "lucide-react"
 
 import { SyncService } from "@/client"
-import { SettingsRow } from "./SettingsSection"
 import { cn } from "@/lib/utils"
+import { SettingsRow } from "./SettingsSection"
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("es-AR", {
