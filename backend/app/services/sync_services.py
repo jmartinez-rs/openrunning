@@ -101,34 +101,41 @@ except ImportError:
 
 
 def _ensure_strava_access(session: Session, token: AuthToken) -> str:
-    """Devuelve un access token vigente, refrescándolo si expiró."""
+    """Devuelve un access token vigente, refrescándolo si expiró o no existe."""
     access = _decrypt(token.access_token)
-    if not access:
-        return ""
     now = datetime.now(UTC)
-    if token.expires_at and token.expires_at <= now and token.refresh_token:
+
+    # Si tenemos un access token válido que no expiró, lo devolvemos
+    if access and (not token.expires_at or token.expires_at > now):
+        return access
+
+    # Si falta el access_token o ya expiró, intentamos refrescarlo si hay refresh_token
+    if token.refresh_token:
         metadata = _decrypt_metadata(token)
-        result = refresh_strava_token(
-            metadata.get("client_id", ""),
-            metadata.get("client_secret", ""),
-            _decrypt(token.refresh_token),
-        )
-        if result:
-            new_access = str(result.get("access_token", ""))
-            new_refresh = str(result.get("refresh_token", ""))
-            new_expires = None
-            if result.get("expires_at"):
-                new_expires = datetime.fromtimestamp(
-                    int(str(result["expires_at"])), tz=UTC
-                )
-            token.access_token = _encrypt_for_storage(new_access)
-            token.refresh_token = (
-                _encrypt_for_storage(new_refresh) if new_refresh else None
+        client_id = metadata.get("client_id", "")
+        client_secret = metadata.get("client_secret", "")
+        refresh_tok = _decrypt(token.refresh_token)
+        if client_id and client_secret and refresh_tok:
+            result = refresh_strava_token(
+                client_id,
+                client_secret,
+                refresh_tok,
             )
-            token.expires_at = new_expires
-            session.add(token)
-            session.commit()
-            return new_access
+            if result and result.get("access_token"):
+                new_access = str(result["access_token"])
+                new_refresh = str(result.get("refresh_token") or refresh_tok)
+                new_expires = None
+                if result.get("expires_at"):
+                    new_expires = datetime.fromtimestamp(
+                        int(str(result["expires_at"])), tz=UTC
+                    )
+                token.access_token = _encrypt_for_storage(new_access)
+                token.refresh_token = _encrypt_for_storage(new_refresh)
+                token.expires_at = new_expires
+                session.add(token)
+                session.commit()
+                return new_access
+
     return access
 
 

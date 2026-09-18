@@ -163,9 +163,10 @@
   flex: none;
   width: 14px;
   font-size: 11px;
-  color: hsl(var(--on-surface-variant));
+  color: #94a3b8;
   white-space: nowrap;
   overflow: visible;
+  font-weight: 500;
 }
 .hm-body {
   display: flex;
@@ -180,8 +181,9 @@
 .hm-days span {
   height: 11px;
   font-size: 10px;
-  color: hsl(var(--on-surface-variant));
+  color: #94a3b8;
   line-height: 11px;
+  font-weight: 500;
 }
 .hm-grid {
   display: flex;
@@ -196,36 +198,42 @@
   width: 11px;
   height: 11px;
   border-radius: 3px;
-  background: hsl(var(--surface-variant));
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.03);
   flex: none;
   cursor: default;
 }
 .hm-c.l1 {
-  background: color-mix(in srgb, var(--domain-cardio) 30%, hsl(var(--surface-variant)));
+  background: #064e3b;
+  border-color: #047857;
 }
 .hm-c.l2 {
-  background: color-mix(in srgb, var(--domain-cardio) 55%, hsl(var(--surface-variant)));
+  background: #047857;
+  border-color: #059669;
 }
 .hm-c.l3 {
-  background: color-mix(in srgb, var(--domain-cardio) 78%, hsl(var(--surface-variant)));
+  background: #059669;
+  border-color: #10b981;
 }
 .hm-c.l4 {
-  background: var(--domain-cardio);
+  background: #10b981;
+  border-color: #34d399;
 }
 .hm-c.today {
-  box-shadow: 0 0 0 1.5px var(--domain-cardio);
+  box-shadow: 0 0 0 1.5px #10b981;
 }
 .hm-c.future {
-  opacity: 0.3;
+  opacity: 0.2;
 }
 .hm-legend {
   display: flex;
   align-items: center;
   gap: 4px;
   justify-content: flex-end;
-  margin-top: 9px;
+  margin-top: 10px;
   font-size: 11px;
-  color: hsl(var(--on-surface-variant));
+  color: #94a3b8;
+  font-weight: 500;
 }
 .hm-legend .hm-c {
   width: 10px;

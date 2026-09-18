@@ -8,19 +8,19 @@ interface StatTileProps {
   valueColor?: string
 }
 
-/**
- * Summary tile inspired by OpenGym's .tiles grid.
- * Renders an icon + label row and a large numeric value below.
- */
 export function StatTile({ icon, label, value, valueColor }: StatTileProps) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-2xl bg-card p-4 shadow-card dark:border dark:border-border/50">
-      <div className="flex items-center gap-2 text-on-surface-variant">
-        <span className="text-base">{icon}</span>
-        <span className="text-label-sm uppercase tracking-wide">{label}</span>
+    <div className="flex flex-col gap-2 rounded-2xl bg-slate-900 border border-slate-800 p-4 shadow-xl hover:border-slate-700 transition-all">
+      <div className="flex items-center gap-2">
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+          {icon}
+        </div>
+        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 truncate">
+          {label}
+        </span>
       </div>
       <div
-        className="text-[26px] font-semibold leading-tight tracking-tight tabular-nums"
+        className="text-2xl font-black tracking-tight text-white tabular-nums mt-0.5"
         style={valueColor ? { color: valueColor } : undefined}
       >
         {value}

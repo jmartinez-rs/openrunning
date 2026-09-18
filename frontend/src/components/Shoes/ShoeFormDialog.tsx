@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { ImagePlus, Loader2, X } from "lucide-react"
+import { ImagePlus, Loader2, Footprints, X } from "lucide-react"
 import { useState } from "react"
 
 import {
@@ -48,7 +48,7 @@ export function ShoeFormDialog({
     shoe?.purchase_date ? shoe.purchase_date.slice(0, 10) : "",
   )
   const [targetDistanceKm, setTargetDistanceKm] = useState(
-    shoe?.target_distance_km != null ? String(shoe.target_distance_km) : "",
+    shoe?.target_distance_km != null ? String(shoe.target_distance_km) : "700",
   )
   const [color, setColor] = useState(shoe?.color ?? "")
   const [photoUrl, setPhotoUrl] = useState(shoe?.photo_url ?? "")
@@ -66,7 +66,7 @@ export function ShoeFormDialog({
         purchase_date: purchaseDate
           ? new Date(`${purchaseDate}T12:00:00`).toISOString()
           : null,
-        target_distance_km: targetDistanceKm ? Number(targetDistanceKm) : null,
+        target_distance_km: targetDistanceKm ? Number(targetDistanceKm) : 700,
         color: color.trim() || null,
         photo_url: photoUrl || null,
         notes: notes.trim() || null,
@@ -125,103 +125,112 @@ export function ShoeFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {shoe ? "Editar zapatilla" : "Registrar zapatilla"}
+      <DialogContent className="w-full max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 bg-slate-900 border-slate-800 text-white shadow-2xl rounded-2xl">
+        <DialogHeader className="pr-6">
+          <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2 text-white">
+            <Footprints className="size-5 text-emerald-400 shrink-0" />
+            {shoe ? "Editar Zapatilla" : "Registrar Nueva Zapatilla"}
           </DialogTitle>
-          <DialogDescription>
-            Cargá los datos de tu calzado para trackear el desgaste.
+          <DialogDescription className="text-xs text-slate-400 mt-1">
+            Ingresá los detalles del calzado para el cálculo de desgaste y algoritmo Runna.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="shoe-name">Nombre *</Label>
+        <div className="flex flex-col gap-4 mt-2 w-full min-w-0">
+          <div className="flex flex-col gap-1.5 w-full">
+            <Label htmlFor="shoe-name" className="text-xs font-semibold text-slate-300">
+              Nombre / Apodo *
+            </Label>
             <Input
               id="shoe-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Nike Pegasus 41"
+              placeholder="Ej: Rodadoras Diarias / Pegasus 41"
+              className="w-full bg-slate-800 border-slate-700 text-white focus:border-emerald-500 rounded-xl"
             />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="shoe-brand">Marca</Label>
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 w-full">
+            <div className="flex flex-col gap-1.5 w-full">
+              <Label htmlFor="shoe-brand" className="text-xs font-semibold text-slate-300">Marca</Label>
               <Input
                 id="shoe-brand"
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                placeholder="Ej: Nike"
+                placeholder="Ej: Nike, Hoka, Asics"
+                className="w-full bg-slate-800 border-slate-700 text-white focus:border-emerald-500 rounded-xl"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="shoe-model">Modelo</Label>
+            <div className="flex flex-col gap-1.5 w-full">
+              <Label htmlFor="shoe-model" className="text-xs font-semibold text-slate-300">Modelo</Label>
               <Input
                 id="shoe-model"
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                placeholder="Ej: Pegasus 41"
+                placeholder="Ej: Vaporfly NEXT% 3"
+                className="w-full bg-slate-800 border-slate-700 text-white focus:border-emerald-500 rounded-xl"
               />
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="shoe-category">Categoría</Label>
+          <div className="flex flex-col gap-1.5 w-full">
+            <Label htmlFor="shoe-category" className="text-xs font-semibold text-slate-300">Categoría & Uso Recomendado</Label>
             <select
               id="shoe-category"
-              className="rounded-md border bg-background px-3 py-2 text-sm"
+              className="w-full max-w-full truncate rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white font-medium focus:border-emerald-500 focus:outline-none cursor-pointer"
               value={category}
               onChange={(e) =>
                 setCategory(e.target.value as ShoePublic["category"])
               }
             >
               {SHOE_CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value}>
+                <option key={cat.value} value={cat.value} className="bg-slate-900 text-white py-1">
                   {cat.label}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="shoe-purchase">Fecha de compra</Label>
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 w-full">
+            <div className="flex flex-col gap-1.5 w-full">
+              <Label htmlFor="shoe-purchase" className="text-xs font-semibold text-slate-300">Fecha de compra</Label>
               <Input
                 id="shoe-purchase"
                 type="date"
                 value={purchaseDate}
                 onChange={(e) => setPurchaseDate(e.target.value)}
+                className="w-full bg-slate-800 border-slate-700 text-white focus:border-emerald-500 rounded-xl"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="shoe-target">Vida útil (km)</Label>
+            <div className="flex flex-col gap-1.5 w-full">
+              <Label htmlFor="shoe-target" className="text-xs font-semibold text-slate-300">Vida útil estimada (km)</Label>
               <Input
                 id="shoe-target"
                 type="number"
-                step="10"
+                step="50"
                 value={targetDistanceKm}
                 onChange={(e) => setTargetDistanceKm(e.target.value)}
-                placeholder="Ej: 800"
+                placeholder="Ej: 700"
+                className="w-full bg-slate-800 border-slate-700 text-white font-extrabold focus:border-emerald-500 rounded-xl"
               />
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="shoe-color">Color</Label>
+          <div className="flex flex-col gap-1.5 w-full">
+            <Label htmlFor="shoe-color" className="text-xs font-semibold text-slate-300">Color distintivo (Hexadecimal)</Label>
             <Input
               id="shoe-color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              placeholder="Ej: #e11d48"
+              placeholder="Ej: #10b981 o #f59e0b"
+              className="w-full bg-slate-800 border-slate-700 text-white focus:border-emerald-500 rounded-xl"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label>Foto</Label>
+          <div className="flex flex-col gap-1.5 w-full">
+            <Label className="text-xs font-semibold text-slate-300">Foto de la zapatilla</Label>
             {photoUrl ? (
-              <div className="relative inline-block h-24 w-24 overflow-hidden rounded-lg border">
+              <div className="relative inline-block h-28 w-28 overflow-hidden rounded-xl border border-slate-700 bg-slate-800">
                 <img
                   src={photoUrl}
                   alt="Foto de la zapatilla"
@@ -229,19 +238,20 @@ export function ShoeFormDialog({
                 />
                 <button
                   type="button"
-                  className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white"
+                  className="absolute right-1 top-1 rounded-full bg-slate-900/80 p-1 text-white hover:bg-slate-900"
                   onClick={() => setPhotoUrl("")}
                 >
-                  <X className="size-3" />
+                  <X className="size-3.5" />
                 </button>
               </div>
             ) : (
-              <label className="flex h-24 w-24 cursor-pointer items-center justify-center rounded-lg border border-dashed text-muted-foreground hover:bg-muted">
+              <label className="flex h-24 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-700 bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
                 {uploading ? (
-                  <Loader2 className="size-5 animate-spin" />
+                  <Loader2 className="size-5 animate-spin text-emerald-400" />
                 ) : (
-                  <ImagePlus className="size-5" />
+                  <ImagePlus className="size-5 text-emerald-400" />
                 )}
+                <span className="text-xs font-semibold">Subir foto de calzado</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -252,37 +262,39 @@ export function ShoeFormDialog({
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="shoe-notes">Notas</Label>
+          <div className="flex flex-col gap-1.5 w-full">
+            <Label htmlFor="shoe-notes" className="text-xs font-semibold text-slate-300">Notas y sensaciones</Label>
             <textarea
               id="shoe-notes"
-              className="flex min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex min-h-20 w-full max-w-full rounded-xl border border-slate-700 bg-slate-800 p-3 text-sm text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none resize-none"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Sensaciones, uso habitual..."
+              placeholder="Ej: Calzado reservado únicamente para ritmos de umbral y series en pista..."
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-border/50 px-4 py-3">
-            <div>
-              <Label htmlFor="shoe-active">Activa</Label>
-              <p className="text-body-md text-on-surface-variant">
-                Zapatilla en uso actual
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-800/40 p-3.5 sm:p-4 w-full">
+            <div className="min-w-0 flex-1">
+              <Label htmlFor="shoe-active" className="font-bold text-sm text-white block truncate">Par en rotación activa</Label>
+              <p className="text-xs text-slate-400 truncate">
+                Al desmarcarla, se moverá al armario de retiradas.
               </p>
             </div>
             <Switch
               id="shoe-active"
               checked={isActive}
               onCheckedChange={setIsActive}
+              className="shrink-0"
             />
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="border-t border-slate-800 pt-4 mt-2 flex-col-reverse sm:flex-row gap-2">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
+            className="w-full sm:w-auto bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white rounded-xl"
           >
             Cancelar
           </Button>
@@ -290,11 +302,12 @@ export function ShoeFormDialog({
             type="button"
             disabled={!name.trim() || mutation.isPending}
             onClick={() => mutation.mutate()}
+            className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 rounded-xl cursor-pointer"
           >
             {mutation.isPending && (
               <Loader2 className="mr-2 size-4 animate-spin" />
             )}
-            Guardar
+            Guardar Zapatilla
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,9 +1,9 @@
 /**
- * Tema de charts para ATOS — Recharts.
+ * Tema de charts para OpenRunning — Recharts & Dark Slate.
  */
 export const DOMAIN_COLORS = {
-  cardio: "#ff5722",
-  strength: "#7c3aed",
+  cardio: "#10b981",
+  strength: "#8b5cf6",
   success: "#10b981",
   race: "#f59e0b",
   pace: "#14b8a6",
@@ -13,22 +13,25 @@ export const DOMAIN_COLORS = {
 export type DomainColorKey = keyof typeof DOMAIN_COLORS
 
 export const AXIS_TICK_STYLE = {
-  fill: "currentColor",
-  fontSize: 10,
+  fill: "#94a3b8",
+  fontSize: 11,
+  fontWeight: 500,
 } as const
 
 export const AXIS_LABEL_STYLE = {
-  fill: "currentColor",
+  fill: "#94a3b8",
   fontSize: 11,
+  fontWeight: 600,
 } as const
 
 export const TOOLTIP_CONTENT_STYLE = {
-  backgroundColor: "hsl(var(--card))",
-  borderColor: "hsl(var(--border))",
-  borderRadius: "8px",
-  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-  color: "hsl(var(--foreground))",
+  backgroundColor: "#0f172a",
+  borderColor: "#1e293b",
+  borderRadius: "12px",
+  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
+  color: "#f8fafc",
   fontSize: "12px",
+  fontWeight: "500",
 }
 
 export const CHART_HEIGHTS = {

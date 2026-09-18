@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { X, Check, Activity } from "lucide-react";
+import { X, Check, Activity, Footprints } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ShoesService, type ShoePublic } from "@/client";
 import { Stepper } from "../ui/Stepper";
 import { formatPace } from "../../lib/running-math";
 
@@ -25,8 +27,19 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
   const [durationMinutes, setDurationMinutes] = useState<number>(25);
   const [rpe, setRpe] = useState<number>(5);
   const [notes, setNotes] = useState<string>("");
+  const [shoeId, setShoeId] = useState<string>("");
   const [dateStr, setDateStr] = useState<string>(
     new Date().toISOString().split("T")[0]
+  );
+
+  const { data: shoesData } = useQuery({
+    queryKey: ["shoes"],
+    queryFn: () => ShoesService.readShoes({}),
+    enabled: isOpen,
+  });
+
+  const activeShoes: ShoePublic[] = (shoesData?.data ?? []).filter(
+    (s) => s.is_active !== false
   );
 
   if (!isOpen) return null;
@@ -52,6 +65,7 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
       distanceKm,
       durationSeconds,
       rpe,
+      shoeId: shoeId || undefined,
       notes,
     });
     onClose();
@@ -137,6 +151,25 @@ export const ManualRunSheet: React.FC<ManualRunSheetProps> = ({
               unit="/10"
               decimals={0}
             />
+          </div>
+
+          {/* Shoe Selector */}
+          <div>
+            <label className="text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
+              <Footprints className="size-3.5 text-emerald-400" /> Calzado utilizado
+            </label>
+            <select
+              value={shoeId}
+              onChange={(e) => setShoeId(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">Sin calzado asignado</option>
+              {activeShoes.map((shoe: ShoePublic) => (
+                <option key={shoe.id} value={shoe.id}>
+                  {shoe.name} {shoe.brand ? `(${shoe.brand})` : ""}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Notes */}

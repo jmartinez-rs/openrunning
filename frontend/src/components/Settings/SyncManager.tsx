@@ -15,6 +15,11 @@ export function SyncManager() {
     queryClient.invalidateQueries({ queryKey: ["sync-logs"] })
     queryClient.invalidateQueries({ queryKey: ["dashboard"] })
     queryClient.invalidateQueries({ queryKey: ["integration-status"] })
+    queryClient.invalidateQueries({ queryKey: ["activities"] })
+    queryClient.invalidateQueries({ queryKey: ["shoes"] })
+    queryClient.invalidateQueries({ queryKey: ["cardio-analytics"] })
+    queryClient.invalidateQueries({ queryKey: ["running-plan"] })
+    queryClient.invalidateQueries({ queryKey: ["running-plans"] })
   }
 
   const stravaSync = useMutation({

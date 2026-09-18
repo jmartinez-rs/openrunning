@@ -262,19 +262,19 @@ function RunningStats() {
   // ── Render ──
 
   return (
-    <div className="col-span-12 flex flex-col gap-5 pb-8">
-      {/* ── Header (OpenGym style) ── */}
-      <div className="flex items-end justify-between gap-3">
+    <div className="max-w-4xl mx-auto space-y-6 pb-20 px-2 sm:px-4">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between pt-2">
         <div>
-          <h1 className="text-headline-lg text-primary">Stats</h1>
-          <p className="text-body-md text-on-surface-variant">
-            Progreso e historial
+          <h1 className="text-2xl font-black text-white tracking-tight">Estadísticas</h1>
+          <p className="text-xs font-medium text-slate-400">
+            Progreso e historial de rendimiento
           </p>
         </div>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="text-on-surface-variant"
+          className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white rounded-xl text-xs font-bold"
           onClick={() => navigate({ to: "/activities" })}
         >
           Historial
@@ -310,13 +310,13 @@ function RunningStats() {
       </div>
 
       {/* ── Activity Heatmap ── */}
-      <div className="rounded-2xl bg-card p-4 shadow-card dark:border dark:border-border/50">
-        <h2 className="mb-3 text-label-sm uppercase tracking-wide text-on-surface-variant">
+      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4 sm:p-5 shadow-xl">
+        <h2 className="mb-3 text-xs font-extrabold uppercase tracking-wider text-slate-400">
           Actividad — últimos 12 meses{" "}
-          <span className="normal-case tracking-normal">· por distancia</span>
+          <span className="normal-case tracking-normal font-normal text-slate-500">· por distancia</span>
         </h2>
         {activitiesQuery.isLoading ? (
-          <div className="h-28 animate-pulse rounded-xl bg-surface-variant" />
+          <div className="h-28 animate-pulse rounded-xl bg-slate-800/60" />
         ) : (
           <RunningHeatmap
             data={heatmapData}
@@ -344,15 +344,15 @@ function RunningStats() {
           {paces.map((pace, index) => (
             <div
               key={index}
-              className="flex items-center justify-between gap-2 rounded-xl border border-border/50 bg-surface-container-low px-3 py-2.5"
+              className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-800/40 px-3.5 py-2.5"
             >
-              <span className="text-body-md font-medium text-primary">
+              <span className="text-sm font-bold text-white">
                 {String(pace.distance_label)}
               </span>
-              <span className="text-title-lg font-semibold tabular-nums text-domain-cardio">
+              <span className="text-lg font-black tabular-nums text-emerald-400">
                 {formatPace(Number(pace.pace_seconds_per_km))}
               </span>
-              <span className="text-label-sm text-on-surface-variant">
+              <span className="text-xs font-medium text-slate-400">
                 {String(pace.date ?? "").slice(0, 10)}
               </span>
             </div>
@@ -374,7 +374,7 @@ function RunningStats() {
             latestHrZones === null
           }
         >
-          <div className="text-on-surface-variant">
+          <div className="text-slate-300">
             <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
               <PieChart>
                 <Pie
@@ -457,7 +457,7 @@ function RunningStats() {
             hrTrendData === null
           }
         >
-          <div className="text-on-surface-variant">
+          <div className="text-slate-300">
             <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
               <LineChart
                 data={(hrTrendData?.labels ?? []).map((lbl, i) => ({
@@ -470,7 +470,7 @@ function RunningStats() {
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke="hsl(var(--border))"
+                  stroke="#1e293b"
                 />
                 <XAxis
                   dataKey="name"
@@ -531,7 +531,7 @@ function RunningStats() {
             monthlyKm.length === 0
           }
         >
-          <div className="text-on-surface-variant">
+          <div className="text-slate-300">
             <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
               <BarChart
                 data={monthlyKm}
@@ -540,7 +540,7 @@ function RunningStats() {
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke="hsl(var(--border))"
+                  stroke="#1e293b"
                 />
                 <XAxis
                   dataKey="name"
@@ -557,7 +557,7 @@ function RunningStats() {
                 <Tooltip
                   contentStyle={TOOLTIP_CONTENT_STYLE}
                   cursor={{
-                    fill: "var(--color-surface-container-high, rgba(128,128,128,0.1))",
+                    fill: "rgba(255,255,255,0.05)",
                   }}
                   formatter={(val: any) => [
                     `${Number(val).toFixed(1)} km`,
@@ -586,7 +586,7 @@ function RunningStats() {
             monthlyKm.length === 0
           }
         >
-          <div className="text-on-surface-variant">
+          <div className="text-slate-300">
             <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
               <BarChart
                 data={monthlyKm}
@@ -595,7 +595,7 @@ function RunningStats() {
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke="hsl(var(--border))"
+                  stroke="#1e293b"
                 />
                 <XAxis
                   dataKey="name"
@@ -613,7 +613,7 @@ function RunningStats() {
                 <Tooltip
                   contentStyle={TOOLTIP_CONTENT_STYLE}
                   cursor={{
-                    fill: "var(--color-surface-container-high, rgba(128,128,128,0.1))",
+                    fill: "rgba(255,255,255,0.05)",
                   }}
                 />
                 <Bar
@@ -632,20 +632,20 @@ function RunningStats() {
       {recentActivities.length > 0 && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-label-sm uppercase tracking-wide text-on-surface-variant">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
               Últimas carreras
             </h3>
             <Button
               variant="ghost"
               size="sm"
-              className="text-on-surface-variant"
+              className="text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl"
               onClick={() => navigate({ to: "/activities" })}
             >
-              Todas {totalRuns}
+              Todas ({totalRuns})
               <ChevronRight className="ml-1 size-4" />
             </Button>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {recentActivities.map((activity) => {
               const km = activity.cardio?.distance_meters
                 ? (activity.cardio.distance_meters / 1000).toFixed(1)
@@ -664,16 +664,16 @@ function RunningStats() {
                   key={activity.id}
                   to="/activities/$activityId"
                   params={{ activityId: activity.id }}
-                  className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-card transition-colors hover:bg-surface-container-low dark:border dark:border-border/50"
+                  className="flex items-center gap-3.5 rounded-2xl bg-slate-900 border border-slate-800 px-4 py-3 shadow-lg transition-all hover:bg-slate-800/60 hover:border-slate-700"
                 >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-domain-cardio/10 text-domain-cardio">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 font-bold">
                     <MapPin className="size-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="truncate text-body-md font-medium text-primary">
+                    <p className="truncate text-sm font-bold text-white">
                       {activity.name || "Carrera"}
                     </p>
-                    <p className="text-label-sm text-on-surface-variant">
+                    <p className="text-xs text-slate-400">
                       {dateStr}
                       {km && ` · ${km} km`}
                       {activity.duration_seconds
@@ -682,11 +682,11 @@ function RunningStats() {
                     </p>
                   </div>
                   {pace && (
-                    <span className="shrink-0 text-label-sm font-semibold tabular-nums text-domain-cardio">
+                    <span className="shrink-0 text-xs font-extrabold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20 tabular-nums">
                       {pace} /km
                     </span>
                   )}
-                  <ChevronRight className="size-4 shrink-0 text-on-surface-variant" />
+                  <ChevronRight className="size-4 shrink-0 text-slate-500" />
                 </Link>
               )
             })}

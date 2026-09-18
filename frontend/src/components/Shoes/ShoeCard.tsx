@@ -1,21 +1,16 @@
 import { Link } from "@tanstack/react-router"
-import { Footprints } from "lucide-react"
+import { AlertTriangle, Footprints, Gauge } from "lucide-react"
 
 import type { ShoePublic, ShoeStatsPublic } from "@/client"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import {
+  checkRotationAlert,
   formatKm,
   formatPace,
-  shoeCategoryLabel,
-  usagePercent,
+  getFoamHealth,
+  shoeCategoryMeta,
 } from "./shoe-utils"
-
-const CATEGORY_BADGE: Record<string, string> = {
-  training: "bg-domain-cardio/10 text-domain-cardio",
-  race: "bg-domain-race/10 text-domain-race",
-  trail: "bg-emerald-500/10 text-emerald-600",
-  easy: "bg-teal-500/10 text-teal-600",
-  mixed: "bg-domain-strength/10 text-domain-strength",
-}
 
 export function ShoeCard({
   shoe,
@@ -24,95 +19,128 @@ export function ShoeCard({
   shoe: ShoePublic
   stats?: ShoeStatsPublic | null
 }) {
-  const percent = usagePercent(
+  const health = getFoamHealth(
     stats?.total_distance_meters,
     shoe.target_distance_km,
   )
+  const categoryMeta = shoeCategoryMeta(shoe.category)
+  const rotationAlert = checkRotationAlert(shoe.id, [])
 
   return (
     <Link to="/shoes/$shoeId" params={{ shoeId: shoe.id }}>
-      <div className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-card transition-colors hover:border hover:border-primary/30 dark:border dark:border-border/50">
-        {/* Image / placeholder — identical fixed height on both branches */}
-        {shoe.photo_url ? (
-          <div className="relative h-20 overflow-hidden sm:h-28">
+      <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-xl transition-all duration-200 hover:border-emerald-500/40 hover:bg-slate-900/90 cursor-pointer">
+        {/* Photo / Color Header Avatar */}
+        <div className="relative h-32 w-full overflow-hidden rounded-xl bg-slate-800/80">
+          {shoe.photo_url ? (
             <img
               src={shoe.photo_url}
               alt={shoe.name}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          </div>
-        ) : (
-          <div
-            className="flex h-20 items-center justify-center sm:h-28"
-            style={
-              shoe.color
-                ? {
-                    background: `color-mix(in srgb, ${shoe.color} 12%, var(--surface-container-low))`,
-                  }
-                : undefined
-            }
-          >
-            <Footprints className="size-8 text-on-surface-variant/40 sm:size-10" />
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="flex flex-col gap-2 p-3 sm:gap-2.5 sm:p-4">
-          {/* Name + brand */}
-          <div className="min-w-0">
-            <h3 className="truncate text-title-lg text-primary">{shoe.name}</h3>
-            <p className="truncate text-body-sm text-on-surface-variant">
-              {[shoe.brand, shoe.model].filter(Boolean).join(" · ") || "—"}
-            </p>
-          </div>
-
-          {/* Badges */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span
-              className={`w-fit rounded-full px-2.5 py-0.5 text-label-sm ${CATEGORY_BADGE[shoe.category] ?? "bg-surface-container-low text-on-surface-variant"}`}
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center relative overflow-hidden"
+              style={
+                shoe.color
+                  ? {
+                      background: `linear-gradient(135deg, ${shoe.color} 25%, #0f172a 100%)`,
+                    }
+                  : {
+                      background: "linear-gradient(135deg, #1e293b 0%, #064e3b 100%)",
+                    }
+              }
             >
-              {shoeCategoryLabel(shoe.category)}
-            </span>
+              <Footprints className="size-12 text-white/30 transition-transform group-hover:scale-110" />
+            </div>
+          )}
+
+          {/* Top badges over photo */}
+          <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5 z-10">
+            <Badge className={cn("text-[10px] font-extrabold uppercase border px-2 py-0.5", categoryMeta.badgeClass)}>
+              {categoryMeta.shortLabel}
+            </Badge>
+
             {shoe.strava_gear_id && (
-              <span className="w-fit rounded-full bg-surface-container-low px-2.5 py-0.5 text-label-sm text-on-surface-variant">
-                Strava
-              </span>
+              <Badge className="bg-slate-900/80 text-slate-300 border-slate-700 text-[10px] font-bold backdrop-blur-xs">
+                Strava Gear
+              </Badge>
             )}
           </div>
 
-          {/* Progress bar */}
-          <div className="flex flex-col gap-1">
-            <div className="h-1.5 overflow-hidden rounded-full bg-surface-container-low">
-              <div
-                className="h-full rounded-full bg-domain-cardio transition-all duration-500"
-                style={{ width: `${percent}%` }}
-              />
-            </div>
-            <p className="text-label-sm text-on-surface-variant">
-              {formatKm(stats?.total_distance_meters)}
-              {shoe.target_distance_km
-                ? ` / ${shoe.target_distance_km} km`
-                : ""}
+          {/* Foam Health Pill */}
+          <div className="absolute right-2.5 top-2.5 z-10">
+            <Badge className={cn("text-[10px] font-extrabold border px-2 py-0.5 shadow-md", health.badgeClass)}>
+              {health.percent}% salud
+            </Badge>
+          </div>
+        </div>
+
+        {/* Shoe Info Body */}
+        <div className="flex flex-col gap-3 pt-3">
+          <div className="min-w-0">
+            <h3 className="truncate text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
+              {shoe.name}
+            </h3>
+            <p className="truncate text-xs font-medium text-slate-400 mt-0.5">
+              {[shoe.brand, shoe.model].filter(Boolean).join(" · ") || "Sin especificación de modelo"}
             </p>
           </div>
 
-          {/* Footer: sessions + pace */}
-          {(stats?.sessions != null ||
-            stats?.avg_pace_seconds_per_km != null) && (
-            <div className="flex items-center gap-3 border-t border-border/50 pt-2 text-body-sm text-on-surface-variant sm:pt-2.5">
-              {stats?.sessions != null && (
-                <span className="flex items-center gap-1">
-                  <Footprints className="size-3.5" />
-                  {stats.sessions}{" "}
-                  {stats.sessions === 1 ? "sesión" : "sesiones"}
-                </span>
-              )}
-              {stats?.avg_pace_seconds_per_km != null && (
-                <span>{formatPace(stats.avg_pace_seconds_per_km)}</span>
-              )}
+          {/* Wear Progress Bar */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-400">
+                Vida útil de espuma
+              </span>
+              <span className="font-bold text-white">
+                {formatKm(stats?.total_distance_meters)} / {health.targetKm} km
+              </span>
+            </div>
+
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800 border border-slate-700/50 p-0.5">
+              <div
+                className={cn(
+                  "h-full rounded-full bg-gradient-to-r transition-all duration-500",
+                  health.barColorClass,
+                )}
+                style={{ width: `${Math.min(health.percent, 100)}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px]">
+              <span className={cn("font-bold", health.status === "optimal" ? "text-emerald-400" : health.status === "warning" ? "text-amber-400" : "text-red-400")}>
+                ● {health.statusLabel}
+              </span>
+              <span className="text-slate-400 font-medium">
+                Quedan ~{health.remainingKm} km
+              </span>
+            </div>
+          </div>
+
+          {/* Rotation alert if applicable */}
+          {rotationAlert.needsRest && (
+            <div className="flex items-center gap-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 p-2 text-[11px] font-semibold text-amber-400">
+              <AlertTriangle className="size-3.5 shrink-0" />
+              <span className="truncate">Rotación sugerida por entreno reciente</span>
             </div>
           )}
+
+          {/* Stats Footer */}
+          <div className="flex items-center justify-between border-t border-slate-800 pt-2.5 text-xs text-slate-400 font-medium">
+            <span className="flex items-center gap-1 text-slate-300">
+              <Footprints className="size-3.5 text-slate-500" />
+              {stats?.sessions ?? 0} {stats?.sessions === 1 ? "sesión" : "sesiones"}
+            </span>
+
+            {stats?.avg_pace_seconds_per_km ? (
+              <span className="flex items-center gap-1 text-emerald-400 font-extrabold">
+                <Gauge className="size-3.5" />
+                {formatPace(stats.avg_pace_seconds_per_km)}
+              </span>
+            ) : (
+              <span className="text-slate-500 text-[11px]">Sin entrenos</span>
+            )}
+          </div>
         </div>
       </div>
     </Link>

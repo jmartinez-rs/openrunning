@@ -1,16 +1,19 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import {
   CalendarDays,
   CheckCircle2,
   Copy,
   ExternalLink,
+  Footprints,
   Loader2,
+  Sparkles,
 } from "lucide-react"
 
 import {
   ApiError,
   RunningPlansService,
+  ShoesService,
   type RunningWorkoutPublic,
   type WorkoutBlockPublic,
 } from "@/client"
@@ -53,6 +56,7 @@ import {
   WORKOUT_STATUS_META,
   WORKOUT_TYPE_META,
 } from "./running-utils"
+import { getShoeRecommendation, SHOE_CATEGORIES } from "@/components/Shoes/shoe-utils"
 
 type MatchedActivity = {
   activity_id?: string
@@ -167,6 +171,18 @@ export function WorkoutBlocksDrawer({
   const summaryDistance =
     workout.distance_km != null ? workout.distance_km : blocksDistanceKm(blocks)
 
+  const { data: shoesData } = useQuery({
+    queryKey: ["shoes"],
+    queryFn: () => ShoesService.readShoes({}),
+    enabled: open,
+  })
+
+  const activeShoes = (shoesData?.data ?? []).filter(
+    (s) => s.is_active !== false,
+  )
+  const recResult = getShoeRecommendation(workout.type, activeShoes)
+  const recommendedShoe = recResult.recommendedShoe
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md bg-slate-900 border-l border-slate-800 text-white shadow-2xl">
@@ -216,6 +232,47 @@ export function WorkoutBlocksDrawer({
 
         <div className="flex-1 overflow-y-auto p-5">
           <div className="flex flex-col gap-5">
+            {/* Runna Shoe Recommendation Banner */}
+            {activeShoes.length > 0 ? (
+              <div className="flex flex-col gap-2 rounded-xl bg-slate-800/40 border border-slate-800 p-3.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1.5">
+                    <Footprints className="size-3.5 text-emerald-400" />
+                    Calzado sugerido para hoy
+                  </h4>
+                  {recommendedShoe ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      <Sparkles className="size-3" /> Recomendación Runna
+                    </span>
+                  ) : null}
+                </div>
+
+                {recommendedShoe ? (
+                  <div className="flex items-center gap-3 bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/60">
+                    <div className="size-10 rounded-lg bg-slate-800 flex items-center justify-center font-bold text-xs text-white shrink-0 overflow-hidden border border-slate-700">
+                      {recommendedShoe.photo_url ? (
+                        <img src={recommendedShoe.photo_url} alt="" className="size-full object-cover" />
+                      ) : (
+                        <Footprints className="size-5 text-emerald-400" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-white truncate">
+                        {recommendedShoe.name || `${recommendedShoe.brand} ${recommendedShoe.model}`}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        Categoría: {SHOE_CATEGORIES.find(c => c.value === recommendedShoe.category)?.label || "Entrenamiento"}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400">
+                    Asigna categorías en el <strong>Shoe Locker</strong> para recibir la recomendación ideal según la intensidad del entreno.
+                  </p>
+                )}
+              </div>
+            ) : null}
+
             {workout.objective ? (
               <div className="flex flex-col gap-1 rounded-xl bg-slate-800/40 border border-slate-800 p-3">
                 <h4 className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
