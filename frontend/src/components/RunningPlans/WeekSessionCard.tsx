@@ -63,7 +63,6 @@ export function WeekSessionCard({ workout, onClick }: WeekSessionCardProps) {
               typeMeta.badgeClass,
             )}
           >
-            <span>{typeMeta.emoji}</span>
             <span>{typeMeta.label}</span>
           </span>
         </div>

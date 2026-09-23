@@ -87,6 +87,18 @@ function formatDuration(seconds: number): string {
   return `${m}m`
 }
 
+/** Tiempo total de una marca en formato mm:ss (o h:mm:ss). */
+function formatRaceTime(seconds: number | undefined): string {
+  if (!seconds || seconds <= 0) return "—"
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.round(seconds % 60)
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+  }
+  return `${m}:${String(s).padStart(2, "0")}`
+}
+
 /** Colores para las 5 zonas de FC (Z1 … Z5). */
 const HR_ZONE_COLORS = ["#4d5a1a", "#6a8220", "#a9cc33", "#EAFC5F", "#EF4444"]
 
@@ -409,9 +421,14 @@ function RunningStats() {
               <span className="text-lg font-black font-display tabular-nums text-primary">
                 {formatPace(Number(pace.pace_seconds_per_km))}
               </span>
-              <span className="text-xs font-medium text-muted-foreground">
-                {String(pace.date ?? "").slice(0, 10)}
-              </span>
+              <div className="flex flex-col items-end gap-0.5">
+                <span className="text-sm font-bold font-display tabular-nums text-foreground">
+                  {formatRaceTime(Number(pace.duration_seconds))}
+                </span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {String(pace.date ?? "").slice(0, 10)}
+                </span>
+              </div>
             </div>
           ))}
         </div>

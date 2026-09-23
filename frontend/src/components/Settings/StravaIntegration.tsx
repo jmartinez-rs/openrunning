@@ -259,7 +259,7 @@ export function StravaIntegration() {
               </div>
             </div>
 
-            <div className="flex justify-end pt-1">
+            <div className="flex justify-end pt-1 px-4">
               <Button
                 type="submit"
                 size="sm"

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Settings } from "lucide-react"
 import { useMemo, useState } from "react"
-import { AnalyticsService, SyncService } from "@/client"
+import { AnalyticsService, RunningPlansService, SyncService } from "@/client"
 import { CoachCard } from "@/components/Dashboard/CoachCard"
 import { StravaSyncBar } from "@/components/Dashboard/StravaSyncBar"
 import { StreakCard } from "@/components/Dashboard/StreakCard"
@@ -62,6 +62,13 @@ function OpenRunningDashboard() {
   })
 
   const dashboard = dashboardQuery.data
+
+  // Plan actual (para que "Hoy" lleve al plan activo, no al registro manual)
+  const plansQuery = useQuery({
+    queryKey: ["running-plans"],
+    queryFn: () => RunningPlansService.readPlans(),
+  })
+  const activePlan = plansQuery.data?.data.find((p) => p.status === "active")
 
   const syncMutation = useMutation({
     mutationFn: () => SyncService.triggerSync({ provider: "strava" }),
@@ -233,7 +240,14 @@ function OpenRunningDashboard() {
           sessionTitle={todayTitle}
           workoutType={todayWorkoutType}
           isCompleted={hasCompletedActivity}
-          onAction={() => setIsManualSheetOpen(true)}
+          onAction={() =>
+            activePlan
+              ? navigate({
+                  to: "/routines/run/$planId",
+                  params: { planId: activePlan.id },
+                })
+              : navigate({ to: "/routines" })
+          }
         />
       </div>
 

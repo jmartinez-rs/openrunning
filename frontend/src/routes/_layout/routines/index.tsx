@@ -96,7 +96,7 @@ function Routines() {
           <Skeleton className="h-28 w-full rounded-2xl bg-card" />
         </div>
       ) : plans.length === 0 ? (
-        /* ── Empty state (Runna-inspired onboarding) ── */
+        /* ── Empty state (onboarding) ── */
         <div className="flex flex-col items-center justify-center py-16 text-center bg-card border border-border rounded-[2rem] p-8 shadow-card">
           <div className="relative mb-6">
             <div className="flex size-20 items-center justify-center rounded-[2rem] bg-primary/10 text-primary border border-primary/20">

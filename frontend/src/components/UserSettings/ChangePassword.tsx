@@ -150,7 +150,7 @@ const ChangePassword = () => {
           )}
         />
 
-        <div className="pt-2 flex justify-end">
+        <div className="pt-2 px-4 flex justify-end">
           <LoadingButton
             type="submit"
             size="sm"

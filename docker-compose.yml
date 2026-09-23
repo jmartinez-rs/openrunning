@@ -2,12 +2,15 @@ name: openrunning
 
 x-backend-environment: &backend-environment
   PROJECT_NAME: ${PROJECT_NAME:-OpenRunning}
-  ENVIRONMENT: local
+  ENVIRONMENT: ${ENVIRONMENT:-local}
   SECRET_KEY: ${SECRET_KEY:-openrunning-local-development-secret-key-32chars}
   FIRST_SUPERUSER: ${FIRST_SUPERUSER:-admin@example.com}
   FIRST_SUPERUSER_PASSWORD: ${FIRST_SUPERUSER_PASSWORD:-changethis}
-  FRONTEND_HOST: http://localhost:5173
-  BACKEND_CORS_ORIGINS: http://localhost:5173,http://localhost:8001
+  # URL pública del frontend (para links de reset de contraseña y CORS).
+  # En un deploy detrás de un dominio, usar https://tu-dominio
+  FRONTEND_HOST: ${FRONTEND_HOST:-http://localhost:5173}
+  # Orígenes CORS permitidos (separados por coma). FRONTEND_HOST se agrega solo.
+  BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:5173,http://localhost:8001}
   POSTGRES_SERVER: db
   POSTGRES_PORT: 5432
   POSTGRES_DB: ${POSTGRES_DB:-openrunning_db}
@@ -15,6 +18,17 @@ x-backend-environment: &backend-environment
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openrunning_dev_password}
   STORAGE_PROVIDER: local
   STORAGE_LOCAL_PATH: /app/storage
+  # Integraciones opcionales (Strava / email / R2)
+  STRAVA_CLIENT_ID: ${STRAVA_CLIENT_ID:-}
+  STRAVA_CLIENT_SECRET: ${STRAVA_CLIENT_SECRET:-}
+  STRAVA_WEBHOOK_VERIFY_TOKEN: ${STRAVA_WEBHOOK_VERIFY_TOKEN:-}
+  STRAVA_REDIRECT_URI: ${STRAVA_REDIRECT_URI:-}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL:-}
+  EMAILS_FROM_NAME: ${EMAILS_FROM_NAME:-}
 
 services:
   db:
@@ -24,8 +38,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-openrunning_db}
       POSTGRES_USER: ${POSTGRES_USER:-openrunning}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openrunning_dev_password}
-    ports:
-      - "5432:5432"
+    # No se expone el puerto 5432 al host por seguridad: el backend se conecta
+    # por la red interna. Para debug local, agregá "ports: ['5432:5432']".
     volumes:
       - openrunning-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -59,7 +73,7 @@ services:
       migrate:
         condition: service_completed_successfully
     ports:
-      - "8001:8000"
+      - "${BACKEND_PORT:-8001}:8000"
     volumes:
       - ./backend:/app/backend
       - openrunning-storage:/app/storage
@@ -80,9 +94,11 @@ services:
       backend:
         condition: service_healthy
     environment:
-      VITE_API_URL: http://localhost:8001
+      # URL pública de la API que el navegador usará. En un deploy detrás de un
+      # dominio, usar https://api.tu-dominio (o la URL pública del backend).
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8001}
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:5173"
     volumes:
       - ./frontend:/app/frontend
       - openrunning-frontend-node-modules:/app/frontend/node_modules

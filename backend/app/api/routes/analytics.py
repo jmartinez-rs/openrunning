@@ -290,6 +290,7 @@ def read_cardio_best_paces(
                 best = {
                     "distance_label": label,
                     "pace_seconds_per_km": round(pace, 2),
+                    "duration_seconds": activity.duration_seconds,
                     "date": activity.timestamp.astimezone(UTC).isoformat(),
                     "activity_name": activity.name,
                 }

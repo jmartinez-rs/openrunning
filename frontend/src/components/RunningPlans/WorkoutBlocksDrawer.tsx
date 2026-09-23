@@ -8,6 +8,7 @@ import {
   Footprints,
   Loader2,
   Sparkles,
+  Zap,
 } from "lucide-react"
 
 import {
@@ -15,7 +16,6 @@ import {
   RunningPlansService,
   type RunningWorkoutPublic,
   ShoesService,
-  type WorkoutBlockPublic,
 } from "@/client"
 import {
   getShoeRecommendation,
@@ -53,9 +53,12 @@ import {
   BLOCK_TYPE_META,
   blocksDistanceKm,
   buildBlockPreview,
+  formatBlockDistance,
   formatDistance,
   formatDuration,
   formatPace,
+  formatPaceRange,
+  formatRecovery,
   formatShortDate,
   WORKOUT_STATUS_META,
   WORKOUT_TYPE_META,
@@ -69,34 +72,6 @@ type MatchedActivity = {
 }
 
 type StatusOption = "auto" | "completed" | "missed" | "cancelled"
-
-function formatBlockDistance(meters: number | null | undefined): string {
-  if (meters == null) return "—"
-  if (meters >= 1000) return formatDistance(meters / 1000)
-  return `${Math.round(meters)} m`
-}
-
-function formatPaceRange(block: WorkoutBlockPublic): string {
-  const start = block.pace_seconds_per_km
-  if (start == null) return "—"
-  const a = formatPace(start).replace("/km", "")
-  const end = block.pace_range_end_seconds_per_km
-  if (end == null) return a
-  return `${a}–${formatPace(end).replace("/km", "")}`
-}
-
-function formatRecovery(block: WorkoutBlockPublic): string {
-  if (block.recovery_seconds == null || block.recovery_seconds <= 0) return "—"
-  const mins = block.recovery_seconds / 60
-  const rec = mins % 1 === 0 ? `${mins}'` : `${mins.toFixed(1)}'`
-  const tipo =
-    block.recovery_type === "jog"
-      ? " trotando"
-      : block.recovery_type === "walk"
-        ? " caminando"
-        : ""
-  return `${rec}${tipo}`
-}
 
 export function WorkoutBlocksDrawer({
   open,
@@ -197,7 +172,7 @@ export function WorkoutBlocksDrawer({
                 typeMeta.badgeClass,
               )}
             >
-              {typeMeta.emoji}
+              <Zap className="size-4" />
             </span>
             <span className="truncate">
               {typeMeta.label} ·{" "}
@@ -238,7 +213,7 @@ export function WorkoutBlocksDrawer({
 
         <div className="flex-1 overflow-y-auto p-5">
           <div className="flex flex-col gap-5">
-            {/* Runna Shoe Recommendation Banner */}
+            {/* Shoe Recommendation Banner */}
             {activeShoes.length > 0 ? (
               <div className="flex flex-col gap-2 rounded-xl bg-surface-container-high/40 border border-border p-3.5">
                 <div className="flex items-center justify-between">
@@ -248,7 +223,7 @@ export function WorkoutBlocksDrawer({
                   </h4>
                   {recommendedShoe ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                      <Sparkles className="size-3" /> Recomendación Runna
+                      <Sparkles className="size-3" /> Recomendación
                     </span>
                   ) : null}
                 </div>

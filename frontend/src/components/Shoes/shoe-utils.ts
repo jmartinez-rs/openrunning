@@ -217,7 +217,7 @@ export function getShoeRecommendation(
     const meta = shoeCategoryMeta(targetCategory)
     return {
       recommendedShoe: categoryMatch,
-      reason: `Sugerencia Runna: Zapatilla óptima recomendada para ${meta.shortLabel}`,
+      reason: `Sugerencia: Zapatilla óptima recomendada para ${meta.shortLabel}`,
       isOptimal: true,
     }
   }
@@ -235,7 +235,7 @@ export function getShoeRecommendation(
 
   return {
     recommendedShoe: healthyShoe,
-    reason: `Sugerencia Runna: Par disponible en tu armario`,
+    reason: `Sugerencia: Par disponible en tu armario`,
     isOptimal: false,
   }
 }

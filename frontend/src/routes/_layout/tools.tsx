@@ -19,6 +19,13 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   calculateHeartRateZones,
@@ -148,31 +155,31 @@ function ToolsView() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-card border border-border p-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1 bg-card border border-border p-1 rounded-xl h-auto">
           <TabsTrigger
             value="vdot"
-            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
+            className="flex items-center gap-2 bg-surface-container-lowest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
           >
             <Sparkles className="size-4 shrink-0" />
             <span>VDOT & Ritmos</span>
           </TabsTrigger>
           <TabsTrigger
             value="riegel"
-            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
+            className="flex items-center gap-2 bg-surface-container-lowest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
           >
             <Trophy className="size-4 shrink-0" />
             <span>Predictor</span>
           </TabsTrigger>
           <TabsTrigger
             value="hr"
-            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
+            className="flex items-center gap-2 bg-surface-container-lowest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
           >
             <HeartPulse className="size-4 shrink-0" />
             <span>Zonas FC</span>
           </TabsTrigger>
           <TabsTrigger
             value="converter"
-            className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
+            className="flex items-center gap-2 bg-surface-container-lowest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold rounded-lg text-xs md:text-sm"
           >
             <ArrowRightLeft className="size-4 shrink-0" />
             <span>Conversor</span>
@@ -202,20 +209,24 @@ function ToolsView() {
                   >
                     Distancia de la marca
                   </Label>
-                  <select
-                    id="vdot-dist"
-                    value={vdotDistanceMeters}
-                    onChange={(e) =>
-                      setVdotDistanceMeters(Number(e.target.value))
-                    }
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  <Select
+                    value={String(vdotDistanceMeters)}
+                    onValueChange={(v) => setVdotDistanceMeters(Number(v))}
                   >
-                    {STANDARD_DISTANCES.map((d) => (
-                      <option key={d.meters} value={d.meters}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger
+                      id="vdot-dist"
+                      className="w-full bg-background border-border text-white"
+                    >
+                      <SelectValue placeholder="Seleccioná una distancia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STANDARD_DISTANCES.map((d) => (
+                        <SelectItem key={d.meters} value={String(d.meters)}>
+                          {d.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -433,20 +444,24 @@ function ToolsView() {
                   >
                     Distancia base
                   </Label>
-                  <select
-                    id="riegel-dist"
-                    value={riegelDistanceMeters}
-                    onChange={(e) =>
-                      setRiegelDistanceMeters(Number(e.target.value))
-                    }
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  <Select
+                    value={String(riegelDistanceMeters)}
+                    onValueChange={(v) => setRiegelDistanceMeters(Number(v))}
                   >
-                    {STANDARD_DISTANCES.map((d) => (
-                      <option key={d.meters} value={d.meters}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger
+                      id="riegel-dist"
+                      className="w-full bg-background border-border text-white"
+                    >
+                      <SelectValue placeholder="Seleccioná una distancia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STANDARD_DISTANCES.map((d) => (
+                        <SelectItem key={d.meters} value={String(d.meters)}>
+                          {d.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">

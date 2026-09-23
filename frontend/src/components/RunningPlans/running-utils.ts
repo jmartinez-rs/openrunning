@@ -195,6 +195,43 @@ export function formatDistance(km?: number | null): string {
   return `${numFmt.format(km)} km`
 }
 
+/** Distancia de un bloque: "1 km" | "400 m" | "—" */
+export function formatBlockDistance(meters: number | null | undefined): string {
+  if (meters == null) return "—"
+  if (meters >= 1000) return formatDistance(meters / 1000)
+  return `${Math.round(meters)} m`
+}
+
+/** Rango de ritmo de un bloque: "4:20" | "4:20–4:30" | "—" */
+export function formatPaceRange(block: {
+  pace_seconds_per_km?: number | null
+  pace_range_end_seconds_per_km?: number | null
+}): string {
+  const start = block.pace_seconds_per_km
+  if (start == null) return "—"
+  const a = formatPace(start).replace("/km", "")
+  const end = block.pace_range_end_seconds_per_km
+  if (end == null) return a
+  return `${a}–${formatPace(end).replace("/km", "")}`
+}
+
+/** Recuperación de un bloque: "90' trotando" | "2' caminando" | "—" */
+export function formatRecovery(block: {
+  recovery_seconds?: number | null
+  recovery_type?: string | null
+}): string {
+  if (block.recovery_seconds == null || block.recovery_seconds <= 0) return "—"
+  const mins = block.recovery_seconds / 60
+  const rec = mins % 1 === 0 ? `${mins}'` : `${mins.toFixed(1)}'`
+  const tipo =
+    block.recovery_type === "jog"
+      ? " trotando"
+      : block.recovery_type === "walk"
+        ? " caminando"
+        : ""
+  return `${rec}${tipo}`
+}
+
 /** "sáb 08/08" | "—" */
 export function formatShortDate(iso?: string | null): string {
   if (!iso) return "—"

@@ -272,7 +272,7 @@ export function WeeklyPlan() {
         </SettingsRow>
       ))}
 
-      <div className="pt-2 flex justify-end">
+      <div className="pt-2 px-4 flex justify-end">
         <Button
           type="button"
           size="sm"

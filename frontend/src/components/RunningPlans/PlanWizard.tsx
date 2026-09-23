@@ -16,9 +16,11 @@ import {
   Wand2,
   Zap,
 } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import {
+  ActivitiesService,
+  AnalyticsService,
   type RacePublic,
   RacesService,
   type RunningPlanCreate,
@@ -157,6 +159,17 @@ const DAYS_OF_WEEK = [
   { id: 6, label: "Sábado", short: "S" },
   { id: 0, label: "Domingo", short: "D" },
 ]
+
+/** ISO (YYYY-MM-DD) del lunes de la semana actual. */
+function getCurrentWeekStartIso(): string {
+  const now = new Date()
+  const day = now.getDay()
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1)
+  const monday = new Date(now)
+  monday.setDate(diff)
+  monday.setHours(12, 0, 0, 0)
+  return monday.toISOString().split("T")[0]
+}
 
 function createEmptyDraft(): PlanDraft {
   const today = new Date().toISOString().split("T")[0]
@@ -301,10 +314,10 @@ function buildPayload(draft: PlanDraft): RunningPlanCreate {
 }
 
 // ---------------------------------------------------------------------------
-// Runna Engine — Algoritmo de Generación de Sesiones Estructuradas
+// Engine — Algoritmo de Generación de Sesiones Estructuradas
 // ---------------------------------------------------------------------------
 
-function generateRunnaPlanStructure({
+function generatePlanStructure({
   draft,
   planType: _planType,
   targetKm,
@@ -724,8 +737,7 @@ function generateRunnaPlanStructure({
   })
 
   // Format plan name automatically if empty
-  const planName =
-    draft.name.trim() || `Plan ${targetKm}K — Runna Engine (${numWeeks} sem)`
+  const planName = draft.name.trim() || `Plan ${targetKm}K (${numWeeks} sem)`
 
   return {
     ...draft,
@@ -749,17 +761,98 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
   const [step, setStep] = useState<number>(1)
   const [draft, setDraft] = useState<PlanDraft>(createEmptyDraft)
 
-  // Questionnaire / Onboarding state (Runna style)
+  // Questionnaire / Onboarding state (wizard style)
   const [planType, setPlanType] = useState<string>("race")
   const [targetKm, setTargetKm] = useState<number>(21.1)
   const [numWeeks, setNumWeeks] = useState<number>(12)
   const [userLevel, setUserLevel] = useState<string>("intermediate")
   const [refDistanceKm, setRefDistanceKm] = useState<number>(5)
   const [refTimeInput, setRefTimeInput] = useState<string>("00:24:30")
-  const [currentWeeklyKm, setCurrentWeeklyKm] = useState<number>(25)
-  const [longestRunKm, setLongestRunKm] = useState<number>(12)
+  const [currentWeeklyKm, setCurrentWeeklyKm] = useState<number | "">("")
+  const [longestRunKm, setLongestRunKm] = useState<number | "">("")
   const [selectedDays, setSelectedDays] = useState<number[]>([2, 4, 6, 0]) // Tue, Thu, Sat, Sun
   const [longRunDay, setLongRunDay] = useState<number>(0) // Sunday
+
+  // Best marks reales del usuario (para autocompletar el tiempo de referencia)
+  const bestPacesQuery = useQuery({
+    queryKey: ["stats-best-paces"],
+    queryFn: () => AnalyticsService.readCardioBestPaces(),
+  })
+
+  // Mapa distancia de referencia (5, 10, 15, 21.1, 42.2) → mejor tiempo (seg)
+  const bestTimeByRefKm = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const entry of bestPacesQuery.data ?? []) {
+      const label = String(entry.distance_label ?? "").toLowerCase()
+      const duration = Number(entry.duration_seconds)
+      if (!duration) continue
+      if (label === "5k") map["5"] = duration
+      else if (label === "10k") map["10"] = duration
+      else if (label === "15k") map["15"] = duration
+      else if (label === "21k") map["21.1"] = duration
+      else if (label === "42k") map["42.2"] = duration
+    }
+    return map
+  }, [bestPacesQuery.data])
+
+  const bestTimeForRef = bestTimeByRefKm[refDistanceKm.toString()]
+
+  // Si el usuario aún no editó el tiempo a mano, autocompletar con su mejor marca
+  const refTimeEdited = useRef(false)
+  useEffect(() => {
+    const best = bestTimeByRefKm[refDistanceKm.toString()]
+    if (best && !refTimeEdited.current) {
+      setRefTimeInput(formatTime(best))
+    }
+  }, [refDistanceKm, bestTimeByRefKm])
+
+  // Datos reales para autocompletar volumen semanal y tirada larga
+  const dashboardQuery = useQuery({
+    queryKey: ["dashboard", "current-week"],
+    queryFn: () =>
+      AnalyticsService.readDashboard({ weekStart: getCurrentWeekStartIso() }),
+  })
+
+  const recentActivitiesQuery = useQuery({
+    queryKey: ["activities", "recent"],
+    queryFn: () => ActivitiesService.readActivities({ limit: 50 }),
+  })
+
+  // Promedio de kilometraje semanal (semana actual + anterior)
+  const autoWeeklyKm = useMemo(() => {
+    const current = dashboardQuery.data?.kpis?.cardio_distance_meters ?? 0
+    const previous =
+      dashboardQuery.data?.previous_kpis?.cardio_distance_meters ?? 0
+    const total = current + previous
+    if (total <= 0) return null
+    return Math.round(total / 2 / 1000)
+  }, [dashboardQuery.data])
+
+  // Tirada más larga reciente (máxima distancia cardio de las últimas actividades)
+  const autoLongestKm = useMemo(() => {
+    const activities = recentActivitiesQuery.data?.data ?? []
+    let maxMeters = 0
+    for (const activity of activities) {
+      const distance = activity.cardio?.distance_meters ?? 0
+      if (distance > maxMeters) maxMeters = distance
+    }
+    if (maxMeters <= 0) return null
+    return Math.round(maxMeters / 1000)
+  }, [recentActivitiesQuery.data])
+
+  // Autocompletar solo si el usuario no editó el campo manualmente
+  const volumeEdited = useRef(false)
+  const longestEdited = useRef(false)
+  useEffect(() => {
+    if (autoWeeklyKm != null && !volumeEdited.current) {
+      setCurrentWeeklyKm(autoWeeklyKm)
+    }
+  }, [autoWeeklyKm])
+  useEffect(() => {
+    if (autoLongestKm != null && !longestEdited.current) {
+      setLongestRunKm(autoLongestKm)
+    }
+  }, [autoLongestKm])
 
   // Calculated VDOT preview
   const refTimeSeconds = useMemo(
@@ -851,13 +944,13 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
     )
   }
 
-  const handleGenerateRunnaEngine = () => {
+  const handleGeneratePlan = () => {
     if (selectedDays.length === 0) {
       showErrorToast("Seleccioná al menos 1 día de entrenamiento")
       return
     }
 
-    const generated = generateRunnaPlanStructure({
+    const generated = generatePlanStructure({
       draft,
       planType,
       targetKm,
@@ -865,16 +958,14 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
       userLevel,
       refDistanceKm,
       refTimeSeconds,
-      currentWeeklyKm,
-      longestRunKm,
+      currentWeeklyKm: currentWeeklyKm === "" ? 0 : currentWeeklyKm,
+      longestRunKm: longestRunKm === "" ? 0 : longestRunKm,
       selectedDays,
       longRunDay,
     })
 
     setDraft(generated)
-    showSuccessToast(
-      "¡Algoritmo Runna ejecutado! Plan generado con bloques exactos.",
-    )
+    showSuccessToast("¡Algoritmo ejecutado! Plan generado con bloques exactos.")
     setStep(6) // Jump to Unified Editor & Preview
   }
 
@@ -922,9 +1013,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight text-white">
-                {editId
-                  ? "Editar Plan de Running"
-                  : "Creador de Planes Estilo Runna"}
+                {editId ? "Editar Plan de Running" : "Creador de Planes"}
               </h1>
               <Badge className="bg-primary/15 text-primary border-primary/30 gap-1 text-[11px] font-bold">
                 <Sparkles className="size-3" /> Algoritmo VDOT
@@ -1012,7 +1101,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                   {
                     id: "distance",
                     title: "Cubrir Distancia",
-                    desc: "Superar 5K, 10K, 21K o 42K por tu cuenta",
+                    desc: "Superar 5K, 10K, 15K, 21K o 42K por tu cuenta",
                     icon: Flag,
                   },
                   {
@@ -1069,6 +1158,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                 {[
                   { label: "5K", km: 5 },
                   { label: "10K", km: 10 },
+                  { label: "15K", km: 15 },
                   { label: "21.1K (Media Maratón)", km: 21.1 },
                   { label: "42.2K (Maratón)", km: 42.2 },
                   { label: "50K (Ultra)", km: 50 },
@@ -1173,7 +1263,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                       value="12"
                       className="focus:bg-surface-container-high focus:text-primary text-foreground"
                     >
-                      12 Semanas (Recomendado Runna)
+                      12 Semanas (Recomendado)
                     </SelectItem>
                     <SelectItem
                       value="16"
@@ -1256,7 +1346,10 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                 </Label>
                 <Select
                   value={refDistanceKm.toString()}
-                  onValueChange={(val) => setRefDistanceKm(parseFloat(val))}
+                  onValueChange={(val) => {
+                    setRefDistanceKm(parseFloat(val))
+                    refTimeEdited.current = false
+                  }}
                 >
                   <SelectTrigger
                     id="ref-dist"
@@ -1267,6 +1360,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                   <SelectContent className="bg-card border-border text-white">
                     <SelectItem value="5">5K Reciente</SelectItem>
                     <SelectItem value="10">10K Reciente</SelectItem>
+                    <SelectItem value="15">15K Reciente</SelectItem>
                     <SelectItem value="21.1">21.1K (Media Maratón)</SelectItem>
                     <SelectItem value="42.2">42.2K (Maratón)</SelectItem>
                   </SelectContent>
@@ -1284,9 +1378,30 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                   id="ref-time"
                   placeholder="00:24:30"
                   value={refTimeInput}
-                  onChange={(e) => setRefTimeInput(e.target.value)}
+                  onChange={(e) => {
+                    refTimeEdited.current = true
+                    setRefTimeInput(e.target.value)
+                  }}
                   className="bg-surface-container-high/80 border-border text-white font-display"
                 />
+                {bestTimeForRef ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRefTimeInput(formatTime(bestTimeForRef))
+                      refTimeEdited.current = true
+                    }}
+                    className="inline-flex items-center gap-1 self-start text-[11px] font-semibold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-1 hover:bg-primary/20 transition-colors"
+                  >
+                    <Sparkles className="size-3" />
+                    Usar mi mejor marca ({formatTime(bestTimeForRef)})
+                  </button>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    Sin marca registrada para esta distancia — escribila
+                    manualmente.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -1388,15 +1503,21 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                   htmlFor="current-weekly"
                   className="font-semibold text-muted-foreground"
                 >
-                  Kilometraje Semanal Promedio Actual ({currentWeeklyKm} km/sem)
+                  Kilometraje Semanal Promedio Actual
                 </Label>
                 <Input
                   id="current-weekly"
                   type="number"
+                  min="0"
+                  placeholder="Ej: 25"
                   value={currentWeeklyKm}
-                  onChange={(e) =>
-                    setCurrentWeeklyKm(parseInt(e.target.value, 10) || 10)
-                  }
+                  onChange={(e) => {
+                    volumeEdited.current = true
+                    const value = e.target.value
+                    setCurrentWeeklyKm(
+                      value === "" ? "" : Math.max(0, parseInt(value, 10) || 0),
+                    )
+                  }}
                   className="font-extrabold text-base bg-surface-container-high/80 border-border text-white"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -1410,15 +1531,21 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                   htmlFor="longest-run"
                   className="font-semibold text-muted-foreground"
                 >
-                  Tirada Más Larga Reciente del Último Mes ({longestRunKm} km)
+                  Tirada Más Larga Reciente del Último Mes
                 </Label>
                 <Input
                   id="longest-run"
                   type="number"
+                  min="0"
+                  placeholder="Ej: 12"
                   value={longestRunKm}
-                  onChange={(e) =>
-                    setLongestRunKm(parseInt(e.target.value, 10) || 5)
-                  }
+                  onChange={(e) => {
+                    longestEdited.current = true
+                    const value = e.target.value
+                    setLongestRunKm(
+                      value === "" ? "" : Math.max(0, parseInt(value, 10) || 0),
+                    )
+                  }}
                   className="font-extrabold text-base bg-surface-container-high/80 border-border text-white"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -1533,7 +1660,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                 onClick={() => setStep(5)}
                 className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
               >
-                <span>Siguiente: Resumen & Algoritmo Runna</span>
+                <span>Siguiente: Resumen & Algoritmo</span>
                 <ChevronRight className="size-4" />
               </Button>
             </div>
@@ -1547,7 +1674,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           <CardHeader className="px-0 pt-0">
             <CardTitle className="text-xl font-extrabold flex items-center gap-2 text-white">
               <Sparkles className="size-6 text-primary animate-pulse" />
-              5. Generar Plan Completo con Algoritmo Runna
+              5. Generar Plan Completo con Algoritmo
             </CardTitle>
           </CardHeader>
           <CardContent className="px-0 flex flex-col gap-6">
@@ -1583,7 +1710,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
             <div className="flex flex-col items-center gap-3 py-6 text-center">
               <Button
                 type="button"
-                onClick={handleGenerateRunnaEngine}
+                onClick={handleGeneratePlan}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-base px-8 py-6 rounded-2xl shadow-card transition-all gap-3 cursor-pointer"
               >
                 <Wand2 className="size-6" />

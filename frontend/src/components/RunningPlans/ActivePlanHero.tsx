@@ -287,7 +287,7 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
               type="button"
               aria-pressed={weekOffset === 0}
               className={cn(
-                "relative rounded-lg px-4 sm:px-5 py-2 text-[11px] sm:text-xs font-bold uppercase font-display tracking-wide transition-all",
+                "rounded-lg px-4 sm:px-5 py-2 text-[11px] sm:text-xs font-bold uppercase font-display tracking-wide transition-all",
                 weekOffset === 0
                   ? "bg-surface-bright text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -298,15 +298,12 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
               }}
             >
               Esta semana
-              {weekOffset === 0 && (
-                <span className="absolute inset-x-3 -bottom-[1px] h-0.5 rounded-full bg-primary" />
-              )}
             </button>
             <button
               type="button"
               aria-pressed={weekOffset === -1}
               className={cn(
-                "relative rounded-lg px-4 sm:px-5 py-2 text-[11px] sm:text-xs font-bold uppercase font-display tracking-wide transition-all",
+                "rounded-lg px-4 sm:px-5 py-2 text-[11px] sm:text-xs font-bold uppercase font-display tracking-wide transition-all",
                 weekOffset === -1
                   ? "bg-surface-bright text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -317,9 +314,6 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
               }}
             >
               Semana pasada
-              {weekOffset === -1 && (
-                <span className="absolute inset-x-3 -bottom-[1px] h-0.5 rounded-full bg-primary" />
-              )}
             </button>
           </div>
 

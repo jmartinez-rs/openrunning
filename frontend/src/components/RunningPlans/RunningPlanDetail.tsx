@@ -5,6 +5,9 @@ import {
   CalendarDays,
   ChevronDown,
   ChevronRight,
+  Copy,
+  Download,
+  FileDown,
   Flag,
   Footprints,
   Pencil,
@@ -22,6 +25,14 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -29,10 +40,17 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard"
 import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
 import { PhaseTimeline } from "./PhaseTimeline"
+import {
+  buildPlanMarkdown,
+  downloadPlanFile,
+  type PlanExportScope,
+  planExportFilename,
+} from "./plan-export"
 import {
   blocksDistanceKm,
   computeProgress,
@@ -89,6 +107,7 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const [, copyToClipboard] = useCopyToClipboard()
   const [selected, setSelected] = useState<SelectedWorkout | null>(null)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [collapseInitialized, setCollapseInitialized] = useState(false)
@@ -271,6 +290,33 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
     deletePlan.mutate()
   }
 
+  const handleCopyExport = async (scope: PlanExportScope) => {
+    if (!plan) return
+    const ok = await copyToClipboard(buildPlanMarkdown(plan, scope))
+    if (ok) {
+      showSuccessToast(
+        scope === "current"
+          ? "Semana actual copiada como Markdown"
+          : "Plan copiado como Markdown",
+      )
+    } else {
+      showErrorToast("No se pudo copiar al portapapeles")
+    }
+  }
+
+  const handleDownloadExport = (scope: PlanExportScope) => {
+    if (!plan) return
+    downloadPlanFile(
+      buildPlanMarkdown(plan, scope),
+      planExportFilename(plan, scope),
+    )
+    showSuccessToast(
+      scope === "current"
+        ? "Semana actual descargada (.md)"
+        : "Plan descargado (.md)",
+    )
+  }
+
   if (query.isLoading) {
     return (
       <div className="flex flex-col gap-4">
@@ -354,19 +400,19 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                       value="active"
                       className="font-bold text-primary"
                     >
-                      🟢 Activo (En curso)
+                      Activo (En curso)
                     </SelectItem>
                     <SelectItem
                       value="planned"
                       className="font-bold text-primary"
                     >
-                      ⏸️ Pausado / Planificado
+                      Pausado / Planificado
                     </SelectItem>
                     <SelectItem
                       value="completed"
                       className="font-bold text-primary"
                     >
-                      🏁 Finalizado (Concluido)
+                      Finalizado (Concluido)
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -379,6 +425,50 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" size="sm">
+                  <Download className="mr-2 size-4" /> Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-64 bg-card border-border text-muted-foreground"
+              >
+                <DropdownMenuLabel className="text-foreground">
+                  Plan completo
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  className="cursor-pointer hover:bg-surface-container-high hover:text-foreground focus:bg-surface-container-high focus:text-foreground"
+                  onClick={() => handleCopyExport("full")}
+                >
+                  <Copy className="mr-2 size-4" /> Copiar Markdown
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer hover:bg-surface-container-high hover:text-foreground focus:bg-surface-container-high focus:text-foreground"
+                  onClick={() => handleDownloadExport("full")}
+                >
+                  <FileDown className="mr-2 size-4" /> Descargar .md
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-border" />
+                <DropdownMenuLabel className="text-foreground">
+                  Semana actual
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  className="cursor-pointer hover:bg-surface-container-high hover:text-foreground focus:bg-surface-container-high focus:text-foreground"
+                  onClick={() => handleCopyExport("current")}
+                >
+                  <Copy className="mr-2 size-4" /> Copiar Markdown
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer hover:bg-surface-container-high hover:text-foreground focus:bg-surface-container-high focus:text-foreground"
+                  onClick={() => handleDownloadExport("current")}
+                >
+                  <FileDown className="mr-2 size-4" /> Descargar .md
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Button type="button" variant="outline" size="sm" asChild>
               <Link to="/routines/run/new" search={{ edit: planId }}>
                 <Pencil className="mr-2 size-4" /> Editar plan
@@ -476,7 +566,7 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
         </div>
 
         {/* Quick Stats Chips */}
-        <div className="flex flex-wrap gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           <StatChip label="Semanas" value={summary.weeks} icon={CalendarDays} />
           <StatChip
             label="Sesiones total"

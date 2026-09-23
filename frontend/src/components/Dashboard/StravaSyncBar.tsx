@@ -49,7 +49,7 @@ export const StravaSyncBar: React.FC<StravaSyncBarProps> = ({
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-black text-xs font-bold hover:bg-primary/90 active:scale-95 transition-all shadow-glow cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5 stroke-[3]" />
-          <span>+ Registrar Manual</span>
+          <span>Registrar Manual</span>
         </button>
       </div>
     </div>

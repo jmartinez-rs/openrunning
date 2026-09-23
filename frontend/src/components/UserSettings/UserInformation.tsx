@@ -114,7 +114,7 @@ const UserInformation = () => {
         )}
       </SettingsRow>
 
-      <div className="pt-2 flex justify-end gap-2">
+      <div className="pt-2 px-4 flex justify-end gap-2">
         {editMode ? (
           <>
             <LoadingButton
