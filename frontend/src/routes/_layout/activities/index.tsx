@@ -29,6 +29,7 @@ import { ActivityRow } from "@/components/Activities/ActivityRow"
 import { WorkoutCard } from "@/components/Activities/WorkoutCard"
 import { ChartCard } from "@/components/Analytics/ChartCard"
 import {
+  AXIS_LABEL_STYLE,
   AXIS_TICK_STYLE,
   CHART_HEIGHTS,
   DOMAIN_COLORS,
@@ -425,7 +426,7 @@ function ActivitiesHistory() {
               {/* Decorative timeline line */}
               <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-surface-container-high -translate-y-1/2 z-0" />
 
-              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 pt-2 px-2 scrollbar-hide relative z-10">
+              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 pt-2 px-2 scrollbar-app relative z-10">
                 {filteredActivities.slice(0, 10).map((activity, index) => (
                   <div key={activity.id} className="snap-center shrink-0">
                     <WorkoutCard activity={activity} isActive={index === 0} />
@@ -452,7 +453,7 @@ function ActivitiesHistory() {
                   <ResponsiveContainer width="100%" height={CHART_HEIGHTS.sm}>
                     <BarChart
                       data={monthlyKm}
-                      margin={{ top: 20, right: 0, left: -20, bottom: 0 }}
+                      margin={{ top: 20, right: 0, left: 8, bottom: 0 }}
                     >
                       <CartesianGrid
                         vertical={false}
@@ -470,6 +471,12 @@ function ActivitiesHistory() {
                         axisLine={false}
                         tickLine={false}
                         tick={AXIS_TICK_STYLE}
+                        label={{
+                          value: "km",
+                          angle: -90,
+                          position: "insideLeft",
+                          style: AXIS_LABEL_STYLE,
+                        }}
                         tickFormatter={(value: number) =>
                           value === 0 ? "" : `${value}`
                         }

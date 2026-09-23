@@ -23,6 +23,7 @@ import { Route as LayoutAnalyticsCardioRouteImport } from './routes/_layout/anal
 import { Route as LayoutAnalyticsStrengthRouteImport } from './routes/_layout/analytics/strength'
 import { Route as LayoutRacesIndexRouteImport } from './routes/_layout/races/index'
 import { Route as LayoutRacesRaceIdRouteImport } from './routes/_layout/races/$raceId'
+import { Route as LayoutRacesNewRouteImport } from './routes/_layout/races/new'
 import { Route as LayoutRoutinesIndexRouteImport } from './routes/_layout/routines/index'
 import { Route as LayoutRoutinesRoutineIdRouteImport } from './routes/_layout/routines/$routineId'
 import { Route as LayoutShoesIndexRouteImport } from './routes/_layout/shoes/index'
@@ -100,6 +101,11 @@ const LayoutRacesRaceIdRoute = LayoutRacesRaceIdRouteImport.update({
   path: '/races/$raceId',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutRacesNewRoute = LayoutRacesNewRouteImport.update({
+  id: '/races/new',
+  path: '/races/new',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutRoutinesIndexRoute = LayoutRoutinesIndexRouteImport.update({
   id: '/routines/',
   path: '/routines/',
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/analytics/cardio': typeof LayoutAnalyticsCardioRoute
   '/analytics/strength': typeof LayoutAnalyticsStrengthRoute
   '/races/$raceId': typeof LayoutRacesRaceIdRoute
+  '/races/new': typeof LayoutRacesNewRoute
   '/routines/$routineId': typeof LayoutRoutinesRoutineIdRoute
   '/shoes/$shoeId': typeof LayoutShoesShoeIdRoute
   '/activities/': typeof LayoutActivitiesIndexRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/analytics/cardio': typeof LayoutAnalyticsCardioRoute
   '/analytics/strength': typeof LayoutAnalyticsStrengthRoute
   '/races/$raceId': typeof LayoutRacesRaceIdRoute
+  '/races/new': typeof LayoutRacesNewRoute
   '/routines/$routineId': typeof LayoutRoutinesRoutineIdRoute
   '/shoes/$shoeId': typeof LayoutShoesShoeIdRoute
   '/activities': typeof LayoutActivitiesIndexRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/_layout/analytics/cardio': typeof LayoutAnalyticsCardioRoute
   '/_layout/analytics/strength': typeof LayoutAnalyticsStrengthRoute
   '/_layout/races/$raceId': typeof LayoutRacesRaceIdRoute
+  '/_layout/races/new': typeof LayoutRacesNewRoute
   '/_layout/routines/$routineId': typeof LayoutRoutinesRoutineIdRoute
   '/_layout/shoes/$shoeId': typeof LayoutShoesShoeIdRoute
   '/_layout/activities/': typeof LayoutActivitiesIndexRoute
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
     | '/analytics/cardio'
     | '/analytics/strength'
     | '/races/$raceId'
+    | '/races/new'
     | '/routines/$routineId'
     | '/shoes/$shoeId'
     | '/activities/'
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/analytics/cardio'
     | '/analytics/strength'
     | '/races/$raceId'
+    | '/races/new'
     | '/routines/$routineId'
     | '/shoes/$shoeId'
     | '/activities'
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/_layout/analytics/cardio'
     | '/_layout/analytics/strength'
     | '/_layout/races/$raceId'
+    | '/_layout/races/new'
     | '/_layout/routines/$routineId'
     | '/_layout/shoes/$shoeId'
     | '/_layout/activities/'
@@ -370,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutRacesRaceIdRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/races/new': {
+      id: '/_layout/races/new'
+      path: '/races/new'
+      fullPath: '/races/new'
+      preLoaderRoute: typeof LayoutRacesNewRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/routines/': {
       id: '/_layout/routines/'
       path: '/routines'
@@ -423,6 +442,7 @@ interface LayoutRouteChildren {
   LayoutAnalyticsCardioRoute: typeof LayoutAnalyticsCardioRoute
   LayoutAnalyticsStrengthRoute: typeof LayoutAnalyticsStrengthRoute
   LayoutRacesRaceIdRoute: typeof LayoutRacesRaceIdRoute
+  LayoutRacesNewRoute: typeof LayoutRacesNewRoute
   LayoutRoutinesRoutineIdRoute: typeof LayoutRoutinesRoutineIdRoute
   LayoutShoesShoeIdRoute: typeof LayoutShoesShoeIdRoute
   LayoutActivitiesIndexRoute: typeof LayoutActivitiesIndexRoute
@@ -442,6 +462,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAnalyticsCardioRoute: LayoutAnalyticsCardioRoute,
   LayoutAnalyticsStrengthRoute: LayoutAnalyticsStrengthRoute,
   LayoutRacesRaceIdRoute: LayoutRacesRaceIdRoute,
+  LayoutRacesNewRoute: LayoutRacesNewRoute,
   LayoutRoutinesRoutineIdRoute: LayoutRoutinesRoutineIdRoute,
   LayoutShoesShoeIdRoute: LayoutShoesShoeIdRoute,
   LayoutActivitiesIndexRoute: LayoutActivitiesIndexRoute,

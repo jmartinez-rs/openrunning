@@ -1,11 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { ArrowLeft, MapPin, Medal, Pencil, Trash2, Trophy } from "lucide-react"
-import { useState } from "react"
 
 import { ActivitiesService, RacesService } from "@/client"
 import { ActivityMap } from "@/components/Activities/ActivityMap"
-import { RaceFormDialog } from "@/components/Races/RaceFormDialog"
 import {
   formatRaceDate,
   formatRacePace,
@@ -32,7 +30,6 @@ function RaceDetail() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [formOpen, setFormOpen] = useState(false)
 
   const raceQuery = useQuery({
     queryKey: ["race", raceId],
@@ -108,9 +105,11 @@ function RaceDetail() {
             type="button"
             variant="outline"
             className="rounded-lg"
-            onClick={() => setFormOpen(true)}
+            asChild
           >
-            <Pencil className="mr-2 size-4" /> Editar
+            <Link to="/races/new" search={{ edit: raceId }}>
+              <Pencil className="mr-2 size-4" /> Editar
+            </Link>
           </Button>
           <Button
             type="button"
@@ -313,8 +312,6 @@ function RaceDetail() {
           </section>
         ) : null}
       </div>
-
-      <RaceFormDialog open={formOpen} onOpenChange={setFormOpen} race={race} />
     </div>
   )
 }

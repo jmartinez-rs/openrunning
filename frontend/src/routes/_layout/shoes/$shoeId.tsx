@@ -144,7 +144,7 @@ function ShoeDetail() {
       </Link>
 
       {/* ── Shoe Hero Card ─────────────────────────────────────────── */}
-      <div className="relative flex flex-col gap-6 overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-card via-card to-primary/10 p-6 shadow-card md:flex-row md:items-center">
+      <div className="relative flex flex-col gap-6 overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-card md:flex-row md:items-center">
         {/* Photo / Avatar */}
         {shoe.photo_url ? (
           <img
@@ -182,7 +182,7 @@ function ShoeDetail() {
               {categoryMeta.label}
             </Badge>
             {shoe.strava_gear_id && (
-              <Badge className="bg-primary/20 text-primary border-primary/40 text-xs font-bold">
+              <Badge className="bg-surface-container-high text-muted-foreground border-border text-xs font-bold">
                 Strava Gear
               </Badge>
             )}

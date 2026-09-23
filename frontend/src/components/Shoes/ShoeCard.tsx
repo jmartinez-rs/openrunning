@@ -92,10 +92,6 @@ export function ShoeCard({
             <h3 className="truncate text-base font-bold text-white group-hover:text-primary transition-colors">
               {shoe.name}
             </h3>
-            <p className="truncate text-xs font-medium text-muted-foreground mt-0.5">
-              {[shoe.brand, shoe.model].filter(Boolean).join(" · ") ||
-                "Sin especificación de modelo"}
-            </p>
           </div>
 
           {/* Wear Progress Bar */}
@@ -104,7 +100,7 @@ export function ShoeCard({
               <span className="font-semibold text-muted-foreground">
                 Vida útil de espuma
               </span>
-              <span className="font-bold text-white">
+              <span className="font-bold text-white font-display">
                 {formatKm(stats?.total_distance_meters)} / {health.targetKm} km
               </span>
             </div>
@@ -112,7 +108,7 @@ export function ShoeCard({
             <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-high border border-border/50 p-0.5">
               <div
                 className={cn(
-                  "h-full rounded-full bg-gradient-to-r transition-all duration-500",
+                  "h-full rounded-full transition-all duration-500",
                   health.barColorClass,
                 )}
                 style={{ width: `${Math.min(health.percent, 100)}%` }}
@@ -132,7 +128,7 @@ export function ShoeCard({
               >
                 ● {health.statusLabel}
               </span>
-              <span className="text-muted-foreground font-medium">
+              <span className="text-muted-foreground font-medium font-display">
                 Quedan ~{health.remainingKm} km
               </span>
             </div>
@@ -140,7 +136,7 @@ export function ShoeCard({
 
           {/* Rotation alert if applicable */}
           {rotationAlert.needsRest && (
-            <div className="flex items-center gap-1.5 rounded-xl bg-primary/10 border border-primary/30 p-2 text-[11px] font-semibold text-primary">
+            <div className="flex items-center gap-1.5 rounded-xl bg-surface-container-high border border-border p-2 text-[11px] font-semibold text-primary">
               <AlertTriangle className="size-3.5 shrink-0" />
               <span className="truncate">
                 Rotación sugerida por entreno reciente

@@ -23,6 +23,7 @@ export const AXIS_LABEL_STYLE = {
   fill: "#A1A1AA",
   fontSize: 11,
   fontWeight: 600,
+  textAnchor: "middle" as const,
 } as const
 
 export const TOOLTIP_CONTENT_STYLE = {

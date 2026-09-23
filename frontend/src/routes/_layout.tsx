@@ -21,7 +21,7 @@ function Layout() {
     <div className="relative w-full min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
       <TopNavbar />
 
-      <main className="w-full pt-20 pb-24 md:pb-12">
+      <main className="w-full pt-20 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-12">
         <div className="w-full max-w-7xl mx-auto px-3 sm:px-6">
           <Outlet />
         </div>

@@ -9,7 +9,6 @@ import {
   Footprints,
   Trophy,
 } from "lucide-react"
-import { useState } from "react"
 
 import { ActivitiesService, AnalyticsService, ShoesService } from "@/client"
 import { ActivitySummary } from "@/components/Activities/ActivitySummary"
@@ -24,7 +23,6 @@ import {
   type ExerciseRecord,
   StrengthDetail,
 } from "@/components/Activities/StrengthDetail"
-import { RaceFormDialog } from "@/components/Races/RaceFormDialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
@@ -151,7 +149,6 @@ function hasCardioAside(cardio: {
 
 function ActivityDetail() {
   const { activityId } = Route.useParams()
-  const [formOpen, setFormOpen] = useState(false)
 
   const query = useQuery({
     queryKey: ["activity", activityId],
@@ -264,12 +261,13 @@ function ActivityDetail() {
         </div>
 
         {isStrava && (
-          <button
-            onClick={() => setFormOpen(true)}
+          <Link
+            to="/races/new"
+            search={{ activityId }}
             className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-white hover:bg-surface-container-high transition-colors text-xs font-bold w-full sm:w-auto"
           >
             <Trophy className="w-4 h-4 text-primary" /> Marcar como carrera
-          </button>
+          </Link>
         )}
       </div>
 
@@ -314,12 +312,6 @@ function ActivityDetail() {
           </aside>
         ) : null}
       </div>
-
-      <RaceFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        defaultActivityId={activityId}
-      />
     </div>
   )
 }

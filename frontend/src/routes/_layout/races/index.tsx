@@ -1,11 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { Archive, Plus, RefreshCw, Trophy } from "lucide-react"
 import { useState } from "react"
 
 import { type RacePublic, RacesService } from "@/client"
 import { HistoryRacesTab } from "@/components/Races/HistoryRacesTab"
-import { RaceFormDialog } from "@/components/Races/RaceFormDialog"
 import { RaceMemoryModal } from "@/components/Races/RaceMemoryModal"
 import { UpcomingRacesTab } from "@/components/Races/UpcomingRacesTab"
 import { Button } from "@/components/ui/button"
@@ -20,11 +19,9 @@ export const Route = createFileRoute("/_layout/races/")({
 })
 
 function Races() {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
-
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<RacePublic | null>(null)
 
   const [memoryModalOpen, setMemoryModalOpen] = useState(false)
   const [selectedRaceForMemory, setSelectedRaceForMemory] =
@@ -75,12 +72,11 @@ function Races() {
         <Button
           type="button"
           className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-glow"
-          onClick={() => {
-            setEditing(null)
-            setFormOpen(true)
-          }}
+          asChild
         >
-          <Plus className="mr-2 size-4" /> Nueva carrera
+          <Link to="/races/new">
+            <Plus className="mr-2 size-4" /> Nueva carrera
+          </Link>
         </Button>
       </div>
 
@@ -130,10 +126,7 @@ function Races() {
           <TabsContent value="upcoming" className="focus-visible:outline-none">
             <UpcomingRacesTab
               upcoming={upcoming}
-              onOpenForm={() => {
-                setEditing(null)
-                setFormOpen(true)
-              }}
+              onOpenForm={() => navigate({ to: "/races/new" })}
             />
           </TabsContent>
 
@@ -146,23 +139,13 @@ function Races() {
         </Tabs>
       )}
 
-      <RaceFormDialog
-        open={formOpen}
-        onOpenChange={(open) => {
-          setFormOpen(open)
-          if (!open) setEditing(null)
-        }}
-        race={editing}
-      />
-
       <RaceMemoryModal
         open={memoryModalOpen}
         onOpenChange={setMemoryModalOpen}
         race={selectedRaceForMemory}
         onEdit={(race) => {
-          setEditing(race)
-          setFormOpen(true)
           setMemoryModalOpen(false)
+          navigate({ to: "/races/new", search: { edit: race.id } })
         }}
         onDelete={(race) => deleteMutation.mutate(race.id)}
       />

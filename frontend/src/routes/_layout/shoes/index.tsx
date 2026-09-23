@@ -14,7 +14,6 @@ import {
   Pencil,
   Plus,
   RefreshCw,
-  Sparkles,
   Trash2,
   TrendingUp,
 } from "lucide-react"
@@ -24,7 +23,6 @@ import { type ShoePublic, ShoesService } from "@/client"
 import { ShoeCard } from "@/components/Shoes/ShoeCard"
 import { ShoeFormDialog } from "@/components/Shoes/ShoeFormDialog"
 import { getFoamHealth, SHOE_CATEGORIES } from "@/components/Shoes/shoe-utils"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import useCustomToast from "@/hooks/useCustomToast"
@@ -136,14 +134,9 @@ function Shoes() {
       {/* ── Top Header ────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-white tracking-tight">
-              Shoe Locker · Mi Calzado
-            </h1>
-            <Badge className="bg-primary/15 text-primary border-primary/30 gap-1 text-[11px] font-bold">
-              <Sparkles className="size-3" /> Rotación Inteligente
-            </Badge>
-          </div>
+          <h1 className="text-2xl font-black text-white tracking-tight">
+            Shoe Locker · Mi Calzado
+          </h1>
           <p className="text-xs text-muted-foreground font-medium mt-0.5">
             Seguimiento de amortiguación, desgaste de espuma EVA/PEBA y
             recomendación por sesión.
@@ -174,52 +167,52 @@ function Shoes() {
         </div>
       </div>
 
-      {/* ── Locker Summary Banner ──────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-gradient-to-br from-card via-card to-primary/10 border border-primary/30 shadow-card">
-        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-surface-container-high/60 border border-border/60">
+      {/* ── Locker Summary ─────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="flex flex-col gap-1 p-3.5 rounded-2xl bg-card border border-border shadow-card">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
             <Footprints className="size-3.5 text-primary" />
             Pares Activos
           </div>
-          <span className="text-xl font-extrabold text-white">
+          <span className="text-2xl font-black text-white font-display tracking-tight leading-none">
             {lockerSummary.activeCount}{" "}
-            <span className="text-xs font-normal text-muted-foreground">
+            <span className="text-xs font-normal text-muted-foreground font-sans">
               pares
             </span>
           </span>
         </div>
 
-        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-surface-container-high/60 border border-border/60">
+        <div className="flex flex-col gap-1 p-3.5 rounded-2xl bg-card border border-border shadow-card">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
             <TrendingUp className="size-3.5 text-primary" />
             Km Acumulados
           </div>
-          <span className="text-xl font-extrabold text-primary">
+          <span className="text-2xl font-black text-primary font-display tracking-tight leading-none">
             {lockerSummary.totalKmTracked}{" "}
-            <span className="text-xs font-normal text-muted-foreground">
+            <span className="text-xs font-normal text-muted-foreground font-sans">
               km
             </span>
           </span>
         </div>
 
-        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-surface-container-high/60 border border-border/60">
+        <div className="flex flex-col gap-1 p-3.5 rounded-2xl bg-card border border-border shadow-card">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
             <HeartPulse className="size-3.5 text-primary" />
             Salud Promedio Espuma
           </div>
-          <span className="text-xl font-extrabold text-primary">
+          <span className="text-2xl font-black text-primary font-display tracking-tight leading-none">
             {lockerSummary.avgHealthPercent}%
           </span>
         </div>
 
-        <div className="flex flex-col gap-1 p-2.5 rounded-xl bg-surface-container-high/60 border border-border/60">
+        <div className="flex flex-col gap-1 p-3.5 rounded-2xl bg-card border border-border shadow-card">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
             <Archive className="size-3.5 text-on-surface-variant" />
             Pares Retirados
           </div>
-          <span className="text-xl font-extrabold text-foreground">
+          <span className="text-2xl font-black text-white font-display tracking-tight leading-none">
             {lockerSummary.retiredCount}{" "}
-            <span className="text-xs font-normal text-muted-foreground">
+            <span className="text-xs font-normal text-muted-foreground font-sans">
               pares
             </span>
           </span>
@@ -230,14 +223,14 @@ function Shoes() {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between border-b border-border pb-3 flex-wrap gap-2">
           {/* Active vs Retired Tabs */}
-          <div className="flex items-center gap-2 p-1 rounded-xl bg-card border border-border">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-card border border-border">
             <button
               type="button"
               onClick={() => setActiveTab("active")}
               className={cn(
                 "px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 activeTab === "active"
-                  ? "bg-primary/20 text-primary border border-primary/40 shadow-xs"
+                  ? "bg-surface-container-high text-primary shadow-xs"
                   : "text-muted-foreground hover:text-white",
               )}
             >
@@ -249,7 +242,7 @@ function Shoes() {
               className={cn(
                 "px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
                 activeTab === "retired"
-                  ? "bg-surface-container-high text-white border border-border shadow-xs"
+                  ? "bg-surface-container-high text-primary shadow-xs"
                   : "text-muted-foreground hover:text-white",
               )}
             >
@@ -273,7 +266,7 @@ function Shoes() {
               className={cn(
                 "rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer border",
                 category === filter.value
-                  ? "bg-primary/20 text-primary border-primary/60 shadow-xs"
+                  ? "bg-surface-container-high text-primary border-border shadow-xs"
                   : "bg-card border-border text-muted-foreground hover:bg-surface-container-high hover:text-white",
               )}
             >

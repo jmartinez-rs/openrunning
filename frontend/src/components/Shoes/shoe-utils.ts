@@ -16,7 +16,7 @@ export const SHOE_CATEGORIES: ShoeCategoryOption[] = [
     shortLabel: "Rodaje Z2",
     description:
       "Máxima amortiguación para entrenamientos regenerativos y cómodos",
-    badgeClass: "bg-teal-500/15 text-teal-400 border-teal-500/30",
+    badgeClass: "bg-card/90 text-foreground border-border",
     recommendedTypes: ["easy_run", "recovery"],
   },
   {
@@ -24,7 +24,7 @@ export const SHOE_CATEGORIES: ShoeCategoryOption[] = [
     label: "Entrenamiento Diario (Daily Trainer)",
     shortLabel: "Entrenamiento",
     description: "Zapatillas versátiles y duraderas para el día a día",
-    badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    badgeClass: "bg-card/90 text-foreground border-border",
     recommendedTypes: ["easy_run", "long_run"],
   },
   {
@@ -33,7 +33,7 @@ export const SHOE_CATEGORIES: ShoeCategoryOption[] = [
     shortLabel: "Series / Tempo",
     description:
       "Calzado reactivo y ligero para series de velocidad y ritmo umbral",
-    badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    badgeClass: "bg-card/90 text-foreground border-border",
     recommendedTypes: ["tempo", "intervals", "fartlek", "activation"],
   },
   {
@@ -42,7 +42,7 @@ export const SHOE_CATEGORIES: ShoeCategoryOption[] = [
     shortLabel: "Competencia",
     description:
       "Zapatillas voladoras con placa de carbono para días de carrera",
-    badgeClass: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+    badgeClass: "bg-card/90 text-foreground border-border",
     recommendedTypes: ["race", "time_trial"],
   },
   {
@@ -50,7 +50,7 @@ export const SHOE_CATEGORIES: ShoeCategoryOption[] = [
     label: "Montaña & Terreno Técnico (Trail)",
     shortLabel: "Trail",
     description: "Agarre y protección para senderos, tierra y desniveles",
-    badgeClass: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+    badgeClass: "bg-card/90 text-foreground border-border",
     recommendedTypes: ["trail", "mountain"],
   },
 ]
@@ -123,9 +123,9 @@ export function getFoamHealth(
       remainingKm,
       status: "optimal",
       statusLabel: "Óptima (0-60%)",
-      badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-      barColorClass: "from-teal-500 to-emerald-400",
-      colorHex: "#10b981",
+      badgeClass: "bg-card/90 text-primary border-border",
+      barColorClass: "bg-primary",
+      colorHex: "#eafc5f",
     }
   }
 
@@ -137,8 +137,8 @@ export function getFoamHealth(
       remainingKm,
       status: "warning",
       statusLabel: "Desgaste Medio (60-85%)",
-      badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-      barColorClass: "from-amber-500 to-orange-400",
+      badgeClass: "bg-card/90 text-amber-400 border-border",
+      barColorClass: "bg-amber-400",
       colorHex: "#f59e0b",
     }
   }
@@ -150,8 +150,8 @@ export function getFoamHealth(
     remainingKm,
     status: "critical",
     statusLabel: "Reemplazo Sugerido (>85%)",
-    badgeClass: "bg-red-500/15 text-red-400 border-red-500/30",
-    barColorClass: "from-red-500 to-rose-600",
+    badgeClass: "bg-card/90 text-destructive border-border",
+    barColorClass: "bg-destructive",
     colorHex: "#ef4444",
   }
 }

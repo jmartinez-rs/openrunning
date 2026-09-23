@@ -176,6 +176,25 @@
 .hm-wrap::-webkit-scrollbar {
   display: none;
 }
+
+/* ── App-styled scrollbar (Kinetic Volt) ───────────────────────────── */
+.scrollbar-app {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-container-high) transparent;
+}
+.scrollbar-app::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollbar-app::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-app::-webkit-scrollbar-thumb {
+  background: var(--surface-container-high);
+  border-radius: 9999px;
+}
+.scrollbar-app::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
 .hm-months {
   display: flex;
   margin-left: 28px;
@@ -185,7 +204,7 @@
   flex: none;
   width: 14px;
   font-size: 11px;
-  color: #A1A1AA;
+  color: #a1a1aa;
   white-space: nowrap;
   overflow: visible;
   font-weight: 500;
@@ -203,7 +222,7 @@
 .hm-days span {
   height: 11px;
   font-size: 10px;
-  color: #A1A1AA;
+  color: #a1a1aa;
   line-height: 11px;
   font-weight: 500;
 }
@@ -254,7 +273,7 @@
   justify-content: flex-end;
   margin-top: 10px;
   font-size: 11px;
-  color: #A1A1AA;
+  color: #a1a1aa;
   font-weight: 500;
 }
 .hm-legend .hm-c {
