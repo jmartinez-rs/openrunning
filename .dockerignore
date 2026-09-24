@@ -1,0 +1,11 @@
+# Caches y tooling que no deben entrar al build context de Docker.
+# NOTA: backend/app/frontend (frontend compilado) se mantiene: el backend lo
+# sirve en modo single-origin en producción.
+.git
+.venv
+**/__pycache__
+**/*.pyc
+.ruff_cache
+frontend/node_modules
+frontend/dist
+*.log
