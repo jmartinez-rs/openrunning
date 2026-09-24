@@ -145,10 +145,27 @@ through the internal network.
 > served by the backend on a single origin, `uvicorn` without reload), open an issue and we'll add
 > a production Dockerfile.
 
+## API client (openapi)
+
+The backend is the single source of truth for the API contract. The typed frontend client
+(`frontend/src/client`) and `frontend/openapi.json` are generated from it:
+
+```bash
+./scripts/generate-client.sh   # dumps openapi.json from the backend + regenerates the client
+```
+
+> Do **not** edit `frontend/src/client/**` or `frontend/openapi.json` by hand.
+
+To keep them from drifting, run the guard (also intended for CI / pre-push):
+
+```bash
+./scripts/check-openapi-drift.sh   # fails if openapi.json or the client differ from the backend
+```
+
 ## Tech
 
 React 19 + Vite (TanStack Router, TanStack Query, Tailwind CSS v4, Recharts, Leaflet) · Python
-FastAPI + SQLModel + Alembic · PostgreSQL 16 · Docker Compose · Strava/Hevy sync · GPX/FIT import.
+FastAPI + SQLModel + Alembic · PostgreSQL 16 · Docker Compose · Strava sync · GPX/FIT import.
 
 ## Contributing
 
