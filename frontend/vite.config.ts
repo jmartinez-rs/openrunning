@@ -9,6 +9,14 @@ export default defineConfig({
   server: {
     // Permitir dominios de producción y locales de dev.
     allowedHosts: true,
+    // Proxy de API al backend (single-domain deploy).
+    // En Docker, los containers se resuelven por service name.
+    proxy: {
+      "/api": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     outDir: "../backend/app/frontend",

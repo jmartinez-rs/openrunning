@@ -98,7 +98,7 @@ services:
     environment:
       # URL pública de la API que el navegador usará. En un deploy detrás de un
       # dominio, usar https://api.tu-dominio (o la URL pública del backend).
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8001}
+      VITE_API_URL: ${VITE_API_URL:-}
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     volumes:
