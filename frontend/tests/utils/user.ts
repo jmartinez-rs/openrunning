@@ -12,7 +12,7 @@ export async function signUpNewUser(
   await page.getByTestId("email-input").fill(email)
   await page.getByTestId("password-input").fill(password)
   await page.getByTestId("confirm-password-input").fill(password)
-  await page.getByRole("button", { name: "Sign Up" }).click()
+  await page.getByRole("button", { name: "Crear cuenta" }).click()
   await page.goto("/login")
 }
 

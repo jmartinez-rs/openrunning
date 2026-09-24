@@ -7,7 +7,6 @@ import {
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import type { Body_login_login_access_token as AccessToken } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
 import {
   Form,
@@ -22,18 +21,25 @@ import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 
-const formSchema = z.object({
-  username: z.email({ message: "Dirección de correo electrónico inválida" }),
-  password: z
-    .string()
-    .min(1, { message: "La contraseña es obligatoria" })
-    .min(8, { message: "La contraseña debe tener al menos 8 caracteres" }),
-}) satisfies z.ZodType<AccessToken>
+const formSchema = z
+  .object({
+    full_name: z.string().min(1, { message: "El nombre es obligatorio" }),
+    email: z.email({ message: "Dirección de correo electrónico inválida" }),
+    password: z
+      .string()
+      .min(1, { message: "La contraseña es obligatoria" })
+      .min(8, { message: "La contraseña debe tener al menos 8 caracteres" }),
+    confirm_password: z.string().min(1, { message: "Confirmá tu contraseña" }),
+  })
+  .refine((data) => data.password === data.confirm_password, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirm_password"],
+  })
 
 type FormData = z.infer<typeof formSchema>
 
-export const Route = createFileRoute("/login")({
-  component: Login,
+export const Route = createFileRoute("/signup")({
+  component: SignUp,
   beforeLoad: async () => {
     if (isLoggedIn()) {
       throw redirect({
@@ -44,27 +50,32 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       {
-        title: "Iniciar sesión - OpenRunning",
+        title: "Crear cuenta - OpenRunning",
       },
     ],
   }),
 })
 
-function Login() {
-  const { loginMutation } = useAuth()
+function SignUp() {
+  const { signUpMutation } = useAuth()
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      username: "",
+      full_name: "",
+      email: "",
       password: "",
+      confirm_password: "",
     },
   })
 
   const onSubmit = (data: FormData) => {
-    if (loginMutation.isPending) return
-    loginMutation.mutate(data)
+    if (signUpMutation.isPending) return
+
+    // Excluir confirm_password del payload enviado al backend
+    const { confirm_password: _confirm_password, ...submitData } = data
+    signUpMutation.mutate(submitData)
   }
 
   return (
@@ -76,18 +87,37 @@ function Login() {
         >
           <div className="flex flex-col gap-2 text-center">
             <h1 className="text-headline-md font-semibold text-primary">
-              Iniciá sesión en tu cuenta
+              Creá tu cuenta
             </h1>
             <p className="text-body-md text-on-surface-variant">
-              Ingresá tus datos para acceder a tu centro de entrenamiento de
-              running.
+              Empezá a registrar tus entrenamientos y armá tu plan de running.
             </p>
           </div>
 
           <div className="grid gap-4">
             <FormField
               control={form.control}
-              name="username"
+              name="full_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre</FormLabel>
+                  <FormControl>
+                    <Input
+                      data-testid="full-name-input"
+                      placeholder="Tu nombre"
+                      type="text"
+                      className="rounded-lg border-border bg-card"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Correo electrónico</FormLabel>
@@ -110,19 +140,30 @@ function Login() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center">
-                    <FormLabel>Contraseña</FormLabel>
-                    <RouterLink
-                      to="/recover-password"
-                      className="ml-auto text-body-md text-primary underline-offset-4 hover:underline"
-                    >
-                      ¿Olvidaste tu contraseña?
-                    </RouterLink>
-                  </div>
+                  <FormLabel>Contraseña</FormLabel>
                   <FormControl>
                     <PasswordInput
                       data-testid="password-input"
-                      placeholder="Contraseña"
+                      placeholder="Mínimo 8 caracteres"
+                      className="rounded-lg border-border bg-card"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="confirm_password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirmar contraseña</FormLabel>
+                  <FormControl>
+                    <PasswordInput
+                      data-testid="confirm-password-input"
+                      placeholder="Repetí tu contraseña"
                       className="rounded-lg border-border bg-card"
                       {...field}
                     />
@@ -135,19 +176,19 @@ function Login() {
             <LoadingButton
               type="submit"
               className="w-full rounded-lg bg-primary text-primary-foreground"
-              loading={loginMutation.isPending}
+              loading={signUpMutation.isPending}
             >
-              Iniciar sesión
+              Crear cuenta
             </LoadingButton>
           </div>
 
           <div className="text-center text-body-md text-on-surface-variant">
-            ¿No tenés cuenta?{" "}
+            ¿Ya tenés cuenta?{" "}
             <RouterLink
-              to="/signup"
+              to="/login"
               className="text-primary underline-offset-4 hover:underline"
             >
-              Crear cuenta
+              Iniciá sesión
             </RouterLink>
           </div>
         </form>

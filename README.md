@@ -90,6 +90,9 @@ Open **http://localhost:5173**, log in with the first superuser
 (`FIRST_SUPERUSER` / `FIRST_SUPERUSER_PASSWORD`, defaults `admin@example.com` / `changethis`), and
 you're in.
 
+New users can also create their own account from **/signup** ("Crear cuenta" on the login page).
+Public registration is enabled by default and can be turned off with `ALLOW_REGISTRATION=false`.
+
 > ⚠️ Change `SECRET_KEY`, `POSTGRES_PASSWORD` and `FIRST_SUPERUSER_PASSWORD` before any real
 > deployment — the backend refuses to start with the default secrets when `ENVIRONMENT` is not
 > `local`.
@@ -105,6 +108,7 @@ All via `.env` (see `.env.example`):
 | `SECRET_KEY` | JWT signing key — **change it** | dev default |
 | `FIRST_SUPERUSER` | Initial admin email | `admin@example.com` |
 | `FIRST_SUPERUSER_PASSWORD` | Initial admin password — **change it** | `changethis` |
+| `ALLOW_REGISTRATION` | Allow public account signup (`POST /users/signup`) | `true` |
 | `FRONTEND_HOST` | Public URL of the frontend (reset links, CORS) | `http://localhost:5173` |
 | `BACKEND_CORS_ORIGINS` | Extra CORS origins (comma-separated) | `http://localhost:5173,http://localhost:8001` |
 | `POSTGRES_*` | Database credentials | dev defaults |

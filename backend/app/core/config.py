@@ -93,6 +93,10 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 
+    # Permite el registro público de cuentas nuevas (POST /users/signup).
+    # Poner en False para deshabilitar el alta de usuarios desde el frontend.
+    ALLOW_REGISTRATION: bool = True
+
     STRAVA_CLIENT_ID: str | None = None
     STRAVA_CLIENT_SECRET: str | None = None
     STRAVA_WEBHOOK_VERIFY_TOKEN: str | None = None

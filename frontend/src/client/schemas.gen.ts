@@ -4259,6 +4259,38 @@ export const UserCreateSchema = {
     title: 'UserCreate'
 } as const;
 
+export const UserRegisterSchema = {
+    properties: {
+        email: {
+            type: 'string',
+            maxLength: 255,
+            format: 'email',
+            title: 'Email'
+        },
+        password: {
+            type: 'string',
+            maxLength: 128,
+            minLength: 8,
+            title: 'Password'
+        },
+        full_name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full Name'
+        }
+    },
+    type: 'object',
+    required: ['email', 'password'],
+    title: 'UserRegister'
+} as const;
+
 export const UserPublicSchema = {
     properties: {
         email: {

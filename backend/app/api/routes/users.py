@@ -2,7 +2,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import col, delete, func, select
+from sqlmodel import col, func, select
 
 from app import crud
 from app.api.deps import (
@@ -18,6 +18,7 @@ from app.models import (
     User,
     UserCreate,
     UserPublic,
+    UserRegister,
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
@@ -139,6 +140,27 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     session.delete(current_user)
     session.commit()
     return Message(message="User deleted successfully")
+
+
+@router.post("/signup", response_model=UserPublic)
+def register_user(session: SessionDep, user_in: UserRegister) -> Any:
+    """
+    Create new user without the need to be logged in.
+    """
+    if not settings.ALLOW_REGISTRATION:
+        raise HTTPException(
+            status_code=403,
+            detail="El registro de nuevas cuentas está deshabilitado",
+        )
+    user = crud.get_user_by_email(session=session, email=user_in.email)
+    if user:
+        raise HTTPException(
+            status_code=400,
+            detail="The user with this email already exists in the system",
+        )
+    user_create = UserCreate.model_validate(user_in)
+    user = crud.create_user(session=session, user_create=user_create)
+    return user
 
 
 @router.get("/{user_id}", response_model=UserPublic)

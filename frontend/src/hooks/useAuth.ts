@@ -7,6 +7,7 @@ import {
   type ApiError,
   LoginService,
   type UserPublic,
+  type UserRegister,
   UsersService,
 } from "@/client"
 import { handleError } from "@/utils"
@@ -18,7 +19,7 @@ const isLoggedIn = () => {
 
 const useAuth = () => {
   const navigate = useNavigate()
-  const { showErrorToast } = useCustomToast()
+  const { showErrorToast, showSuccessToast } = useCustomToast()
 
   const userQuery = useQuery<UserPublic | null, ApiError>({
     queryKey: ["currentUser"],
@@ -52,6 +53,19 @@ const useAuth = () => {
     onError: handleError.bind(showErrorToast),
   })
 
+  const signUp = async (data: UserRegister) => {
+    await UsersService.registerUser({ requestBody: data })
+  }
+
+  const signUpMutation = useMutation({
+    mutationFn: signUp,
+    onSuccess: () => {
+      showSuccessToast("Tu cuenta fue creada. Iniciá sesión para continuar.")
+      navigate({ to: "/login" })
+    },
+    onError: handleError.bind(showErrorToast),
+  })
+
   const logout = () => {
     localStorage.removeItem("access_token")
     navigate({ to: "/login" })
@@ -59,6 +73,7 @@ const useAuth = () => {
 
   return {
     loginMutation,
+    signUpMutation,
     logout,
     user,
   }

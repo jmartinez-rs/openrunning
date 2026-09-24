@@ -745,6 +745,12 @@ export type UserPublic = {
     created_at?: (string | null);
 };
 
+export type UserRegister = {
+    email: string;
+    password: string;
+    full_name?: (string | null);
+};
+
 export type UsersPublic = {
     data: Array<UserPublic>;
     count: number;
@@ -1353,6 +1359,12 @@ export type UsersCreateUserData = {
 };
 
 export type UsersCreateUserResponse = (UserPublic);
+
+export type UsersRegisterUserData = {
+    requestBody: UserRegister;
+};
+
+export type UsersRegisterUserResponse = (UserPublic);
 
 export type UsersReadUserMeResponse = (UserPublic);
 
