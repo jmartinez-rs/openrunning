@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ActivitiesReadActivitiesData, ActivitiesReadActivitiesResponse, ActivitiesCreateActivityData, ActivitiesCreateActivityResponse, ActivitiesReadCardioMetricsData, ActivitiesReadCardioMetricsResponse, ActivitiesReadStrengthMetricsData, ActivitiesReadStrengthMetricsResponse, ActivitiesReadActivityData, ActivitiesReadActivityResponse, ActivitiesUpdateActivityData, ActivitiesUpdateActivityResponse, ActivitiesDeleteActivityData, ActivitiesDeleteActivityResponse, ActivitiesAssignActivityShoeData, ActivitiesAssignActivityShoeResponse, AnalyticsReadCardioAnalyticsData, AnalyticsReadCardioAnalyticsResponse, AnalyticsReadStrengthAnalyticsData, AnalyticsReadStrengthAnalyticsResponse, AnalyticsReadDashboardData, AnalyticsReadDashboardResponse, AnalyticsReadStrengthRecordsResponse, AnalyticsReadCardioMonthlyData, AnalyticsReadCardioMonthlyResponse, AnalyticsReadCardioBestPacesResponse, AnalyticsReadStrengthMonthlyData, AnalyticsReadStrengthMonthlyResponse, AnalyticsReadMuscleDistributionData, AnalyticsReadMuscleDistributionResponse, AnalyticsReadOneRmProgressData, AnalyticsReadOneRmProgressResponse, AnalyticsReadCardioHrZonesData, AnalyticsReadCardioHrZonesResponse, AnalyticsReadCardioHrTrendData, AnalyticsReadCardioHrTrendResponse, AnalyticsReadStrengthRpeTrendData, AnalyticsReadStrengthRpeTrendResponse, AnalyticsReadMuscleVolumeData, AnalyticsReadMuscleVolumeResponse, AnalyticsReadActivitiesSummaryData, AnalyticsReadActivitiesSummaryResponse, AuthStartStravaAuthResponse, AuthFinishStravaAuthData, AuthFinishStravaAuthResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PlanReadPlanResponse, PlanReplacePlanData, PlanReplacePlanResponse, PrivateCreateUserData, PrivateCreateUserResponse, RacesReadRacesData, RacesReadRacesResponse, RacesCreateRaceData, RacesCreateRaceResponse, RacesReadRaceData, RacesReadRaceResponse, RacesUpdateRaceData, RacesUpdateRaceResponse, RacesDeleteRaceData, RacesDeleteRaceResponse, RoutinesReadFoldersResponse, RoutinesCreateFolderData, RoutinesCreateFolderResponse, RoutinesRenameFolderData, RoutinesRenameFolderResponse, RoutinesDeleteFolderData, RoutinesDeleteFolderResponse, RoutinesSetPrimaryFolderData, RoutinesSetPrimaryFolderResponse, RoutinesClearPrimaryFolderData, RoutinesClearPrimaryFolderResponse, RoutinesReadRoutinesData, RoutinesReadRoutinesResponse, RoutinesCreateRoutineData, RoutinesCreateRoutineResponse, RoutinesReadRoutineData, RoutinesReadRoutineResponse, RoutinesUpdateRoutineData, RoutinesUpdateRoutineResponse, RoutinesDeleteRoutineData, RoutinesDeleteRoutineResponse, RoutinesAssignRoutineFolderData, RoutinesAssignRoutineFolderResponse, RunningPlansReadPlansResponse, RunningPlansCreatePlanData, RunningPlansCreatePlanResponse, RunningPlansReadPlanData, RunningPlansReadPlanResponse, RunningPlansReplacePlanData, RunningPlansReplacePlanResponse, RunningPlansDeletePlanData, RunningPlansDeletePlanResponse, RunningPlansUpdateWorkoutData, RunningPlansUpdateWorkoutResponse, RunningPlansDuplicateWorkoutData, RunningPlansDuplicateWorkoutResponse, SettingsReadSettingsResponse, SettingsReadGoalsResponse, SettingsUpdateGoalsData, SettingsUpdateGoalsResponse, SettingsSaveStravaCredentialsData, SettingsSaveStravaCredentialsResponse, SettingsSaveHevyCredentialsData, SettingsSaveHevyCredentialsResponse, SettingsReadIntegrationStatusData, SettingsReadIntegrationStatusResponse, SettingsDisconnectIntegrationData, SettingsDisconnectIntegrationResponse, SettingsTestIntegrationData, SettingsTestIntegrationResponse, SettingsReadSyncScheduleResponse, SettingsUpdateSyncScheduleData, SettingsUpdateSyncScheduleResponse, ShoesReadShoesData, ShoesReadShoesResponse, ShoesCreateShoeData, ShoesCreateShoeResponse, ShoesImportStravaShoesResponse, ShoesReadShoeData, ShoesReadShoeResponse, ShoesUpdateShoeData, ShoesUpdateShoeResponse, ShoesDeleteShoeData, ShoesDeleteShoeResponse, ShoesReadShoeStatsData, ShoesReadShoeStatsResponse, ShoesReadShoeActivitiesData, ShoesReadShoeActivitiesResponse, StorageUploadFileData, StorageUploadFileResponse, StorageReadFileData, StorageReadFileResponse, SyncTriggerSyncData, SyncTriggerSyncResponse, SyncReadSyncLogsData, SyncReadSyncLogsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, WebhooksVerifyStravaWebhookData, WebhooksVerifyStravaWebhookResponse, WebhooksReceiveStravaWebhookData, WebhooksReceiveStravaWebhookResponse } from './types.gen';
+import type { ActivitiesReadActivitiesData, ActivitiesReadActivitiesResponse, ActivitiesCreateActivityData, ActivitiesCreateActivityResponse, ActivitiesReadCardioMetricsData, ActivitiesReadCardioMetricsResponse, ActivitiesReadActivityData, ActivitiesReadActivityResponse, ActivitiesUpdateActivityData, ActivitiesUpdateActivityResponse, ActivitiesDeleteActivityData, ActivitiesDeleteActivityResponse, ActivitiesAssignActivityShoeData, ActivitiesAssignActivityShoeResponse, ActivitiesUploadActivityFileData, ActivitiesUploadActivityFileResponse, AnalyticsReadCardioAnalyticsData, AnalyticsReadCardioAnalyticsResponse, AnalyticsReadDashboardData, AnalyticsReadDashboardResponse, AnalyticsReadCardioMonthlyData, AnalyticsReadCardioMonthlyResponse, AnalyticsReadCardioBestPacesResponse, AnalyticsReadCardioHrZonesData, AnalyticsReadCardioHrZonesResponse, AnalyticsReadCardioHrTrendData, AnalyticsReadCardioHrTrendResponse, AnalyticsReadActivitiesSummaryData, AnalyticsReadActivitiesSummaryResponse, AuthStartStravaAuthResponse, AuthFinishStravaAuthData, AuthFinishStravaAuthResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, RacesReadRacesData, RacesReadRacesResponse, RacesCreateRaceData, RacesCreateRaceResponse, RacesReadRaceData, RacesReadRaceResponse, RacesUpdateRaceData, RacesUpdateRaceResponse, RacesDeleteRaceData, RacesDeleteRaceResponse, RunningPlansReadPlansResponse, RunningPlansCreatePlanData, RunningPlansCreatePlanResponse, RunningPlansReadPlanData, RunningPlansReadPlanResponse, RunningPlansReplacePlanData, RunningPlansReplacePlanResponse, RunningPlansDeletePlanData, RunningPlansDeletePlanResponse, RunningPlansUpdateWorkoutData, RunningPlansUpdateWorkoutResponse, RunningPlansDuplicateWorkoutData, RunningPlansDuplicateWorkoutResponse, SettingsReadSettingsResponse, SettingsReadGoalsResponse, SettingsUpdateGoalsData, SettingsUpdateGoalsResponse, SettingsSaveStravaCredentialsData, SettingsSaveStravaCredentialsResponse, SettingsReadIntegrationStatusData, SettingsReadIntegrationStatusResponse, SettingsDisconnectIntegrationData, SettingsDisconnectIntegrationResponse, SettingsTestIntegrationData, SettingsTestIntegrationResponse, SettingsReadSyncScheduleResponse, SettingsUpdateSyncScheduleData, SettingsUpdateSyncScheduleResponse, ShoesReadShoesData, ShoesReadShoesResponse, ShoesCreateShoeData, ShoesCreateShoeResponse, ShoesImportStravaShoesResponse, ShoesReadShoeData, ShoesReadShoeResponse, ShoesUpdateShoeData, ShoesUpdateShoeResponse, ShoesDeleteShoeData, ShoesDeleteShoeResponse, ShoesReadShoeStatsData, ShoesReadShoeStatsResponse, ShoesReadShoeActivitiesData, ShoesReadShoeActivitiesResponse, StorageUploadFileData, StorageUploadFileResponse, StorageReadFileData, StorageReadFileResponse, SyncTriggerSyncData, SyncTriggerSyncResponse, SyncReadSyncLogsData, SyncReadSyncLogsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, WebhooksVerifyStravaWebhookData, WebhooksVerifyStravaWebhookResponse, WebhooksReceiveStravaWebhookData, WebhooksReceiveStravaWebhookResponse } from './types.gen';
 
 export class ActivitiesService {
     /**
@@ -64,26 +64,6 @@ export class ActivitiesService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/activities/cardio/{activity_id}',
-            path: {
-                activity_id: data.activityId
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Read Strength Metrics
-     * @param data The data for the request.
-     * @param data.activityId
-     * @returns ActivityStrength Successful Response
-     * @throws ApiError
-     */
-    public static readStrengthMetrics(data: ActivitiesReadStrengthMetricsData): CancelablePromise<ActivitiesReadStrengthMetricsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/activities/strength/{activity_id}',
             path: {
                 activity_id: data.activityId
             },
@@ -179,6 +159,26 @@ export class ActivitiesService {
             }
         });
     }
+    
+    /**
+     * Upload Activity File
+     * Sube y procesa un archivo GPS .gpx o .fit directamente.
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns ActivityPublic Successful Response
+     * @throws ApiError
+     */
+    public static uploadActivityFile(data: ActivitiesUploadActivityFileData): CancelablePromise<ActivitiesUploadActivityFileResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/activities/upload',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
 }
 
 export class AnalyticsService {
@@ -194,28 +194,6 @@ export class AnalyticsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/analytics/cardio',
-            query: {
-                from_date: data.fromDate,
-                to_date: data.toDate
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Read Strength Analytics
-     * @param data The data for the request.
-     * @param data.fromDate
-     * @param data.toDate
-     * @returns StrengthAnalyticsPublic Successful Response
-     * @throws ApiError
-     */
-    public static readStrengthAnalytics(data: AnalyticsReadStrengthAnalyticsData = {}): CancelablePromise<AnalyticsReadStrengthAnalyticsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/analytics/strength',
             query: {
                 from_date: data.fromDate,
                 to_date: data.toDate
@@ -247,19 +225,6 @@ export class AnalyticsService {
     }
     
     /**
-     * Read Strength Records
-     * Devuelve récords personales por ejercicio (peso, volumen y 1RM estimado).
-     * @returns unknown Successful Response
-     * @throws ApiError
-     */
-    public static readStrengthRecords(): CancelablePromise<AnalyticsReadStrengthRecordsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/analytics/strength/records'
-        });
-    }
-    
-    /**
      * Read Cardio Monthly
      * Serie mensual de volumen cardio (distancia, desnivel y sesiones).
      * @param data The data for the request.
@@ -282,7 +247,7 @@ export class AnalyticsService {
     
     /**
      * Read Cardio Best Paces
-     * Mejor ritmo promedio por distancia objetivo (5k, 10k, 15k, 21.1k).
+     * Mejor ritmo promedio por distancia objetivo (5k, 10k, 15k, 21.1k, 42.2k).
      * @returns unknown Successful Response
      * @throws ApiError
      */
@@ -290,71 +255,6 @@ export class AnalyticsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/analytics/cardio/best-paces'
-        });
-    }
-    
-    /**
-     * Read Strength Monthly
-     * Serie mensual de volumen de fuerza (kg, series y sesiones).
-     * @param data The data for the request.
-     * @param data.months
-     * @returns unknown Successful Response
-     * @throws ApiError
-     */
-    public static readStrengthMonthly(data: AnalyticsReadStrengthMonthlyData = {}): CancelablePromise<AnalyticsReadStrengthMonthlyResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/analytics/strength/monthly',
-            query: {
-                months: data.months
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Read Muscle Distribution
-     * Distribución de series por grupo muscular en el período.
-     * @param data The data for the request.
-     * @param data.months
-     * @returns unknown Successful Response
-     * @throws ApiError
-     */
-    public static readMuscleDistribution(data: AnalyticsReadMuscleDistributionData = {}): CancelablePromise<AnalyticsReadMuscleDistributionResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/analytics/strength/muscle-distribution',
-            query: {
-                months: data.months
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Read One Rm Progress
-     * Progresión del 1RM estimado (Epley) de un ejercicio a lo largo del tiempo.
-     * @param data The data for the request.
-     * @param data.exercise
-     * @param data.limit
-     * @returns unknown Successful Response
-     * @throws ApiError
-     */
-    public static readOneRmProgress(data: AnalyticsReadOneRmProgressData): CancelablePromise<AnalyticsReadOneRmProgressResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/analytics/strength/one-rm-progress',
-            query: {
-                exercise: data.exercise,
-                limit: data.limit
-            },
-            errors: {
-                422: 'Validation Error'
-            }
         });
     }
     
@@ -401,57 +301,13 @@ export class AnalyticsService {
     }
     
     /**
-     * Read Strength Rpe Trend
-     * RPE promedio por semana (intensidad percibida).
-     * @param data The data for the request.
-     * @param data.weeks
-     * @returns RpeTrendPublic Successful Response
-     * @throws ApiError
-     */
-    public static readStrengthRpeTrend(data: AnalyticsReadStrengthRpeTrendData = {}): CancelablePromise<AnalyticsReadStrengthRpeTrendResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/analytics/strength/rpe-trend',
-            query: {
-                weeks: data.weeks
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Read Muscle Volume
-     * Volumen (kg) por grupo muscular en el período.
-     * @param data The data for the request.
-     * @param data.months
-     * @returns MuscleVolumePublic Successful Response
-     * @throws ApiError
-     */
-    public static readMuscleVolume(data: AnalyticsReadMuscleVolumeData = {}): CancelablePromise<AnalyticsReadMuscleVolumeResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/analytics/strength/muscle-volume',
-            query: {
-                months: data.months
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
      * Read Activities Summary
      * Resumen mensual de actividades cardio de Strava por tipo.
      *
      * - by_type agrupa por sport_type (Run, Ride, Walk, ...).
      * - coverage es la fracción de actividades del período con sport_type no nulo.
      * - monthly.target_activities es una PROYECCIÓN de la meta semanal existente
-     * (WeeklyGoal.target_cardio_minutes o target_km) multiplicada por ~4.33
-     * semanas/mes. No es una meta mensual real: si no hay WeeklyGoal, se
-     * devuelve null.
+     * multiplicada por ~4.33 semanas/mes.
      * - calendar incluye todos los días del mes (con types vacío si no hubo
      * actividad).
      * @param data The data for the request.
@@ -610,39 +466,6 @@ export class LoginService {
     }
 }
 
-export class PlanService {
-    /**
-     * Read Plan
-     * @returns TrainingPlanPublic Successful Response
-     * @throws ApiError
-     */
-    public static readPlan(): CancelablePromise<PlanReadPlanResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/plan'
-        });
-    }
-    
-    /**
-     * Replace Plan
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns TrainingPlanPublic Successful Response
-     * @throws ApiError
-     */
-    public static replacePlan(data: PlanReplacePlanData): CancelablePromise<PlanReplacePlanResponse> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/v1/plan',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-}
-
 export class PrivateService {
     /**
      * Create User
@@ -768,251 +591,6 @@ export class RacesService {
             path: {
                 race_id: data.raceId
             },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-}
-
-export class RoutinesService {
-    /**
-     * Read Folders
-     * @returns RoutineFoldersPublic Successful Response
-     * @throws ApiError
-     */
-    public static readFolders(): CancelablePromise<RoutinesReadFoldersResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/routines/folders'
-        });
-    }
-    
-    /**
-     * Create Folder
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns RoutineFolderPublic Successful Response
-     * @throws ApiError
-     */
-    public static createFolder(data: RoutinesCreateFolderData): CancelablePromise<RoutinesCreateFolderResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/routines/folders',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Rename Folder
-     * @param data The data for the request.
-     * @param data.folderId
-     * @param data.requestBody
-     * @returns RoutineFolderPublic Successful Response
-     * @throws ApiError
-     */
-    public static renameFolder(data: RoutinesRenameFolderData): CancelablePromise<RoutinesRenameFolderResponse> {
-        return __request(OpenAPI, {
-            method: 'PATCH',
-            url: '/api/v1/routines/folders/{folder_id}',
-            path: {
-                folder_id: data.folderId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Delete Folder
-     * @param data The data for the request.
-     * @param data.folderId
-     * @returns RoutineFolderPublic Successful Response
-     * @throws ApiError
-     */
-    public static deleteFolder(data: RoutinesDeleteFolderData): CancelablePromise<RoutinesDeleteFolderResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/v1/routines/folders/{folder_id}',
-            path: {
-                folder_id: data.folderId
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Set Primary Folder
-     * @param data The data for the request.
-     * @param data.folderId
-     * @returns RoutineFolderPublic Successful Response
-     * @throws ApiError
-     */
-    public static setPrimaryFolder(data: RoutinesSetPrimaryFolderData): CancelablePromise<RoutinesSetPrimaryFolderResponse> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/v1/routines/folders/{folder_id}/primary',
-            path: {
-                folder_id: data.folderId
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Clear Primary Folder
-     * @param data The data for the request.
-     * @param data.folderId
-     * @returns RoutineFolderPublic Successful Response
-     * @throws ApiError
-     */
-    public static clearPrimaryFolder(data: RoutinesClearPrimaryFolderData): CancelablePromise<RoutinesClearPrimaryFolderResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/v1/routines/folders/{folder_id}/primary',
-            path: {
-                folder_id: data.folderId
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Read Routines
-     * @param data The data for the request.
-     * @param data.type
-     * @param data.skip
-     * @param data.limit
-     * @returns RoutinesPublic Successful Response
-     * @throws ApiError
-     */
-    public static readRoutines(data: RoutinesReadRoutinesData = {}): CancelablePromise<RoutinesReadRoutinesResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/routines/',
-            query: {
-                type: data.type,
-                skip: data.skip,
-                limit: data.limit
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Create Routine
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns RoutinePublic Successful Response
-     * @throws ApiError
-     */
-    public static createRoutine(data: RoutinesCreateRoutineData): CancelablePromise<RoutinesCreateRoutineResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/routines/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Read Routine
-     * @param data The data for the request.
-     * @param data.routineId
-     * @returns RoutinePublic Successful Response
-     * @throws ApiError
-     */
-    public static readRoutine(data: RoutinesReadRoutineData): CancelablePromise<RoutinesReadRoutineResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/routines/{routine_id}',
-            path: {
-                routine_id: data.routineId
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Update Routine
-     * @param data The data for the request.
-     * @param data.routineId
-     * @param data.requestBody
-     * @returns RoutinePublic Successful Response
-     * @throws ApiError
-     */
-    public static updateRoutine(data: RoutinesUpdateRoutineData): CancelablePromise<RoutinesUpdateRoutineResponse> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/v1/routines/{routine_id}',
-            path: {
-                routine_id: data.routineId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Delete Routine
-     * @param data The data for the request.
-     * @param data.routineId
-     * @returns string Successful Response
-     * @throws ApiError
-     */
-    public static deleteRoutine(data: RoutinesDeleteRoutineData): CancelablePromise<RoutinesDeleteRoutineResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/v1/routines/{routine_id}',
-            path: {
-                routine_id: data.routineId
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Assign Routine Folder
-     * @param data The data for the request.
-     * @param data.routineId
-     * @param data.requestBody
-     * @returns RoutinePublic Successful Response
-     * @throws ApiError
-     */
-    public static assignRoutineFolder(data: RoutinesAssignRoutineFolderData): CancelablePromise<RoutinesAssignRoutineFolderResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/routines/{routine_id}/folder',
-            path: {
-                routine_id: data.routineId
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
             errors: {
                 422: 'Validation Error'
             }
@@ -1221,25 +799,6 @@ export class SettingsService {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/v1/settings/integrations/strava',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Save Hevy Credentials
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns IntegrationStatus Successful Response
-     * @throws ApiError
-     */
-    public static saveHevyCredentials(data: SettingsSaveHevyCredentialsData): CancelablePromise<SettingsSaveHevyCredentialsResponse> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/v1/settings/integrations/hevy',
             body: data.requestBody,
             mediaType: 'application/json',
             errors: {
@@ -1641,26 +1200,6 @@ export class UsersService {
     }
     
     /**
-     * Register User
-     * Create new user without the need to be logged in.
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns UserPublic Successful Response
-     * @throws ApiError
-     */
-    public static registerUser(data: UsersRegisterUserData): CancelablePromise<UsersRegisterUserResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/users/signup',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
      * Read User Me
      * Get current user.
      * @returns UserPublic Successful Response
@@ -1718,6 +1257,26 @@ export class UsersService {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/api/v1/users/me/password',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Register User
+     * Create new user without the need to be logged in.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserPublic Successful Response
+     * @throws ApiError
+     */
+    public static registerUser(data: UsersRegisterUserData): CancelablePromise<UsersRegisterUserResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/users/signup',
             body: data.requestBody,
             mediaType: 'application/json',
             errors: {

@@ -5,13 +5,11 @@ import {
   Calendar,
   Check,
   Clock,
-  Dumbbell,
   Footprints,
   Trophy,
 } from "lucide-react"
 
-import { ActivitiesService, AnalyticsService, ShoesService } from "@/client"
-import { ActivitySummary } from "@/components/Activities/ActivitySummary"
+import { ActivitiesService, ShoesService } from "@/client"
 import {
   formatDate,
   formatDuration,
@@ -19,10 +17,6 @@ import {
 } from "@/components/Activities/activity-utils"
 import { CardioDetail } from "@/components/Activities/CardioDetail"
 import { CardioSummary } from "@/components/Activities/CardioSummary"
-import {
-  type ExerciseRecord,
-  StrengthDetail,
-} from "@/components/Activities/StrengthDetail"
 import { Skeleton } from "@/components/ui/skeleton"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
@@ -155,16 +149,6 @@ function ActivityDetail() {
     queryFn: () => ActivitiesService.readActivity({ activityId }),
   })
 
-  const recordsQuery = useQuery({
-    queryKey: ["strength-records"],
-    queryFn: () => AnalyticsService.readStrengthRecords(),
-    enabled: Boolean(query.data?.strength),
-  })
-  const records = (recordsQuery.data ?? {}) as unknown as Record<
-    string,
-    ExerciseRecord
-  >
-
   if (query.isLoading) {
     return (
       <div className="col-span-12 flex flex-col gap-6 pb-20">
@@ -198,10 +182,16 @@ function ActivityDetail() {
   }
 
   const activity = query.data
-  const isStrength = activity.source_type === "hevy"
   const isStrava = activity.source_type === "strava"
-  const strengthData = activity.strength
-  const hasStrengthSummary = isStrength && Boolean(strengthData)
+  const sourceLabel =
+    activity.source_type === "strava"
+      ? "Strava"
+      : activity.source_type === "manual"
+        ? "Manual"
+        : activity.source_type === "gpx_upload" ||
+            activity.source_type === "fit_upload"
+          ? "Archivo GPS"
+          : "Actividad"
   const hasCardioSummary =
     isStrava && Boolean(activity.cardio) && hasCardioAside(activity.cardio!)
 
@@ -220,25 +210,10 @@ function ActivityDetail() {
           <div className="space-y-1">
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                {activity.name ||
-                  (isStrength ? "Sesión de fuerza" : "Sesión cardio")}
+                {activity.name || "Sesión cardio"}
               </h1>
-              <span
-                className={
-                  isStrength
-                    ? "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-bold"
-                    : "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold"
-                }
-              >
-                {isStrength ? (
-                  <>
-                    <Dumbbell className="w-3.5 h-3.5" /> Hevy
-                  </>
-                ) : (
-                  <>
-                    <Footprints className="w-3.5 h-3.5" /> Strava
-                  </>
-                )}
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold">
+                <Footprints className="w-3.5 h-3.5" /> {sourceLabel}
               </span>
             </div>
             <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground flex-wrap">
@@ -274,7 +249,7 @@ function ActivityDetail() {
       {/* Main Grid Content */}
       <div
         className={
-          hasStrengthSummary || hasCardioSummary
+          hasCardioSummary
             ? "grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]"
             : "flex flex-col gap-5"
         }
@@ -290,8 +265,6 @@ function ActivityDetail() {
               ) : null}
               <CardioDetail cardio={activity.cardio} />
             </div>
-          ) : activity.strength ? (
-            <StrengthDetail strength={activity.strength} records={records} />
           ) : (
             <div className="p-8 bg-card/80 border border-border rounded-2xl text-center text-muted-foreground text-xs font-medium">
               Sin métricas cargadas para esta sesión.
@@ -299,14 +272,7 @@ function ActivityDetail() {
           )}
         </div>
 
-        {hasStrengthSummary ? (
-          <aside className="lg:sticky lg:top-4 lg:self-start">
-            <ActivitySummary
-              strength={strengthData!}
-              durationSeconds={activity.duration_seconds}
-            />
-          </aside>
-        ) : hasCardioSummary ? (
+        {hasCardioSummary ? (
           <aside className="lg:sticky lg:top-4 lg:self-start">
             <CardioSummary cardio={activity.cardio!} />
           </aside>

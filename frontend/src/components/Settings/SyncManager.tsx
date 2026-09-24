@@ -33,19 +33,6 @@ export function SyncManager() {
     onError: handleError.bind(showErrorToast),
   })
 
-  const hevySync = useMutation({
-    mutationFn: () => SyncService.triggerSync({ provider: "hevy" }),
-    onSuccess: (log) => {
-      showSuccessToast(
-        String(log.details?.message ?? "Sincronización completada"),
-      )
-      invalidate()
-    },
-    onError: handleError.bind(showErrorToast),
-  })
-
-  const syncing = stravaSync.isPending || hevySync.isPending
-
   return (
     <SettingsRow
       icon={RefreshCw}
@@ -59,7 +46,7 @@ export function SyncManager() {
           type="button"
           variant="outline"
           size="sm"
-          disabled={syncing}
+          disabled={stravaSync.isPending}
           onClick={() => stravaSync.mutate()}
           className="h-8 rounded-xl border-border text-xs text-muted-foreground"
         >
@@ -69,21 +56,6 @@ export function SyncManager() {
             <RefreshCw className="mr-1.5 size-3.5" />
           )}
           Strava
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={syncing}
-          onClick={() => hevySync.mutate()}
-          className="h-8 rounded-xl border-border text-xs text-muted-foreground"
-        >
-          {hevySync.isPending ? (
-            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="mr-1.5 size-3.5" />
-          )}
-          Hevy
         </Button>
       </div>
     </SettingsRow>

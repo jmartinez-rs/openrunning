@@ -12,6 +12,7 @@ export type ActivityCardio = {
     max_hr?: (number | null);
     elevation_gain_meters?: number;
     calories?: (number | null);
+    cadence_avg?: (number | null);
     map_summary_polyline?: (string | null);
     splits?: Array<{
         [key: string]: unknown;
@@ -19,6 +20,8 @@ export type ActivityCardio = {
     heart_rate_zones?: Array<{
         [key: string]: unknown;
     }>;
+    rpe?: (number | null);
+    perceived_effort_notes?: (string | null);
     shoe_id?: (string | null);
     gear_id?: (string | null);
     id?: string;
@@ -32,6 +35,7 @@ export type ActivityCardioBase = {
     max_hr?: (number | null);
     elevation_gain_meters?: number;
     calories?: (number | null);
+    cadence_avg?: (number | null);
     map_summary_polyline?: (string | null);
     splits?: Array<{
         [key: string]: unknown;
@@ -39,6 +43,8 @@ export type ActivityCardioBase = {
     heart_rate_zones?: Array<{
         [key: string]: unknown;
     }>;
+    rpe?: (number | null);
+    perceived_effort_notes?: (string | null);
     shoe_id?: (string | null);
     gear_id?: (string | null);
 };
@@ -51,7 +57,6 @@ export type ActivityCreate = {
     name?: (string | null);
     sport_type?: (string | null);
     cardio?: (ActivityCardioBase | null);
-    strength?: (ActivityStrengthBase | null);
 };
 
 export type ActivityPublic = {
@@ -65,31 +70,10 @@ export type ActivityPublic = {
     user_id: string;
     created_at: string;
     cardio?: (ActivityCardioBase | null);
-    strength?: (ActivityStrengthBase | null);
 };
 
 export type ActivityShoeAssignment = {
     shoe_id?: (string | null);
-};
-
-export type ActivityStrength = {
-    total_volume_kg?: number;
-    total_sets?: number;
-    avg_rpe?: (number | null);
-    exercises?: Array<{
-        [key: string]: unknown;
-    }>;
-    id?: string;
-    activity_id: string;
-};
-
-export type ActivityStrengthBase = {
-    total_volume_kg?: number;
-    total_sets?: number;
-    avg_rpe?: (number | null);
-    exercises?: Array<{
-        [key: string]: unknown;
-    }>;
 };
 
 export type ActivitySummaryCalendarDay = {
@@ -134,6 +118,10 @@ export type ActivityUpdate = {
     name?: (string | null);
 };
 
+export type Body_activities_upload_activity_file = {
+    file: string;
+};
+
 export type Body_login_login_access_token = {
     grant_type?: (string | null);
     username: string;
@@ -169,8 +157,6 @@ export type DashboardActivity = {
     source_type: string;
     duration_seconds: number;
     distance_meters?: (number | null);
-    total_volume_kg?: (number | null);
-    total_sets?: (number | null);
 };
 
 export type DashboardDay = {
@@ -182,8 +168,6 @@ export type DashboardKPIs = {
     cardio_distance_meters: number;
     cardio_duration_seconds: number;
     cardio_avg_pace_seconds_per_km: (number | null);
-    strength_volume_kg: number;
-    strength_total_sets: number;
     sessions: number;
     active_days: number;
 };
@@ -196,10 +180,6 @@ export type DashboardPublic = {
     upcoming_race?: (UpcomingRacePublic | null);
     previous_kpis?: (DashboardKPIs | null);
     sync_state?: Array<SyncStateEntry>;
-};
-
-export type HevyCredentialsIn = {
-    api_key: string;
 };
 
 export type HrTrendPoint = {
@@ -238,15 +218,6 @@ export type Message = {
     message: string;
 };
 
-export type MuscleVolumePoint = {
-    group: string;
-    volume_kg: number;
-};
-
-export type MuscleVolumePublic = {
-    data?: Array<MuscleVolumePoint>;
-};
-
 export type NewPassword = {
     token: string;
     new_password: string;
@@ -275,6 +246,9 @@ export type RaceCreate = {
     date: string;
     location?: (string | null);
     distance_km: number;
+    priority?: 'A' | 'B' | 'C';
+    target_time_seconds?: (number | null);
+    target_pace_seconds_per_km?: (number | null);
     official_time_seconds?: (number | null);
     official_pace_seconds_per_km?: (number | null);
     chip_time_seconds?: (number | null);
@@ -287,11 +261,16 @@ export type RaceCreate = {
     activity_id?: (string | null);
 };
 
+export type priority = 'A' | 'B' | 'C';
+
 export type RacePublic = {
     event_name: string;
     date: string;
     location?: (string | null);
     distance_km: number;
+    priority?: 'A' | 'B' | 'C';
+    target_time_seconds?: (number | null);
+    target_pace_seconds_per_km?: (number | null);
     official_time_seconds?: (number | null);
     official_pace_seconds_per_km?: (number | null);
     chip_time_seconds?: (number | null);
@@ -317,6 +296,9 @@ export type RaceUpdate = {
     date?: (string | null);
     location?: (string | null);
     distance_km?: (number | null);
+    priority?: ('A' | 'B' | 'C' | null);
+    target_time_seconds?: (number | null);
+    target_pace_seconds_per_km?: (number | null);
     official_time_seconds?: (number | null);
     official_pace_seconds_per_km?: (number | null);
     chip_time_seconds?: (number | null);
@@ -327,81 +309,6 @@ export type RaceUpdate = {
     notes?: (string | null);
     activity_id?: (string | null);
     shoe_id?: (string | null);
-};
-
-export type RoutineCreate = {
-    type: string;
-    name: string;
-    description?: (string | null);
-    routine_data?: {
-        [key: string]: unknown;
-    };
-};
-
-export type RoutineFolderAssignment = {
-    folder_id?: (string | null);
-};
-
-export type RoutineFolderCreate = {
-    name: string;
-};
-
-export type RoutineFolderPublic = {
-    name: string;
-    hevy_folder_id?: (number | null);
-    is_primary?: boolean;
-    id: string;
-    user_id: string;
-    created_at: string;
-    routines?: Array<RoutinePublic>;
-};
-
-export type RoutineFoldersPublic = {
-    data: Array<RoutineFolderPublic>;
-    count: number;
-};
-
-export type RoutineFolderUpdate = {
-    name: string;
-};
-
-export type RoutinePublic = {
-    type: string;
-    name: string;
-    description?: (string | null);
-    routine_data?: {
-        [key: string]: unknown;
-    };
-    id: string;
-    user_id: string;
-    folder_id?: (string | null);
-    created_at: string;
-    updated_at: string;
-};
-
-export type RoutinesPublic = {
-    data: Array<RoutinePublic>;
-    count: number;
-};
-
-export type RoutineUpdate = {
-    type?: (string | null);
-    name?: (string | null);
-    description?: (string | null);
-    routine_data?: ({
-    [key: string]: unknown;
-} | null);
-    folder_id?: (string | null);
-};
-
-export type RpeTrendPoint = {
-    week: string;
-    avg_rpe?: (number | null);
-    sessions?: number;
-};
-
-export type RpeTrendPublic = {
-    data?: Array<RpeTrendPoint>;
 };
 
 export type RunningPhasePublic = {
@@ -638,14 +545,6 @@ export type StravaCredentialsIn = {
     expires_at?: (string | null);
 };
 
-export type StrengthAnalyticsPublic = {
-    from_date: (string | null);
-    to_date: (string | null);
-    volume_kg: number;
-    total_sets: number;
-    sessions: number;
-};
-
 export type SyncLogPublic = {
     provider: string;
     status: string;
@@ -688,31 +587,6 @@ export type SyncStateEntry = {
 export type Token = {
     access_token: string;
     token_type?: string;
-};
-
-export type TrainingPlanDayBase = {
-    weekday: number;
-    kind: 'strength' | 'running' | 'rest';
-    routine_id?: (string | null);
-    label?: (string | null);
-};
-
-export type kind = 'strength' | 'running' | 'rest';
-
-export type TrainingPlanDayPublic = {
-    weekday: number;
-    kind: 'strength' | 'running' | 'rest';
-    routine_id?: (string | null);
-    label?: (string | null);
-    id: string;
-};
-
-export type TrainingPlanPublic = {
-    days?: Array<TrainingPlanDayPublic>;
-};
-
-export type TrainingPlanUpdate = {
-    days?: Array<TrainingPlanDayBase>;
 };
 
 export type UpcomingRacePublic = {
@@ -791,14 +665,14 @@ export type WeekIn = {
 
 export type WeeklyGoalBase = {
     target_km?: (number | null);
-    target_gym_days?: (number | null);
-    target_cardio_minutes?: (number | null);
+    target_sessions?: (number | null);
+    target_long_run_km?: (number | null);
 };
 
 export type WeeklyGoalPublic = {
     target_km?: (number | null);
-    target_gym_days?: (number | null);
-    target_cardio_minutes?: (number | null);
+    target_sessions?: (number | null);
+    target_long_run_km?: (number | null);
     id: string;
     user_id: string;
     created_at: string;
@@ -878,12 +752,6 @@ export type ActivitiesReadCardioMetricsData = {
 
 export type ActivitiesReadCardioMetricsResponse = (ActivityCardio);
 
-export type ActivitiesReadStrengthMetricsData = {
-    activityId: string;
-};
-
-export type ActivitiesReadStrengthMetricsResponse = (ActivityStrength);
-
 export type ActivitiesReadActivityData = {
     activityId: string;
 };
@@ -912,19 +780,18 @@ export type ActivitiesAssignActivityShoeData = {
 
 export type ActivitiesAssignActivityShoeResponse = (ActivityPublic);
 
+export type ActivitiesUploadActivityFileData = {
+    formData: Body_activities_upload_activity_file;
+};
+
+export type ActivitiesUploadActivityFileResponse = (ActivityPublic);
+
 export type AnalyticsReadCardioAnalyticsData = {
     fromDate?: (string | null);
     toDate?: (string | null);
 };
 
 export type AnalyticsReadCardioAnalyticsResponse = (CardioAnalyticsPublic);
-
-export type AnalyticsReadStrengthAnalyticsData = {
-    fromDate?: (string | null);
-    toDate?: (string | null);
-};
-
-export type AnalyticsReadStrengthAnalyticsResponse = (StrengthAnalyticsPublic);
 
 export type AnalyticsReadDashboardData = {
     /**
@@ -935,12 +802,6 @@ export type AnalyticsReadDashboardData = {
 
 export type AnalyticsReadDashboardResponse = (DashboardPublic);
 
-export type AnalyticsReadStrengthRecordsResponse = ({
-    [key: string]: {
-        [key: string]: unknown;
-    };
-});
-
 export type AnalyticsReadCardioMonthlyData = {
     months?: number;
 };
@@ -950,31 +811,6 @@ export type AnalyticsReadCardioMonthlyResponse = (Array<{
 }>);
 
 export type AnalyticsReadCardioBestPacesResponse = (Array<{
-    [key: string]: unknown;
-}>);
-
-export type AnalyticsReadStrengthMonthlyData = {
-    months?: number;
-};
-
-export type AnalyticsReadStrengthMonthlyResponse = (Array<{
-    [key: string]: unknown;
-}>);
-
-export type AnalyticsReadMuscleDistributionData = {
-    months?: number;
-};
-
-export type AnalyticsReadMuscleDistributionResponse = (Array<{
-    [key: string]: unknown;
-}>);
-
-export type AnalyticsReadOneRmProgressData = {
-    exercise: string;
-    limit?: number;
-};
-
-export type AnalyticsReadOneRmProgressResponse = (Array<{
     [key: string]: unknown;
 }>);
 
@@ -989,18 +825,6 @@ export type AnalyticsReadCardioHrTrendData = {
 };
 
 export type AnalyticsReadCardioHrTrendResponse = (HrTrendPublic);
-
-export type AnalyticsReadStrengthRpeTrendData = {
-    weeks?: number;
-};
-
-export type AnalyticsReadStrengthRpeTrendResponse = (RpeTrendPublic);
-
-export type AnalyticsReadMuscleVolumeData = {
-    months?: number;
-};
-
-export type AnalyticsReadMuscleVolumeResponse = (MuscleVolumePublic);
 
 export type AnalyticsReadActivitiesSummaryData = {
     /**
@@ -1050,14 +874,6 @@ export type LoginRecoverPasswordHtmlContentData = {
 
 export type LoginRecoverPasswordHtmlContentResponse = (string);
 
-export type PlanReadPlanResponse = (TrainingPlanPublic);
-
-export type PlanReplacePlanData = {
-    requestBody: TrainingPlanUpdate;
-};
-
-export type PlanReplacePlanResponse = (TrainingPlanPublic);
-
 export type PrivateCreateUserData = {
     requestBody: PrivateUserCreate;
 };
@@ -1099,81 +915,6 @@ export type RacesDeleteRaceData = {
 export type RacesDeleteRaceResponse = ({
     [key: string]: (string);
 });
-
-export type RoutinesReadFoldersResponse = (RoutineFoldersPublic);
-
-export type RoutinesCreateFolderData = {
-    requestBody: RoutineFolderCreate;
-};
-
-export type RoutinesCreateFolderResponse = (RoutineFolderPublic);
-
-export type RoutinesRenameFolderData = {
-    folderId: string;
-    requestBody: RoutineFolderUpdate;
-};
-
-export type RoutinesRenameFolderResponse = (RoutineFolderPublic);
-
-export type RoutinesDeleteFolderData = {
-    folderId: string;
-};
-
-export type RoutinesDeleteFolderResponse = (RoutineFolderPublic);
-
-export type RoutinesSetPrimaryFolderData = {
-    folderId: string;
-};
-
-export type RoutinesSetPrimaryFolderResponse = (RoutineFolderPublic);
-
-export type RoutinesClearPrimaryFolderData = {
-    folderId: string;
-};
-
-export type RoutinesClearPrimaryFolderResponse = (RoutineFolderPublic);
-
-export type RoutinesReadRoutinesData = {
-    limit?: number;
-    skip?: number;
-    type?: (string | null);
-};
-
-export type RoutinesReadRoutinesResponse = (RoutinesPublic);
-
-export type RoutinesCreateRoutineData = {
-    requestBody: RoutineCreate;
-};
-
-export type RoutinesCreateRoutineResponse = (RoutinePublic);
-
-export type RoutinesReadRoutineData = {
-    routineId: string;
-};
-
-export type RoutinesReadRoutineResponse = (RoutinePublic);
-
-export type RoutinesUpdateRoutineData = {
-    requestBody: RoutineUpdate;
-    routineId: string;
-};
-
-export type RoutinesUpdateRoutineResponse = (RoutinePublic);
-
-export type RoutinesDeleteRoutineData = {
-    routineId: string;
-};
-
-export type RoutinesDeleteRoutineResponse = ({
-    [key: string]: (string);
-});
-
-export type RoutinesAssignRoutineFolderData = {
-    requestBody: RoutineFolderAssignment;
-    routineId: string;
-};
-
-export type RoutinesAssignRoutineFolderResponse = (RoutinePublic);
 
 export type RunningPlansReadPlansResponse = (RunningPlansPublic);
 
@@ -1235,12 +976,6 @@ export type SettingsSaveStravaCredentialsData = {
 };
 
 export type SettingsSaveStravaCredentialsResponse = (IntegrationStatus);
-
-export type SettingsSaveHevyCredentialsData = {
-    requestBody: HevyCredentialsIn;
-};
-
-export type SettingsSaveHevyCredentialsResponse = (IntegrationStatus);
 
 export type SettingsReadIntegrationStatusData = {
     provider: string;
@@ -1360,12 +1095,6 @@ export type UsersCreateUserData = {
 
 export type UsersCreateUserResponse = (UserPublic);
 
-export type UsersRegisterUserData = {
-    requestBody: UserRegister;
-};
-
-export type UsersRegisterUserResponse = (UserPublic);
-
 export type UsersReadUserMeResponse = (UserPublic);
 
 export type UsersDeleteUserMeResponse = (Message);
@@ -1381,6 +1110,12 @@ export type UsersUpdatePasswordMeData = {
 };
 
 export type UsersUpdatePasswordMeResponse = (Message);
+
+export type UsersRegisterUserData = {
+    requestBody: UserRegister;
+};
+
+export type UsersRegisterUserResponse = (UserPublic);
 
 export type UsersReadUserByIdData = {
     userId: string;

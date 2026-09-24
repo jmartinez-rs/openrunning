@@ -2,7 +2,6 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
 
 import useCustomToast from "@/hooks/useCustomToast"
-import { HevyIntegration } from "./HevyIntegration"
 import { StravaIntegration } from "./StravaIntegration"
 import { SyncLog } from "./SyncLog"
 import { SyncManager } from "./SyncManager"
@@ -33,7 +32,6 @@ export function IntegrationsSettings() {
   return (
     <>
       <StravaIntegration />
-      <HevyIntegration />
       <SyncManager />
       <SyncScheduleSettings />
       <SyncLog />

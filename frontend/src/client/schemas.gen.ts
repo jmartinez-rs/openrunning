@@ -81,6 +81,18 @@ export const ActivityCardioSchema = {
             ],
             title: 'Calories'
         },
+        cadence_avg: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    minimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Cadence Avg'
+        },
         map_summary_polyline: {
             anyOf: [
                 {
@@ -108,6 +120,31 @@ export const ActivityCardioSchema = {
             },
             type: 'array',
             title: 'Heart Rate Zones'
+        },
+        rpe: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    maximum: 10,
+                    minimum: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rpe'
+        },
+        perceived_effort_notes: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 2000
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Perceived Effort Notes'
         },
         shoe_id: {
             anyOf: [
@@ -211,6 +248,18 @@ export const ActivityCardioBaseSchema = {
             ],
             title: 'Calories'
         },
+        cadence_avg: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    minimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Cadence Avg'
+        },
         map_summary_polyline: {
             anyOf: [
                 {
@@ -238,6 +287,31 @@ export const ActivityCardioBaseSchema = {
             },
             type: 'array',
             title: 'Heart Rate Zones'
+        },
+        rpe: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    maximum: 10,
+                    minimum: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rpe'
+        },
+        perceived_effort_notes: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 2000
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Perceived Effort Notes'
         },
         shoe_id: {
             anyOf: [
@@ -326,16 +400,6 @@ export const ActivityCreateSchema = {
                     type: 'null'
                 }
             ]
-        },
-        strength: {
-            anyOf: [
-                {
-                    '$ref': '#/components/schemas/ActivityStrengthBase'
-                },
-                {
-                    type: 'null'
-                }
-            ]
         }
     },
     type: 'object',
@@ -416,16 +480,6 @@ export const ActivityPublicSchema = {
                     type: 'null'
                 }
             ]
-        },
-        strength: {
-            anyOf: [
-                {
-                    '$ref': '#/components/schemas/ActivityStrengthBase'
-                },
-                {
-                    type: 'null'
-                }
-            ]
         }
     },
     type: 'object',
@@ -450,97 +504,6 @@ export const ActivityShoeAssignmentSchema = {
     },
     type: 'object',
     title: 'ActivityShoeAssignment'
-} as const;
-
-export const ActivityStrengthSchema = {
-    properties: {
-        total_volume_kg: {
-            type: 'number',
-            minimum: 0,
-            title: 'Total Volume Kg',
-            default: 0
-        },
-        total_sets: {
-            type: 'integer',
-            minimum: 0,
-            title: 'Total Sets',
-            default: 0
-        },
-        avg_rpe: {
-            anyOf: [
-                {
-                    type: 'number',
-                    maximum: 10,
-                    minimum: 0
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Avg Rpe'
-        },
-        exercises: {
-            items: {
-                additionalProperties: true,
-                type: 'object'
-            },
-            type: 'array',
-            title: 'Exercises'
-        },
-        id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Id'
-        },
-        activity_id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Activity Id'
-        }
-    },
-    type: 'object',
-    required: ['activity_id'],
-    title: 'ActivityStrength'
-} as const;
-
-export const ActivityStrengthBaseSchema = {
-    properties: {
-        total_volume_kg: {
-            type: 'number',
-            minimum: 0,
-            title: 'Total Volume Kg',
-            default: 0
-        },
-        total_sets: {
-            type: 'integer',
-            minimum: 0,
-            title: 'Total Sets',
-            default: 0
-        },
-        avg_rpe: {
-            anyOf: [
-                {
-                    type: 'number',
-                    maximum: 10,
-                    minimum: 0
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Avg Rpe'
-        },
-        exercises: {
-            items: {
-                additionalProperties: true,
-                type: 'object'
-            },
-            type: 'array',
-            title: 'Exercises'
-        }
-    },
-    type: 'object',
-    title: 'ActivityStrengthBase'
 } as const;
 
 export const ActivitySummaryCalendarDaySchema = {
@@ -746,6 +709,19 @@ export const ActivityUpdateSchema = {
     title: 'ActivityUpdate'
 } as const;
 
+export const Body_activities_upload_activity_fileSchema = {
+    properties: {
+        file: {
+            type: 'string',
+            contentMediaType: 'application/octet-stream',
+            title: 'File'
+        }
+    },
+    type: 'object',
+    required: ['file'],
+    title: 'Body_activities-upload_activity_file'
+} as const;
+
 export const Body_login_login_access_tokenSchema = {
     properties: {
         grant_type: {
@@ -940,28 +916,6 @@ export const DashboardActivitySchema = {
                 }
             ],
             title: 'Distance Meters'
-        },
-        total_volume_kg: {
-            anyOf: [
-                {
-                    type: 'number'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Total Volume Kg'
-        },
-        total_sets: {
-            anyOf: [
-                {
-                    type: 'integer'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Total Sets'
         }
     },
     type: 'object',
@@ -1010,14 +964,6 @@ export const DashboardKPIsSchema = {
             ],
             title: 'Cardio Avg Pace Seconds Per Km'
         },
-        strength_volume_kg: {
-            type: 'number',
-            title: 'Strength Volume Kg'
-        },
-        strength_total_sets: {
-            type: 'integer',
-            title: 'Strength Total Sets'
-        },
         sessions: {
             type: 'integer',
             title: 'Sessions'
@@ -1028,7 +974,7 @@ export const DashboardKPIsSchema = {
         }
     },
     type: 'object',
-    required: ['cardio_distance_meters', 'cardio_duration_seconds', 'cardio_avg_pace_seconds_per_km', 'strength_volume_kg', 'strength_total_sets', 'sessions', 'active_days'],
+    required: ['cardio_distance_meters', 'cardio_duration_seconds', 'cardio_avg_pace_seconds_per_km', 'sessions', 'active_days'],
     title: 'DashboardKPIs'
 } as const;
 
@@ -1099,20 +1045,6 @@ export const HTTPValidationErrorSchema = {
     },
     type: 'object',
     title: 'HTTPValidationError'
-} as const;
-
-export const HevyCredentialsInSchema = {
-    properties: {
-        api_key: {
-            type: 'string',
-            maxLength: 255,
-            minLength: 1,
-            title: 'Api Key'
-        }
-    },
-    type: 'object',
-    required: ['api_key'],
-    title: 'HevyCredentialsIn'
 } as const;
 
 export const HrTrendPointSchema = {
@@ -1235,36 +1167,6 @@ export const MessageSchema = {
     type: 'object',
     required: ['message'],
     title: 'Message'
-} as const;
-
-export const MuscleVolumePointSchema = {
-    properties: {
-        group: {
-            type: 'string',
-            title: 'Group'
-        },
-        volume_kg: {
-            type: 'number',
-            title: 'Volume Kg'
-        }
-    },
-    type: 'object',
-    required: ['group', 'volume_kg'],
-    title: 'MuscleVolumePoint'
-} as const;
-
-export const MuscleVolumePublicSchema = {
-    properties: {
-        data: {
-            items: {
-                '$ref': '#/components/schemas/MuscleVolumePoint'
-            },
-            type: 'array',
-            title: 'Data'
-        }
-    },
-    type: 'object',
-    title: 'MuscleVolumePublic'
 } as const;
 
 export const NewPasswordSchema = {
@@ -1406,6 +1308,36 @@ export const RaceCreateSchema = {
             type: 'number',
             minimum: 0,
             title: 'Distance Km'
+        },
+        priority: {
+            type: 'string',
+            enum: ['A', 'B', 'C'],
+            title: 'Priority',
+            default: 'B'
+        },
+        target_time_seconds: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    minimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Time Seconds'
+        },
+        target_pace_seconds_per_km: {
+            anyOf: [
+                {
+                    type: 'number',
+                    minimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Pace Seconds Per Km'
         },
         official_time_seconds: {
             anyOf: [
@@ -1557,6 +1489,36 @@ export const RacePublicSchema = {
             type: 'number',
             minimum: 0,
             title: 'Distance Km'
+        },
+        priority: {
+            type: 'string',
+            enum: ['A', 'B', 'C'],
+            title: 'Priority',
+            default: 'B'
+        },
+        target_time_seconds: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    minimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Time Seconds'
+        },
+        target_pace_seconds_per_km: {
+            anyOf: [
+                {
+                    type: 'number',
+                    minimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Pace Seconds Per Km'
         },
         official_time_seconds: {
             anyOf: [
@@ -1745,6 +1707,42 @@ export const RaceUpdateSchema = {
             ],
             title: 'Distance Km'
         },
+        priority: {
+            anyOf: [
+                {
+                    type: 'string',
+                    enum: ['A', 'B', 'C']
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Priority'
+        },
+        target_time_seconds: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    minimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Time Seconds'
+        },
+        target_pace_seconds_per_km: {
+            anyOf: [
+                {
+                    type: 'number',
+                    minimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Pace Seconds Per Km'
+        },
         official_time_seconds: {
             anyOf: [
                 {
@@ -1889,360 +1887,6 @@ export const RacesPublicSchema = {
     type: 'object',
     required: ['data', 'count'],
     title: 'RacesPublic'
-} as const;
-
-export const RoutineCreateSchema = {
-    properties: {
-        type: {
-            type: 'string',
-            maxLength: 16,
-            minLength: 1,
-            title: 'Type'
-        },
-        name: {
-            type: 'string',
-            maxLength: 255,
-            minLength: 1,
-            title: 'Name'
-        },
-        description: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 2000
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Description'
-        },
-        routine_data: {
-            additionalProperties: true,
-            type: 'object',
-            title: 'Routine Data'
-        }
-    },
-    type: 'object',
-    required: ['type', 'name'],
-    title: 'RoutineCreate'
-} as const;
-
-export const RoutineFolderAssignmentSchema = {
-    properties: {
-        folder_id: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'uuid'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Folder Id'
-        }
-    },
-    type: 'object',
-    title: 'RoutineFolderAssignment'
-} as const;
-
-export const RoutineFolderCreateSchema = {
-    properties: {
-        name: {
-            type: 'string',
-            maxLength: 100,
-            minLength: 1,
-            title: 'Name'
-        }
-    },
-    type: 'object',
-    required: ['name'],
-    title: 'RoutineFolderCreate'
-} as const;
-
-export const RoutineFolderPublicSchema = {
-    properties: {
-        name: {
-            type: 'string',
-            maxLength: 100,
-            minLength: 1,
-            title: 'Name'
-        },
-        hevy_folder_id: {
-            anyOf: [
-                {
-                    type: 'integer'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Hevy Folder Id'
-        },
-        is_primary: {
-            type: 'boolean',
-            title: 'Is Primary',
-            default: false
-        },
-        id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Id'
-        },
-        user_id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'User Id'
-        },
-        created_at: {
-            type: 'string',
-            format: 'date-time',
-            title: 'Created At'
-        },
-        routines: {
-            items: {
-                '$ref': '#/components/schemas/RoutinePublic'
-            },
-            type: 'array',
-            title: 'Routines'
-        }
-    },
-    type: 'object',
-    required: ['name', 'id', 'user_id', 'created_at'],
-    title: 'RoutineFolderPublic'
-} as const;
-
-export const RoutineFolderUpdateSchema = {
-    properties: {
-        name: {
-            type: 'string',
-            maxLength: 100,
-            minLength: 1,
-            title: 'Name'
-        }
-    },
-    type: 'object',
-    required: ['name'],
-    title: 'RoutineFolderUpdate'
-} as const;
-
-export const RoutineFoldersPublicSchema = {
-    properties: {
-        data: {
-            items: {
-                '$ref': '#/components/schemas/RoutineFolderPublic'
-            },
-            type: 'array',
-            title: 'Data'
-        },
-        count: {
-            type: 'integer',
-            title: 'Count'
-        }
-    },
-    type: 'object',
-    required: ['data', 'count'],
-    title: 'RoutineFoldersPublic'
-} as const;
-
-export const RoutinePublicSchema = {
-    properties: {
-        type: {
-            type: 'string',
-            maxLength: 16,
-            minLength: 1,
-            title: 'Type'
-        },
-        name: {
-            type: 'string',
-            maxLength: 255,
-            minLength: 1,
-            title: 'Name'
-        },
-        description: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 2000
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Description'
-        },
-        routine_data: {
-            additionalProperties: true,
-            type: 'object',
-            title: 'Routine Data'
-        },
-        id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Id'
-        },
-        user_id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'User Id'
-        },
-        folder_id: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'uuid'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Folder Id'
-        },
-        created_at: {
-            type: 'string',
-            format: 'date-time',
-            title: 'Created At'
-        },
-        updated_at: {
-            type: 'string',
-            format: 'date-time',
-            title: 'Updated At'
-        }
-    },
-    type: 'object',
-    required: ['type', 'name', 'id', 'user_id', 'created_at', 'updated_at'],
-    title: 'RoutinePublic'
-} as const;
-
-export const RoutineUpdateSchema = {
-    properties: {
-        type: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 16,
-                    minLength: 1
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Type'
-        },
-        name: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255,
-                    minLength: 1
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Name'
-        },
-        description: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 2000
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Description'
-        },
-        routine_data: {
-            anyOf: [
-                {
-                    additionalProperties: true,
-                    type: 'object'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Routine Data'
-        },
-        folder_id: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'uuid'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Folder Id'
-        }
-    },
-    type: 'object',
-    title: 'RoutineUpdate'
-} as const;
-
-export const RoutinesPublicSchema = {
-    properties: {
-        data: {
-            items: {
-                '$ref': '#/components/schemas/RoutinePublic'
-            },
-            type: 'array',
-            title: 'Data'
-        },
-        count: {
-            type: 'integer',
-            title: 'Count'
-        }
-    },
-    type: 'object',
-    required: ['data', 'count'],
-    title: 'RoutinesPublic'
-} as const;
-
-export const RpeTrendPointSchema = {
-    properties: {
-        week: {
-            type: 'string',
-            title: 'Week'
-        },
-        avg_rpe: {
-            anyOf: [
-                {
-                    type: 'number'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Avg Rpe'
-        },
-        sessions: {
-            type: 'integer',
-            title: 'Sessions',
-            default: 0
-        }
-    },
-    type: 'object',
-    required: ['week'],
-    title: 'RpeTrendPoint'
-} as const;
-
-export const RpeTrendPublicSchema = {
-    properties: {
-        data: {
-            items: {
-                '$ref': '#/components/schemas/RpeTrendPoint'
-            },
-            type: 'array',
-            title: 'Data'
-        }
-    },
-    type: 'object',
-    title: 'RpeTrendPublic'
 } as const;
 
 export const RunningPhasePublicSchema = {
@@ -3779,50 +3423,6 @@ export const StravaCredentialsInSchema = {
     title: 'StravaCredentialsIn'
 } as const;
 
-export const StrengthAnalyticsPublicSchema = {
-    properties: {
-        from_date: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'date'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'From Date'
-        },
-        to_date: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'date'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'To Date'
-        },
-        volume_kg: {
-            type: 'number',
-            title: 'Volume Kg'
-        },
-        total_sets: {
-            type: 'integer',
-            title: 'Total Sets'
-        },
-        sessions: {
-            type: 'integer',
-            title: 'Sessions'
-        }
-    },
-    type: 'object',
-    required: ['from_date', 'to_date', 'volume_kg', 'total_sets', 'sessions'],
-    title: 'StrengthAnalyticsPublic'
-} as const;
-
 export const SyncLogPublicSchema = {
     properties: {
         provider: {
@@ -4040,126 +3640,6 @@ export const TokenSchema = {
     title: 'Token'
 } as const;
 
-export const TrainingPlanDayBaseSchema = {
-    properties: {
-        weekday: {
-            type: 'integer',
-            maximum: 7,
-            minimum: 1,
-            title: 'Weekday'
-        },
-        kind: {
-            type: 'string',
-            enum: ['strength', 'running', 'rest'],
-            maxLength: 32,
-            title: 'Kind'
-        },
-        routine_id: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'uuid'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Routine Id'
-        },
-        label: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Label'
-        }
-    },
-    type: 'object',
-    required: ['weekday', 'kind'],
-    title: 'TrainingPlanDayBase'
-} as const;
-
-export const TrainingPlanDayPublicSchema = {
-    properties: {
-        weekday: {
-            type: 'integer',
-            maximum: 7,
-            minimum: 1,
-            title: 'Weekday'
-        },
-        kind: {
-            type: 'string',
-            enum: ['strength', 'running', 'rest'],
-            maxLength: 32,
-            title: 'Kind'
-        },
-        routine_id: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'uuid'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Routine Id'
-        },
-        label: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Label'
-        },
-        id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Id'
-        }
-    },
-    type: 'object',
-    required: ['weekday', 'kind', 'id'],
-    title: 'TrainingPlanDayPublic'
-} as const;
-
-export const TrainingPlanPublicSchema = {
-    properties: {
-        days: {
-            items: {
-                '$ref': '#/components/schemas/TrainingPlanDayPublic'
-            },
-            type: 'array',
-            title: 'Days'
-        }
-    },
-    type: 'object',
-    title: 'TrainingPlanPublic'
-} as const;
-
-export const TrainingPlanUpdateSchema = {
-    properties: {
-        days: {
-            items: {
-                '$ref': '#/components/schemas/TrainingPlanDayBase'
-            },
-            type: 'array',
-            maxItems: 7,
-            title: 'Days'
-        }
-    },
-    type: 'object',
-    title: 'TrainingPlanUpdate'
-} as const;
-
 export const UpcomingRacePublicSchema = {
     properties: {
         id: {
@@ -4259,38 +3739,6 @@ export const UserCreateSchema = {
     title: 'UserCreate'
 } as const;
 
-export const UserRegisterSchema = {
-    properties: {
-        email: {
-            type: 'string',
-            maxLength: 255,
-            format: 'email',
-            title: 'Email'
-        },
-        password: {
-            type: 'string',
-            maxLength: 128,
-            minLength: 8,
-            title: 'Password'
-        },
-        full_name: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Full Name'
-        }
-    },
-    type: 'object',
-    required: ['email', 'password'],
-    title: 'UserRegister'
-} as const;
-
 export const UserPublicSchema = {
     properties: {
         email: {
@@ -4342,6 +3790,38 @@ export const UserPublicSchema = {
     type: 'object',
     required: ['email', 'id'],
     title: 'UserPublic'
+} as const;
+
+export const UserRegisterSchema = {
+    properties: {
+        email: {
+            type: 'string',
+            maxLength: 255,
+            format: 'email',
+            title: 'Email'
+        },
+        password: {
+            type: 'string',
+            maxLength: 128,
+            minLength: 8,
+            title: 'Password'
+        },
+        full_name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full Name'
+        }
+    },
+    type: 'object',
+    required: ['email', 'password'],
+    title: 'UserRegister'
 } as const;
 
 export const UserUpdateSchema = {
@@ -4593,7 +4073,7 @@ export const WeeklyGoalBaseSchema = {
             ],
             title: 'Target Km'
         },
-        target_gym_days: {
+        target_sessions: {
             anyOf: [
                 {
                     type: 'integer',
@@ -4603,19 +4083,19 @@ export const WeeklyGoalBaseSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Target Gym Days'
+            title: 'Target Sessions'
         },
-        target_cardio_minutes: {
+        target_long_run_km: {
             anyOf: [
                 {
-                    type: 'integer',
+                    type: 'number',
                     minimum: 0
                 },
                 {
                     type: 'null'
                 }
             ],
-            title: 'Target Cardio Minutes'
+            title: 'Target Long Run Km'
         }
     },
     type: 'object',
@@ -4636,7 +4116,7 @@ export const WeeklyGoalPublicSchema = {
             ],
             title: 'Target Km'
         },
-        target_gym_days: {
+        target_sessions: {
             anyOf: [
                 {
                     type: 'integer',
@@ -4646,19 +4126,19 @@ export const WeeklyGoalPublicSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Target Gym Days'
+            title: 'Target Sessions'
         },
-        target_cardio_minutes: {
+        target_long_run_km: {
             anyOf: [
                 {
-                    type: 'integer',
+                    type: 'number',
                     minimum: 0
                 },
                 {
                     type: 'null'
                 }
             ],
-            title: 'Target Cardio Minutes'
+            title: 'Target Long Run Km'
         },
         id: {
             type: 'string',

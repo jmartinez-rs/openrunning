@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router"
 import {
   Bike,
   ChevronRight,
-  Dumbbell,
   Footprints,
   PersonStanding,
   Waves,
@@ -15,7 +14,6 @@ import {
   formatDistance,
   formatDuration,
   formatPace,
-  isStrength,
 } from "./activity-utils"
 
 interface ActivityRowProps {
@@ -24,8 +22,6 @@ interface ActivityRowProps {
 
 export function ActivityRow({ activity }: ActivityRowProps) {
   const cardio = activity.cardio
-  const strength = activity.strength
-  const strengthActivity = isStrength(activity)
   const sportType = (activity.sport_type || "").toLowerCase()
 
   // Select icon and badge colors based on activity type
@@ -34,12 +30,7 @@ export function ActivityRow({ activity }: ActivityRowProps) {
   let badgeText = "Strava"
   let badgeClass = "bg-primary/10 text-primary border-primary/20"
 
-  if (strengthActivity) {
-    Icon = Dumbbell
-    iconBgClass = "bg-purple-500/15 text-purple-400"
-    badgeText = "Hevy"
-    badgeClass = "bg-purple-500/10 text-purple-400 border-purple-500/20"
-  } else if (
+  if (
     sportType.includes("ride") ||
     sportType.includes("bike") ||
     sportType.includes("ciclismo")
@@ -89,16 +80,6 @@ export function ActivityRow({ activity }: ActivityRowProps) {
     }
     if (cardio.avg_hr) {
       metricsParts.push(`${Math.round(cardio.avg_hr)} ppm`)
-    }
-  } else if (strength) {
-    if (strength.total_volume_kg) {
-      metricsParts.push(`${Math.round(strength.total_volume_kg)} kg`)
-    }
-    if (strength.total_sets) {
-      metricsParts.push(`${strength.total_sets} series`)
-    }
-    if (strength.avg_rpe) {
-      metricsParts.push(`RPE ${strength.avg_rpe}`)
     }
   }
 

@@ -8,7 +8,6 @@ import {
   SettingsSegmented,
 } from "@/components/Settings/SettingsSection"
 import { WeeklyGoals } from "@/components/Settings/WeeklyGoals"
-import { WeeklyPlan } from "@/components/Settings/WeeklyPlan"
 import { useTheme } from "@/components/theme-provider"
 import ChangePassword from "@/components/UserSettings/ChangePassword"
 import DeleteAccount from "@/components/UserSettings/DeleteAccount"
@@ -104,7 +103,7 @@ function UserSettings() {
       {/* Section 3: Integrations */}
       <SettingsSection
         title="Integraciones & Sincronización"
-        footer="Conectá tus cuentas de Strava y Hevy para importar automáticamente tus actividades."
+        footer="Conectá tu cuenta de Strava para importar automáticamente tus actividades."
       >
         <IntegrationsSettings />
       </SettingsSection>
@@ -119,17 +118,7 @@ function UserSettings() {
         </SettingsSection>
       )}
 
-      {/* Section 5: Weekly Plan */}
-      {!currentUser.is_superuser && (
-        <SettingsSection
-          title="Plan Semanal"
-          footer="Estructura de días de entrenamiento de running y fuerza."
-        >
-          <WeeklyPlan />
-        </SettingsSection>
-      )}
-
-      {/* Section 6: Danger Zone */}
+      {/* Section 5: Danger Zone */}
       {!currentUser.is_superuser && (
         <SettingsSection title="Zona de Peligro">
           <DeleteAccount />

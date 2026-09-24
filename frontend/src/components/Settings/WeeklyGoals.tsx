@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Dumbbell, Footprints, HeartPulse, Loader2 } from "lucide-react"
+import { CalendarDays, Footprints, Loader2, Route } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { SettingsService } from "@/client"
@@ -13,8 +13,8 @@ export function WeeklyGoals() {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const [targetKm, setTargetKm] = useState("")
-  const [targetGymDays, setTargetGymDays] = useState("")
-  const [targetCardioMinutes, setTargetCardioMinutes] = useState("")
+  const [targetSessions, setTargetSessions] = useState("")
+  const [targetLongRunKm, setTargetLongRunKm] = useState("")
 
   const goalsQuery = useQuery({
     queryKey: ["weekly-goals"],
@@ -25,12 +25,12 @@ export function WeeklyGoals() {
     const goals = goalsQuery.data
     if (goals) {
       setTargetKm(goals.target_km != null ? String(goals.target_km) : "")
-      setTargetGymDays(
-        goals.target_gym_days != null ? String(goals.target_gym_days) : "",
+      setTargetSessions(
+        goals.target_sessions != null ? String(goals.target_sessions) : "",
       )
-      setTargetCardioMinutes(
-        goals.target_cardio_minutes != null
-          ? String(goals.target_cardio_minutes)
+      setTargetLongRunKm(
+        goals.target_long_run_km != null
+          ? String(goals.target_long_run_km)
           : "",
       )
     }
@@ -41,10 +41,8 @@ export function WeeklyGoals() {
       SettingsService.updateGoals({
         requestBody: {
           target_km: targetKm ? Number(targetKm) : null,
-          target_gym_days: targetGymDays ? Number(targetGymDays) : null,
-          target_cardio_minutes: targetCardioMinutes
-            ? Number(targetCardioMinutes)
-            : null,
+          target_sessions: targetSessions ? Number(targetSessions) : null,
+          target_long_run_km: targetLongRunKm ? Number(targetLongRunKm) : null,
         },
       }),
     onSuccess: () => {
@@ -77,42 +75,43 @@ export function WeeklyGoals() {
       </SettingsRow>
 
       <SettingsRow
-        icon={Dumbbell}
+        icon={CalendarDays}
         iconBg="bg-primary/15"
         iconColor="text-primary"
-        title="Días de gimnasio objetivo"
-        subtitle="Sesiones de fuerza semanales"
+        title="Sesiones semanales objetivo"
+        subtitle="Cantidad de entrenamientos por semana"
       >
         <div className="flex items-center gap-1.5">
           <Input
             type="number"
             className="w-24 h-8 rounded-xl border-border bg-background text-xs text-center text-foreground"
-            value={targetGymDays}
-            onChange={(e) => setTargetGymDays(e.target.value)}
-            placeholder="Ej: 3"
+            value={targetSessions}
+            onChange={(e) => setTargetSessions(e.target.value)}
+            placeholder="Ej: 4"
           />
           <span className="text-xs text-muted-foreground font-medium">
-            días
+            sesiones
           </span>
         </div>
       </SettingsRow>
 
       <SettingsRow
-        icon={HeartPulse}
-        iconBg="bg-destructive/15"
-        iconColor="text-destructive"
-        title="Minutos de cardio objetivo"
-        subtitle="Tiempo total de cardio acumulado por semana"
+        icon={Route}
+        iconBg="bg-primary/15"
+        iconColor="text-primary"
+        title="Tirada larga objetivo"
+        subtitle="Kilómetros de la salida larga semanal"
       >
         <div className="flex items-center gap-1.5">
           <Input
             type="number"
+            step="0.1"
             className="w-24 h-8 rounded-xl border-border bg-background text-xs text-center text-foreground"
-            value={targetCardioMinutes}
-            onChange={(e) => setTargetCardioMinutes(e.target.value)}
-            placeholder="Ej: 150"
+            value={targetLongRunKm}
+            onChange={(e) => setTargetLongRunKm(e.target.value)}
+            placeholder="Ej: 12"
           />
-          <span className="text-xs text-muted-foreground font-medium">min</span>
+          <span className="text-xs text-muted-foreground font-medium">km</span>
         </div>
       </SettingsRow>
 

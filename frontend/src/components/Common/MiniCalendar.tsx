@@ -15,7 +15,7 @@ function monthYearLabel(date: Date) {
     .replace(/^(\w)/, (c) => c.toUpperCase())
 }
 
-type DayType = "cardio" | "strength" | "both" | null
+type DayType = "cardio" | null
 
 type CalendarDay = {
   day: number
@@ -94,11 +94,8 @@ export function MiniCalendar({
     const map = new Map<string, DayType>()
     for (const act of activitiesQuery.data?.data ?? []) {
       const dateStr = act.timestamp.slice(0, 10)
-      const existing = map.get(dateStr)
-      if (act.source_type === "strava") {
-        map.set(dateStr, existing === "strength" ? "both" : "cardio")
-      } else if (act.source_type === "hevy") {
-        map.set(dateStr, existing === "cardio" ? "both" : "strength")
+      if (act.source_type === "strava" || act.cardio) {
+        map.set(dateStr, "cardio")
       }
     }
     return map
@@ -150,13 +147,9 @@ export function MiniCalendar({
                 className={`mx-auto flex size-8 items-center justify-center rounded-full ${
                   day.isToday
                     ? "bg-primary font-bold text-primary-foreground shadow-sm"
-                    : day.type === "both"
-                      ? "bg-gradient-to-br from-domain-cardio/40 to-domain-strength/40 font-semibold"
-                      : day.type === "cardio"
-                        ? "bg-domain-cardio/20 text-domain-cardio font-semibold"
-                        : day.type === "strength"
-                          ? "bg-domain-strength/20 text-domain-strength font-semibold"
-                          : ""
+                    : day.type === "cardio"
+                      ? "bg-domain-cardio/20 text-domain-cardio font-semibold"
+                      : ""
                 } ${day.isOtherMonth ? "text-outline-variant" : ""}`}
               >
                 {day.day}

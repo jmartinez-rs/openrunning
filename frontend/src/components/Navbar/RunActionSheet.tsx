@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Footprints, RefreshCw, Upload } from "lucide-react"
 import { useState } from "react"
 
-import { SyncService } from "@/client"
+import { ActivitiesService, SyncService } from "@/client"
 import { QuickCreateActivityDialog } from "@/components/Activities/QuickCreateActivityDialog"
 import { SettingsRow } from "@/components/Settings/SettingsSection"
 import {
@@ -35,22 +35,11 @@ export function RunActionSheet({ open, onOpenChange }: RunActionSheetProps) {
 
     setIsUploading(true)
     onOpenChange(false)
-    const formData = new FormData()
-    formData.append("file", file)
 
     try {
-      const token = localStorage.getItem("access_token")
-      const response = await fetch("/api/v1/activities/upload", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
+      await ActivitiesService.uploadActivityFile({
+        formData: { file: file as unknown as string },
       })
-
-      if (!response.ok) {
-        throw new Error("Error al subir el archivo")
-      }
 
       showSuccessToast("Actividad GPS importada correctamente")
       queryClient.invalidateQueries({ queryKey: ["activities"] })
@@ -125,13 +114,13 @@ export function RunActionSheet({ open, onOpenChange }: RunActionSheetProps) {
               />
             </label>
 
-            {/* Option 3: Sincronizar Strava & Hevy */}
+            {/* Option 3: Sincronizar Strava */}
             <SettingsRow
               icon={RefreshCw}
               iconBg="bg-primary/15"
               iconColor="text-primary"
-              title="Sincronizar Strava & Hevy"
-              subtitle="Forzar importación inmediata desde tus cuentas"
+              title="Sincronizar Strava"
+              subtitle="Forzar importación inmediata desde tu cuenta"
               accessory="chevron"
               onClick={() => syncMutation.mutate()}
             />

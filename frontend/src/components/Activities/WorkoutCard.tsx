@@ -1,4 +1,4 @@
-import { Calendar, Clock, Flame, Footprints } from "lucide-react"
+import { Calendar, Clock, Footprints } from "lucide-react"
 import type { ActivityPublic } from "@/client"
 
 interface WorkoutCardProps {
@@ -48,8 +48,6 @@ export function WorkoutCard({ activity, isActive = false }: WorkoutCardProps) {
         {activity.sport_type?.toLowerCase().includes("walk") ||
         activity.sport_type?.toLowerCase().includes("hike") ? (
           <Footprints className="size-6" />
-        ) : activity.source_type === "hevy" ? (
-          <Flame className="size-6" />
         ) : (
           <svg
             xmlns="http://www.w3.org/2000/svg"

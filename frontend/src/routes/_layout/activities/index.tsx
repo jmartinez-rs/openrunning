@@ -80,22 +80,11 @@ function ActivitiesHistory() {
     if (!file) return
 
     setIsUploading(true)
-    const formData = new FormData()
-    formData.append("file", file)
 
     try {
-      const token = localStorage.getItem("access_token")
-      const response = await fetch("/api/v1/activities/upload", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
+      await ActivitiesService.uploadActivityFile({
+        formData: { file: file as unknown as string },
       })
-
-      if (!response.ok) {
-        throw new Error("Error al subir el archivo")
-      }
 
       showSuccessToast("Actividad GPS importada correctamente")
       queryClient.invalidateQueries({ queryKey: ["activities"] })
@@ -170,11 +159,10 @@ function ActivitiesHistory() {
 
     if (applied.sourceType === "cardio") {
       return (
-        act.source_type !== "hevy" &&
-        (Boolean(act.cardio) ||
-          act.source_type === "strava" ||
-          act.source_type === "gpx_upload" ||
-          act.source_type === "fit_upload")
+        Boolean(act.cardio) ||
+        act.source_type === "strava" ||
+        act.source_type === "gpx_upload" ||
+        act.source_type === "fit_upload"
       )
     }
 
@@ -188,7 +176,7 @@ function ActivitiesHistory() {
           !sport.includes("bike") &&
           !sport.includes("walk") &&
           !sport.includes("swim"))
-      return Boolean(isRun) && act.source_type !== "hevy"
+      return Boolean(isRun)
     }
 
     return true
@@ -390,7 +378,7 @@ function ActivitiesHistory() {
             <p className="mt-1 text-xs text-muted-foreground max-w-sm">
               {hasFilters
                 ? "Probá ajustar la búsqueda, las fechas o el tipo de actividad."
-                : "Sincronizá tu cuenta de Strava o Hevy, o importá un archivo .fit/.gpx."}
+                : "Sincronizá tu cuenta de Strava o importá un archivo .fit/.gpx."}
             </p>
           </div>
           {hasFilters && (

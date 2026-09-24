@@ -1,6 +1,6 @@
 {
   "openapi": "3.1.0",
-  "info": { "title": "ATOS", "version": "0.1.0" },
+  "info": { "title": "OpenRunning", "version": "0.1.0" },
   "paths": {
     "/api/v1/login/access-token": {
       "post": {
@@ -334,6 +334,40 @@
         "security": [{ "OAuth2PasswordBearer": [] }]
       }
     },
+    "/api/v1/users/signup": {
+      "post": {
+        "tags": ["users"],
+        "summary": "Register User",
+        "description": "Create new user without the need to be logged in.",
+        "operationId": "users-register_user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserRegister" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserPublic" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/{user_id}": {
       "get": {
         "tags": ["users"],
@@ -556,60 +590,6 @@
         }
       }
     },
-    "/api/v1/analytics/strength": {
-      "get": {
-        "tags": ["analytics"],
-        "summary": "Read Strength Analytics",
-        "operationId": "analytics-read_strength_analytics",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "from_date",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                { "type": "string", "format": "date" },
-                { "type": "null" }
-              ],
-              "title": "From Date"
-            }
-          },
-          {
-            "name": "to_date",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                { "type": "string", "format": "date" },
-                { "type": "null" }
-              ],
-              "title": "To Date"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StrengthAnalyticsPublic"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/analytics/dashboard": {
       "get": {
         "tags": ["analytics"],
@@ -648,32 +628,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/analytics/strength/records": {
-      "get": {
-        "tags": ["analytics"],
-        "summary": "Read Strength Records",
-        "description": "Devuelve r\u00e9cords personales por ejercicio (peso, volumen y 1RM estimado).",
-        "operationId": "analytics-read_strength_records",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "additionalProperties": true,
-                    "type": "object"
-                  },
-                  "type": "object",
-                  "title": "Response Analytics-Read Strength Records"
-                }
-              }
-            }
-          }
-        },
-        "security": [{ "OAuth2PasswordBearer": [] }]
       }
     },
     "/api/v1/analytics/cardio/monthly": {
@@ -719,7 +673,7 @@
       "get": {
         "tags": ["analytics"],
         "summary": "Read Cardio Best Paces",
-        "description": "Mejor ritmo promedio por distancia objetivo (5k, 10k, 15k, 21.1k).",
+        "description": "Mejor ritmo promedio por distancia objetivo (5k, 10k, 15k, 21.1k, 42.2k).",
         "operationId": "analytics-read_cardio_best_paces",
         "responses": {
           "200": {
@@ -736,129 +690,6 @@
           }
         },
         "security": [{ "OAuth2PasswordBearer": [] }]
-      }
-    },
-    "/api/v1/analytics/strength/monthly": {
-      "get": {
-        "tags": ["analytics"],
-        "summary": "Read Strength Monthly",
-        "description": "Serie mensual de volumen de fuerza (kg, series y sesiones).",
-        "operationId": "analytics-read_strength_monthly",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "months",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "integer", "default": 12, "title": "Months" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "type": "object", "additionalProperties": true },
-                  "title": "Response Analytics-Read Strength Monthly"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/analytics/strength/muscle-distribution": {
-      "get": {
-        "tags": ["analytics"],
-        "summary": "Read Muscle Distribution",
-        "description": "Distribuci\u00f3n de series por grupo muscular en el per\u00edodo.",
-        "operationId": "analytics-read_muscle_distribution",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "months",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "integer", "default": 12, "title": "Months" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "type": "object", "additionalProperties": true },
-                  "title": "Response Analytics-Read Muscle Distribution"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/analytics/strength/one-rm-progress": {
-      "get": {
-        "tags": ["analytics"],
-        "summary": "Read One Rm Progress",
-        "description": "Progresi\u00f3n del 1RM estimado (Epley) de un ejercicio a lo largo del tiempo.",
-        "operationId": "analytics-read_one_rm_progress",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "exercise",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string", "title": "Exercise" }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "integer", "default": 12, "title": "Limit" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "type": "object", "additionalProperties": true },
-                  "title": "Response Analytics-Read One Rm Progress"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
       }
     },
     "/api/v1/analytics/cardio/hr-zones": {
@@ -931,81 +762,11 @@
         }
       }
     },
-    "/api/v1/analytics/strength/rpe-trend": {
-      "get": {
-        "tags": ["analytics"],
-        "summary": "Read Strength Rpe Trend",
-        "description": "RPE promedio por semana (intensidad percibida).",
-        "operationId": "analytics-read_strength_rpe_trend",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "weeks",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "integer", "default": 12, "title": "Weeks" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/RpeTrendPublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/analytics/strength/muscle-volume": {
-      "get": {
-        "tags": ["analytics"],
-        "summary": "Read Muscle Volume",
-        "description": "Volumen (kg) por grupo muscular en el per\u00edodo.",
-        "operationId": "analytics-read_muscle_volume",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "months",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "integer", "default": 12, "title": "Months" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/MuscleVolumePublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/analytics/activities/summary": {
       "get": {
         "tags": ["analytics"],
         "summary": "Read Activities Summary",
-        "description": "Resumen mensual de actividades cardio de Strava por tipo.\n\n- by_type agrupa por sport_type (Run, Ride, Walk, ...).\n- coverage es la fracci\u00f3n de actividades del per\u00edodo con sport_type no nulo.\n- monthly.target_activities es una PROYECCI\u00d3N de la meta semanal existente\n  (WeeklyGoal.target_cardio_minutes o target_km) multiplicada por ~4.33\n  semanas/mes. No es una meta mensual real: si no hay WeeklyGoal, se\n  devuelve null.\n- calendar incluye todos los d\u00edas del mes (con types vac\u00edo si no hubo\n  actividad).",
+        "description": "Resumen mensual de actividades cardio de Strava por tipo.\n\n- by_type agrupa por sport_type (Run, Ride, Walk, ...).\n- coverage es la fracci\u00f3n de actividades del per\u00edodo con sport_type no nulo.\n- monthly.target_activities es una PROYECCI\u00d3N de la meta semanal existente\n  multiplicada por ~4.33 semanas/mes.\n- calendar incluye todos los d\u00edas del mes (con types vac\u00edo si no hubo\n  actividad).",
         "operationId": "analytics-read_activities_summary",
         "security": [{ "OAuth2PasswordBearer": [] }],
         "parameters": [
@@ -1278,44 +1039,6 @@
         }
       }
     },
-    "/api/v1/activities/strength/{activity_id}": {
-      "get": {
-        "tags": ["activities"],
-        "summary": "Read Strength Metrics",
-        "operationId": "activities-read_strength_metrics",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "activity_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Activity Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ActivityStrength" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/activities/{activity_id}": {
       "get": {
         "tags": ["activities"],
@@ -1487,43 +1210,28 @@
         }
       }
     },
-    "/api/v1/routines/folders": {
-      "get": {
-        "tags": ["routines"],
-        "summary": "Read Folders",
-        "operationId": "routines-read_folders",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RoutineFoldersPublic"
-                }
-              }
-            }
-          }
-        },
-        "security": [{ "OAuth2PasswordBearer": [] }]
-      },
+    "/api/v1/activities/upload": {
       "post": {
-        "tags": ["routines"],
-        "summary": "Create Folder",
-        "operationId": "routines-create_folder",
+        "tags": ["activities"],
+        "summary": "Upload Activity File",
+        "description": "Sube y procesa un archivo GPS .gpx o .fit directamente.",
+        "operationId": "activities-upload_activity_file",
         "requestBody": {
           "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/RoutineFolderCreate" }
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_activities-upload_activity_file"
+              }
             }
           },
           "required": true
         },
         "responses": {
-          "201": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/RoutineFolderPublic" }
+                "schema": { "$ref": "#/components/schemas/ActivityPublic" }
               }
             }
           },
@@ -1537,424 +1245,6 @@
           }
         },
         "security": [{ "OAuth2PasswordBearer": [] }]
-      }
-    },
-    "/api/v1/routines/folders/{folder_id}": {
-      "patch": {
-        "tags": ["routines"],
-        "summary": "Rename Folder",
-        "operationId": "routines-rename_folder",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "folder_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Folder Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/RoutineFolderUpdate" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/RoutineFolderPublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["routines"],
-        "summary": "Delete Folder",
-        "operationId": "routines-delete_folder",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "folder_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Folder Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/RoutineFolderPublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/routines/folders/{folder_id}/primary": {
-      "put": {
-        "tags": ["routines"],
-        "summary": "Set Primary Folder",
-        "operationId": "routines-set_primary_folder",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "folder_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Folder Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/RoutineFolderPublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["routines"],
-        "summary": "Clear Primary Folder",
-        "operationId": "routines-clear_primary_folder",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "folder_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Folder Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/RoutineFolderPublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/routines/": {
-      "get": {
-        "tags": ["routines"],
-        "summary": "Read Routines",
-        "operationId": "routines-read_routines",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [{ "type": "string" }, { "type": "null" }],
-              "title": "Type"
-            }
-          },
-          {
-            "name": "skip",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Skip"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 100,
-              "title": "Limit"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/RoutinesPublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": ["routines"],
-        "summary": "Create Routine",
-        "operationId": "routines-create_routine",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/RoutineCreate" }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/RoutinePublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/routines/{routine_id}": {
-      "get": {
-        "tags": ["routines"],
-        "summary": "Read Routine",
-        "operationId": "routines-read_routine",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "routine_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Routine Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/RoutinePublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": ["routines"],
-        "summary": "Update Routine",
-        "operationId": "routines-update_routine",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "routine_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Routine Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/RoutineUpdate" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/RoutinePublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": ["routines"],
-        "summary": "Delete Routine",
-        "operationId": "routines-delete_routine",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "routine_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Routine Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": { "type": "string" },
-                  "title": "Response Routines-Delete Routine"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/routines/{routine_id}/folder": {
-      "post": {
-        "tags": ["routines"],
-        "summary": "Assign Routine Folder",
-        "operationId": "routines-assign_routine_folder",
-        "security": [{ "OAuth2PasswordBearer": [] }],
-        "parameters": [
-          {
-            "name": "routine_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Routine Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RoutineFolderAssignment"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/RoutinePublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        }
       }
     },
     "/api/v1/races/": {
@@ -2166,56 +1456,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/plan": {
-      "get": {
-        "tags": ["plan"],
-        "summary": "Read Plan",
-        "operationId": "plan-read_plan",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/TrainingPlanPublic" }
-              }
-            }
-          }
-        },
-        "security": [{ "OAuth2PasswordBearer": [] }]
-      },
-      "put": {
-        "tags": ["plan"],
-        "summary": "Replace Plan",
-        "operationId": "plan-replace_plan",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/TrainingPlanUpdate" }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/TrainingPlanPublic" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        },
-        "security": [{ "OAuth2PasswordBearer": [] }]
       }
     },
     "/api/v1/running-plans/": {
@@ -2928,40 +2168,6 @@
         "security": [{ "OAuth2PasswordBearer": [] }]
       }
     },
-    "/api/v1/settings/integrations/hevy": {
-      "put": {
-        "tags": ["settings"],
-        "summary": "Save Hevy Credentials",
-        "operationId": "settings-save_hevy_credentials",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/HevyCredentialsIn" }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/IntegrationStatus" }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
-              }
-            }
-          }
-        },
-        "security": [{ "OAuth2PasswordBearer": [] }]
-      }
-    },
     "/api/v1/settings/integrations/{provider}": {
       "get": {
         "tags": ["settings"],
@@ -3444,6 +2650,13 @@
             ],
             "title": "Calories"
           },
+          "cadence_avg": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0.0 },
+              { "type": "null" }
+            ],
+            "title": "Cadence Avg"
+          },
           "map_summary_polyline": {
             "anyOf": [
               { "type": "string", "maxLength": 20000 },
@@ -3460,6 +2673,20 @@
             "items": { "additionalProperties": true, "type": "object" },
             "type": "array",
             "title": "Heart Rate Zones"
+          },
+          "rpe": {
+            "anyOf": [
+              { "type": "integer", "maximum": 10.0, "minimum": 1.0 },
+              { "type": "null" }
+            ],
+            "title": "Rpe"
+          },
+          "perceived_effort_notes": {
+            "anyOf": [
+              { "type": "string", "maxLength": 2000 },
+              { "type": "null" }
+            ],
+            "title": "Perceived Effort Notes"
           },
           "shoe_id": {
             "anyOf": [
@@ -3525,6 +2752,13 @@
             ],
             "title": "Calories"
           },
+          "cadence_avg": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0.0 },
+              { "type": "null" }
+            ],
+            "title": "Cadence Avg"
+          },
           "map_summary_polyline": {
             "anyOf": [
               { "type": "string", "maxLength": 20000 },
@@ -3541,6 +2775,20 @@
             "items": { "additionalProperties": true, "type": "object" },
             "type": "array",
             "title": "Heart Rate Zones"
+          },
+          "rpe": {
+            "anyOf": [
+              { "type": "integer", "maximum": 10.0, "minimum": 1.0 },
+              { "type": "null" }
+            ],
+            "title": "Rpe"
+          },
+          "perceived_effort_notes": {
+            "anyOf": [
+              { "type": "string", "maxLength": 2000 },
+              { "type": "null" }
+            ],
+            "title": "Perceived Effort Notes"
           },
           "shoe_id": {
             "anyOf": [
@@ -3604,12 +2852,6 @@
               { "$ref": "#/components/schemas/ActivityCardioBase" },
               { "type": "null" }
             ]
-          },
-          "strength": {
-            "anyOf": [
-              { "$ref": "#/components/schemas/ActivityStrengthBase" },
-              { "type": "null" }
-            ]
           }
         },
         "type": "object",
@@ -3667,12 +2909,6 @@
               { "$ref": "#/components/schemas/ActivityCardioBase" },
               { "type": "null" }
             ]
-          },
-          "strength": {
-            "anyOf": [
-              { "$ref": "#/components/schemas/ActivityStrengthBase" },
-              { "type": "null" }
-            ]
           }
         },
         "type": "object",
@@ -3698,73 +2934,6 @@
         },
         "type": "object",
         "title": "ActivityShoeAssignment"
-      },
-      "ActivityStrength": {
-        "properties": {
-          "total_volume_kg": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Total Volume Kg",
-            "default": 0
-          },
-          "total_sets": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sets",
-            "default": 0
-          },
-          "avg_rpe": {
-            "anyOf": [
-              { "type": "number", "maximum": 10.0, "minimum": 0.0 },
-              { "type": "null" }
-            ],
-            "title": "Avg Rpe"
-          },
-          "exercises": {
-            "items": { "additionalProperties": true, "type": "object" },
-            "type": "array",
-            "title": "Exercises"
-          },
-          "id": { "type": "string", "format": "uuid", "title": "Id" },
-          "activity_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Activity Id"
-          }
-        },
-        "type": "object",
-        "required": ["activity_id"],
-        "title": "ActivityStrength"
-      },
-      "ActivityStrengthBase": {
-        "properties": {
-          "total_volume_kg": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Total Volume Kg",
-            "default": 0
-          },
-          "total_sets": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sets",
-            "default": 0
-          },
-          "avg_rpe": {
-            "anyOf": [
-              { "type": "number", "maximum": 10.0, "minimum": 0.0 },
-              { "type": "null" }
-            ],
-            "title": "Avg Rpe"
-          },
-          "exercises": {
-            "items": { "additionalProperties": true, "type": "object" },
-            "type": "array",
-            "title": "Exercises"
-          }
-        },
-        "type": "object",
-        "title": "ActivityStrengthBase"
       },
       "ActivitySummaryCalendarDay": {
         "properties": {
@@ -3913,6 +3082,18 @@
         "type": "object",
         "title": "ActivityUpdate"
       },
+      "Body_activities-upload_activity_file": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": ["file"],
+        "title": "Body_activities-upload_activity_file"
+      },
       "Body_login-login_access_token": {
         "properties": {
           "grant_type": {
@@ -4029,14 +3210,6 @@
           "distance_meters": {
             "anyOf": [{ "type": "number" }, { "type": "null" }],
             "title": "Distance Meters"
-          },
-          "total_volume_kg": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Total Volume Kg"
-          },
-          "total_sets": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
-            "title": "Total Sets"
           }
         },
         "type": "object",
@@ -4076,14 +3249,6 @@
             "anyOf": [{ "type": "number" }, { "type": "null" }],
             "title": "Cardio Avg Pace Seconds Per Km"
           },
-          "strength_volume_kg": {
-            "type": "number",
-            "title": "Strength Volume Kg"
-          },
-          "strength_total_sets": {
-            "type": "integer",
-            "title": "Strength Total Sets"
-          },
           "sessions": { "type": "integer", "title": "Sessions" },
           "active_days": { "type": "integer", "title": "Active Days" }
         },
@@ -4092,8 +3257,6 @@
           "cardio_distance_meters",
           "cardio_duration_seconds",
           "cardio_avg_pace_seconds_per_km",
-          "strength_volume_kg",
-          "strength_total_sets",
           "sessions",
           "active_days"
         ],
@@ -4149,19 +3312,6 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
-      },
-      "HevyCredentialsIn": {
-        "properties": {
-          "api_key": {
-            "type": "string",
-            "maxLength": 255,
-            "minLength": 1,
-            "title": "Api Key"
-          }
-        },
-        "type": "object",
-        "required": ["api_key"],
-        "title": "HevyCredentialsIn"
       },
       "HrTrendPoint": {
         "properties": {
@@ -4229,26 +3379,6 @@
         "type": "object",
         "required": ["message"],
         "title": "Message"
-      },
-      "MuscleVolumePoint": {
-        "properties": {
-          "group": { "type": "string", "title": "Group" },
-          "volume_kg": { "type": "number", "title": "Volume Kg" }
-        },
-        "type": "object",
-        "required": ["group", "volume_kg"],
-        "title": "MuscleVolumePoint"
-      },
-      "MuscleVolumePublic": {
-        "properties": {
-          "data": {
-            "items": { "$ref": "#/components/schemas/MuscleVolumePoint" },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "title": "MuscleVolumePublic"
       },
       "NewPassword": {
         "properties": {
@@ -4354,6 +3484,23 @@
             "minimum": 0.0,
             "title": "Distance Km"
           },
+          "priority": {
+            "type": "string",
+            "enum": ["A", "B", "C"],
+            "title": "Priority",
+            "default": "B"
+          },
+          "target_time_seconds": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0.0 },
+              { "type": "null" }
+            ],
+            "title": "Target Time Seconds"
+          },
+          "target_pace_seconds_per_km": {
+            "anyOf": [{ "type": "number", "minimum": 0.0 }, { "type": "null" }],
+            "title": "Target Pace Seconds Per Km"
+          },
           "official_time_seconds": {
             "anyOf": [
               { "type": "integer", "minimum": 0.0 },
@@ -4444,6 +3591,23 @@
             "type": "number",
             "minimum": 0.0,
             "title": "Distance Km"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["A", "B", "C"],
+            "title": "Priority",
+            "default": "B"
+          },
+          "target_time_seconds": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0.0 },
+              { "type": "null" }
+            ],
+            "title": "Target Time Seconds"
+          },
+          "target_pace_seconds_per_km": {
+            "anyOf": [{ "type": "number", "minimum": 0.0 }, { "type": "null" }],
+            "title": "Target Pace Seconds Per Km"
           },
           "official_time_seconds": {
             "anyOf": [
@@ -4557,6 +3721,24 @@
             "anyOf": [{ "type": "number", "minimum": 0.0 }, { "type": "null" }],
             "title": "Distance Km"
           },
+          "priority": {
+            "anyOf": [
+              { "type": "string", "enum": ["A", "B", "C"] },
+              { "type": "null" }
+            ],
+            "title": "Priority"
+          },
+          "target_time_seconds": {
+            "anyOf": [
+              { "type": "integer", "minimum": 0.0 },
+              { "type": "null" }
+            ],
+            "title": "Target Time Seconds"
+          },
+          "target_pace_seconds_per_km": {
+            "anyOf": [{ "type": "number", "minimum": 0.0 }, { "type": "null" }],
+            "title": "Target Pace Seconds Per Km"
+          },
           "official_time_seconds": {
             "anyOf": [
               { "type": "integer", "minimum": 0.0 },
@@ -4640,258 +3822,6 @@
         "type": "object",
         "required": ["data", "count"],
         "title": "RacesPublic"
-      },
-      "RoutineCreate": {
-        "properties": {
-          "type": {
-            "type": "string",
-            "maxLength": 16,
-            "minLength": 1,
-            "title": "Type"
-          },
-          "name": {
-            "type": "string",
-            "maxLength": 255,
-            "minLength": 1,
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              { "type": "string", "maxLength": 2000 },
-              { "type": "null" }
-            ],
-            "title": "Description"
-          },
-          "routine_data": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Routine Data"
-          }
-        },
-        "type": "object",
-        "required": ["type", "name"],
-        "title": "RoutineCreate"
-      },
-      "RoutineFolderAssignment": {
-        "properties": {
-          "folder_id": {
-            "anyOf": [
-              { "type": "string", "format": "uuid" },
-              { "type": "null" }
-            ],
-            "title": "Folder Id"
-          }
-        },
-        "type": "object",
-        "title": "RoutineFolderAssignment"
-      },
-      "RoutineFolderCreate": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Name"
-          }
-        },
-        "type": "object",
-        "required": ["name"],
-        "title": "RoutineFolderCreate"
-      },
-      "RoutineFolderPublic": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Name"
-          },
-          "hevy_folder_id": {
-            "anyOf": [{ "type": "integer" }, { "type": "null" }],
-            "title": "Hevy Folder Id"
-          },
-          "is_primary": {
-            "type": "boolean",
-            "title": "Is Primary",
-            "default": false
-          },
-          "id": { "type": "string", "format": "uuid", "title": "Id" },
-          "user_id": { "type": "string", "format": "uuid", "title": "User Id" },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "routines": {
-            "items": { "$ref": "#/components/schemas/RoutinePublic" },
-            "type": "array",
-            "title": "Routines"
-          }
-        },
-        "type": "object",
-        "required": ["name", "id", "user_id", "created_at"],
-        "title": "RoutineFolderPublic"
-      },
-      "RoutineFolderUpdate": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Name"
-          }
-        },
-        "type": "object",
-        "required": ["name"],
-        "title": "RoutineFolderUpdate"
-      },
-      "RoutineFoldersPublic": {
-        "properties": {
-          "data": {
-            "items": { "$ref": "#/components/schemas/RoutineFolderPublic" },
-            "type": "array",
-            "title": "Data"
-          },
-          "count": { "type": "integer", "title": "Count" }
-        },
-        "type": "object",
-        "required": ["data", "count"],
-        "title": "RoutineFoldersPublic"
-      },
-      "RoutinePublic": {
-        "properties": {
-          "type": {
-            "type": "string",
-            "maxLength": 16,
-            "minLength": 1,
-            "title": "Type"
-          },
-          "name": {
-            "type": "string",
-            "maxLength": 255,
-            "minLength": 1,
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              { "type": "string", "maxLength": 2000 },
-              { "type": "null" }
-            ],
-            "title": "Description"
-          },
-          "routine_data": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Routine Data"
-          },
-          "id": { "type": "string", "format": "uuid", "title": "Id" },
-          "user_id": { "type": "string", "format": "uuid", "title": "User Id" },
-          "folder_id": {
-            "anyOf": [
-              { "type": "string", "format": "uuid" },
-              { "type": "null" }
-            ],
-            "title": "Folder Id"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "type",
-          "name",
-          "id",
-          "user_id",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "RoutinePublic"
-      },
-      "RoutineUpdate": {
-        "properties": {
-          "type": {
-            "anyOf": [
-              { "type": "string", "maxLength": 16, "minLength": 1 },
-              { "type": "null" }
-            ],
-            "title": "Type"
-          },
-          "name": {
-            "anyOf": [
-              { "type": "string", "maxLength": 255, "minLength": 1 },
-              { "type": "null" }
-            ],
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              { "type": "string", "maxLength": 2000 },
-              { "type": "null" }
-            ],
-            "title": "Description"
-          },
-          "routine_data": {
-            "anyOf": [
-              { "additionalProperties": true, "type": "object" },
-              { "type": "null" }
-            ],
-            "title": "Routine Data"
-          },
-          "folder_id": {
-            "anyOf": [
-              { "type": "string", "format": "uuid" },
-              { "type": "null" }
-            ],
-            "title": "Folder Id"
-          }
-        },
-        "type": "object",
-        "title": "RoutineUpdate"
-      },
-      "RoutinesPublic": {
-        "properties": {
-          "data": {
-            "items": { "$ref": "#/components/schemas/RoutinePublic" },
-            "type": "array",
-            "title": "Data"
-          },
-          "count": { "type": "integer", "title": "Count" }
-        },
-        "type": "object",
-        "required": ["data", "count"],
-        "title": "RoutinesPublic"
-      },
-      "RpeTrendPoint": {
-        "properties": {
-          "week": { "type": "string", "title": "Week" },
-          "avg_rpe": {
-            "anyOf": [{ "type": "number" }, { "type": "null" }],
-            "title": "Avg Rpe"
-          },
-          "sessions": { "type": "integer", "title": "Sessions", "default": 0 }
-        },
-        "type": "object",
-        "required": ["week"],
-        "title": "RpeTrendPoint"
-      },
-      "RpeTrendPublic": {
-        "properties": {
-          "data": {
-            "items": { "$ref": "#/components/schemas/RpeTrendPoint" },
-            "type": "array",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "title": "RpeTrendPublic"
       },
       "RunningPhasePublic": {
         "properties": {
@@ -5853,36 +4783,6 @@
         "type": "object",
         "title": "StravaCredentialsIn"
       },
-      "StrengthAnalyticsPublic": {
-        "properties": {
-          "from_date": {
-            "anyOf": [
-              { "type": "string", "format": "date" },
-              { "type": "null" }
-            ],
-            "title": "From Date"
-          },
-          "to_date": {
-            "anyOf": [
-              { "type": "string", "format": "date" },
-              { "type": "null" }
-            ],
-            "title": "To Date"
-          },
-          "volume_kg": { "type": "number", "title": "Volume Kg" },
-          "total_sets": { "type": "integer", "title": "Total Sets" },
-          "sessions": { "type": "integer", "title": "Sessions" }
-        },
-        "type": "object",
-        "required": [
-          "from_date",
-          "to_date",
-          "volume_kg",
-          "total_sets",
-          "sessions"
-        ],
-        "title": "StrengthAnalyticsPublic"
-      },
       "SyncLogPublic": {
         "properties": {
           "provider": {
@@ -6018,90 +4918,6 @@
         "required": ["access_token"],
         "title": "Token"
       },
-      "TrainingPlanDayBase": {
-        "properties": {
-          "weekday": {
-            "type": "integer",
-            "maximum": 7.0,
-            "minimum": 1.0,
-            "title": "Weekday"
-          },
-          "kind": {
-            "type": "string",
-            "enum": ["strength", "running", "rest"],
-            "maxLength": 32,
-            "title": "Kind"
-          },
-          "routine_id": {
-            "anyOf": [
-              { "type": "string", "format": "uuid" },
-              { "type": "null" }
-            ],
-            "title": "Routine Id"
-          },
-          "label": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Label"
-          }
-        },
-        "type": "object",
-        "required": ["weekday", "kind"],
-        "title": "TrainingPlanDayBase"
-      },
-      "TrainingPlanDayPublic": {
-        "properties": {
-          "weekday": {
-            "type": "integer",
-            "maximum": 7.0,
-            "minimum": 1.0,
-            "title": "Weekday"
-          },
-          "kind": {
-            "type": "string",
-            "enum": ["strength", "running", "rest"],
-            "maxLength": 32,
-            "title": "Kind"
-          },
-          "routine_id": {
-            "anyOf": [
-              { "type": "string", "format": "uuid" },
-              { "type": "null" }
-            ],
-            "title": "Routine Id"
-          },
-          "label": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
-            "title": "Label"
-          },
-          "id": { "type": "string", "format": "uuid", "title": "Id" }
-        },
-        "type": "object",
-        "required": ["weekday", "kind", "id"],
-        "title": "TrainingPlanDayPublic"
-      },
-      "TrainingPlanPublic": {
-        "properties": {
-          "days": {
-            "items": { "$ref": "#/components/schemas/TrainingPlanDayPublic" },
-            "type": "array",
-            "title": "Days"
-          }
-        },
-        "type": "object",
-        "title": "TrainingPlanPublic"
-      },
-      "TrainingPlanUpdate": {
-        "properties": {
-          "days": {
-            "items": { "$ref": "#/components/schemas/TrainingPlanDayBase" },
-            "type": "array",
-            "maxItems": 7,
-            "title": "Days"
-          }
-        },
-        "type": "object",
-        "title": "TrainingPlanUpdate"
-      },
       "UpcomingRacePublic": {
         "properties": {
           "id": { "type": "string", "format": "uuid", "title": "Id" },
@@ -6209,6 +5025,32 @@
         "type": "object",
         "required": ["email", "id"],
         "title": "UserPublic"
+      },
+      "UserRegister": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "full_name": {
+            "anyOf": [
+              { "type": "string", "maxLength": 255 },
+              { "type": "null" }
+            ],
+            "title": "Full Name"
+          }
+        },
+        "type": "object",
+        "required": ["email", "password"],
+        "title": "UserRegister"
       },
       "UserUpdate": {
         "properties": {
@@ -6348,19 +5190,16 @@
             "anyOf": [{ "type": "number", "minimum": 0.0 }, { "type": "null" }],
             "title": "Target Km"
           },
-          "target_gym_days": {
+          "target_sessions": {
             "anyOf": [
               { "type": "integer", "minimum": 0.0 },
               { "type": "null" }
             ],
-            "title": "Target Gym Days"
+            "title": "Target Sessions"
           },
-          "target_cardio_minutes": {
-            "anyOf": [
-              { "type": "integer", "minimum": 0.0 },
-              { "type": "null" }
-            ],
-            "title": "Target Cardio Minutes"
+          "target_long_run_km": {
+            "anyOf": [{ "type": "number", "minimum": 0.0 }, { "type": "null" }],
+            "title": "Target Long Run Km"
           }
         },
         "type": "object",
@@ -6372,19 +5211,16 @@
             "anyOf": [{ "type": "number", "minimum": 0.0 }, { "type": "null" }],
             "title": "Target Km"
           },
-          "target_gym_days": {
+          "target_sessions": {
             "anyOf": [
               { "type": "integer", "minimum": 0.0 },
               { "type": "null" }
             ],
-            "title": "Target Gym Days"
+            "title": "Target Sessions"
           },
-          "target_cardio_minutes": {
-            "anyOf": [
-              { "type": "integer", "minimum": 0.0 },
-              { "type": "null" }
-            ],
-            "title": "Target Cardio Minutes"
+          "target_long_run_km": {
+            "anyOf": [{ "type": "number", "minimum": 0.0 }, { "type": "null" }],
+            "title": "Target Long Run Km"
           },
           "id": { "type": "string", "format": "uuid", "title": "Id" },
           "user_id": { "type": "string", "format": "uuid", "title": "User Id" },

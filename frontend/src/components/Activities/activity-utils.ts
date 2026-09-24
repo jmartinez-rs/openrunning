@@ -1,4 +1,4 @@
-import type { ActivityCardioBase, ActivityStrengthBase } from "@/client"
+import type { ActivityCardioBase } from "@/client"
 
 export function formatDuration(seconds: number | undefined): string {
   if (!seconds) return "—"
@@ -42,11 +42,4 @@ export function isCardio(activity: {
   cardio?: ActivityCardioBase | null
 }): boolean {
   return activity.source_type === "strava" || Boolean(activity.cardio)
-}
-
-export function isStrength(activity: {
-  source_type: string
-  strength?: ActivityStrengthBase | null
-}): boolean {
-  return activity.source_type === "hevy" || Boolean(activity.strength)
 }
