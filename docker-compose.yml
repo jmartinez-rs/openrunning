@@ -6,6 +6,8 @@ x-backend-environment: &backend-environment
   SECRET_KEY: ${SECRET_KEY:-openrunning-local-development-secret-key-32chars}
   FIRST_SUPERUSER: ${FIRST_SUPERUSER:-admin@example.com}
   FIRST_SUPERUSER_PASSWORD: ${FIRST_SUPERUSER_PASSWORD:-changethis}
+  # Registro público de cuentas (POST /users/signup). False lo deshabilita.
+  ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
   # URL pública del frontend (para links de reset de contraseña y CORS).
   # En un deploy detrás de un dominio, usar https://tu-dominio
   FRONTEND_HOST: ${FRONTEND_HOST:-http://localhost:5173}
