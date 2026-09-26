@@ -127,6 +127,7 @@ export function calculateVDOT(
     0.2989558 * Math.exp(-0.1932605 * timeMinutes)
 
   const vdot = vo2 / percentMax
+  if (!Number.isFinite(vdot) || vdot <= 0) return 0
   return Math.round(vdot * 10) / 10
 }
 
@@ -146,24 +147,32 @@ export function getTrainingPaces(vdot: number): TrainingPaces {
     }
   }
 
-  // Linear approximations of velocity at intensity percentages of VDOT
-  // Easy: ~65-75% VO2max
-  // Marathon: ~80-85% VO2max
-  // Threshold: ~88-90% VO2max
-  // Interval: ~98-100% VO2max
-  // Repetition: ~105-110% VO2max
+  // Jack Daniels: velocidades de entrenamiento como fracción de VO2max.
+  // Invertimos la ecuación de costo de oxígeno (VO2 = -4.6 + 0.182258*v +
+  // 0.000104*v²) para obtener la velocidad (m/min) a cada intensidad y de ahí
+  // el ritmo (s/km). Esto reemplaza la aproximación lineal previa, que daba
+  // ritmos demasiado rápidos (p. ej. umbral ~4:18 para VDOT 39 en vez de ~5:12).
+  const velocityForVo2 = (vo2: number): number => {
+    const a = 0.000104
+    const b = 0.182258
+    const c = -(4.6 + vo2)
+    const disc = b * b - 4 * a * c
+    if (disc <= 0) return 0
+    return (-b + Math.sqrt(disc)) / (2 * a)
+  }
+  const paceForFraction = (fraction: number): number => {
+    const velocity = velocityForVo2(vdot * fraction)
+    return velocity > 0 ? 60000 / velocity : 0
+  }
 
-  // Empirical pace seconds/km for VDOT thresholds:
-  // VDOT 50 -> E: ~5:15-5:45, M: ~4:35, T: ~4:15, I: ~3:50, R: ~3:35
-  const baseT = 3600 / (vdot * 0.28 + 3)
-  const tPace = Math.max(150, baseT)
-
-  const easyMinSec = tPace * 1.25
-  const easyMaxSec = tPace * 1.4
-  const marathonSec = tPace * 1.08
-  const thresholdSec = tPace
-  const intervalSec = tPace * 0.9
-  const repetitionSec = tPace * 0.83
+  // Rangos de %VO2max por tipo de entrenamiento (Daniels' Running Formula).
+  // Easy 59-74%, Marathon 84%, Threshold 88%, Interval 100%, Repetition 105%.
+  const easyMinSec = paceForFraction(0.74) // extremo rápido del rango fácil
+  const easyMaxSec = paceForFraction(0.59) // extremo lento del rango fácil
+  const marathonSec = paceForFraction(0.84)
+  const thresholdSec = paceForFraction(0.88)
+  const intervalSec = paceForFraction(1.0)
+  const repetitionSec = paceForFraction(1.05)
 
   return {
     easyMin: formatPace(easyMinSec),

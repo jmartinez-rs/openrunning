@@ -309,6 +309,24 @@ export function secondsToPaceInput(seconds?: number | null): string {
   return `${m}:${String(s).padStart(2, "0")}`
 }
 
+/**
+ * Tiempo de carrera → segundos. A diferencia de `durationInputToSeconds`,
+ * interpreta 2 partes como "mm:ss" (no "hh:mm"), que es el formato natural de
+ * una marca de carrera y lo que produce `formatTime` para tiempos < 1 h.
+ * "50:00" → 3000 s | "1:30:00" → 5400 s | "24" → 1440 s. Vacío/inválido → null.
+ */
+export function raceTimeInputToSeconds(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const parts = trimmed.split(":")
+  if (parts.length > 3 || parts.length === 0) return null
+  const nums = parts.map((p) => Number(p))
+  if (nums.some((n) => Number.isNaN(n) || n < 0)) return null
+  if (nums.length === 1) return Math.round(nums[0] * 60)
+  if (nums.length === 2) return Math.round(nums[0] * 60 + nums[1])
+  return Math.round(nums[0] * 3600 + nums[1] * 60 + nums[2])
+}
+
 interface BlockPreviewInput {
   block_type?: string | null
   repeats?: number | null

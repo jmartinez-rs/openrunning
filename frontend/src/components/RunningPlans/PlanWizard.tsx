@@ -55,12 +55,12 @@ import {
   addDaysToIso,
   type BlockType,
   blocksDistanceKm,
-  durationInputToSeconds,
   formatShortDate,
   type Intensity,
   PHASE_COLORS,
   type PhaseColor,
   type PlanStatus,
+  raceTimeInputToSeconds,
   WORKOUT_TYPE_META,
   type WorkoutType,
 } from "./running-utils"
@@ -414,6 +414,13 @@ function generatePlanStructure({
     return orderA - orderB
   })
 
+  // Índices (dentro de sortedDays) reservados para sesiones de calidad.
+  // El día siguiente al último de calidad se usa para un rodaje regenerativo.
+  const qualityIndices = [1, ...(sortedDays.length > 3 ? [2] : [])]
+  const lastQualityIdx = qualityIndices.length
+    ? Math.max(...qualityIndices)
+    : -1
+
   const generatedPhases: PhaseDraft[] = phasesSpec.map((spec, phaseIdx) => {
     const weeksInPhase: WeekDraft[] = []
 
@@ -445,8 +452,9 @@ function generatePlanStructure({
         const isLongRunDay =
           dayId === longRunDay ||
           (dayIdx === sortedDays.length - 1 && !sortedDays.includes(longRunDay))
-        const isQualityDay =
-          dayIdx === 1 || (sortedDays.length > 3 && dayIdx === 2)
+        const isQualityDay = qualityIndices.includes(dayIdx)
+        const isRecoveryDay =
+          phaseIdx >= 1 && dayIdx === lastQualityIdx + 1 && !isLongRunDay
 
         let type: WorkoutType = "easy_run"
         let name = "Rodaje Suave Aeróbico"
@@ -650,13 +658,29 @@ function generatePlanStructure({
             ]
           }
         } else {
-          // Easy Run
-          type = "easy_run"
-          name = "Rodaje Suave Aeróbico"
-          distKm = Math.max(5, Math.round(6 + wNum * 0.2))
-          targetPace = easyPaceSec
+          // Rodaje fácil: regenerativo (día post-calidad), corto, medio o largo,
+          // con variedad de distancias y progresiones para evitar sesiones idénticas.
+          const isRegeneration = isRecoveryDay
+          type = isRegeneration ? "regeneration" : "easy_run"
+
+          const baseEasy = 6 + wNum * 0.2
+          const variation = ((dayIdx % 3) - 1) * 1.5 // -1.5 / 0 / +1.5 km
+          distKm = isRegeneration
+            ? Math.max(4, Math.round((5 + wNum * 0.1) * 10) / 10)
+            : Math.max(5, Math.round((baseEasy + variation) * 10) / 10)
+
+          name = isRegeneration
+            ? "Rodaje Regenerativo"
+            : distKm <= 6
+              ? "Rodaje Suave Corto"
+              : distKm <= 8
+                ? "Rodaje Suave Medio"
+                : "Rodaje Suave Largo"
+
+          targetPace = isRegeneration ? easyPaceSec + 20 : easyPaceSec
           intensity = "easy"
-          blocks = [
+
+          const baseBlocks: BlockDraft[] = [
             {
               position: 1,
               block_type: "warmup",
@@ -673,27 +697,48 @@ function generatePlanStructure({
               position: 2,
               block_type: "main",
               repeats: 1,
-              distance_m: Math.max(2, distKm - 2) * 1000,
+              distance_m: Math.max(2000, (distKm - 2) * 1000),
               duration_seconds: null,
-              pace_seconds_per_km: easyPaceSec,
+              pace_seconds_per_km: targetPace,
               pace_range_end_seconds_per_km: null,
               recovery_seconds: null,
               recovery_type: "jog",
-              notes: "Ritmo Z2 aeróbico",
-            },
-            {
-              position: 3,
-              block_type: "cooldown",
-              repeats: 1,
-              distance_m: 1000,
-              duration_seconds: null,
-              pace_seconds_per_km: easyPaceSec + 10,
-              pace_range_end_seconds_per_km: null,
-              recovery_seconds: null,
-              recovery_type: "jog",
-              notes: "Soltura",
+              notes: isRegeneration
+                ? "Ritmo muy suave, recuperación activa"
+                : "Ritmo Z2 aeróbico conversacional",
             },
           ]
+
+          // Progresiones (strides) en el primer rodaje de la semana, si hay ≥3 días.
+          if (!isRegeneration && dayIdx === 0 && sortedDays.length >= 3) {
+            baseBlocks.push({
+              position: 3,
+              block_type: "strides",
+              repeats: 4,
+              distance_m: 100,
+              duration_seconds: null,
+              pace_seconds_per_km: intervalPaceSec,
+              pace_range_end_seconds_per_km: null,
+              recovery_seconds: 45,
+              recovery_type: "walk",
+              notes: "4x100m progresiones sueltas",
+            })
+          }
+
+          baseBlocks.push({
+            position: baseBlocks.length + 1,
+            block_type: "cooldown",
+            repeats: 1,
+            distance_m: 1000,
+            duration_seconds: null,
+            pace_seconds_per_km: easyPaceSec + 10,
+            pace_range_end_seconds_per_km: null,
+            recovery_seconds: null,
+            recovery_type: "jog",
+            notes: "Soltura",
+          })
+
+          blocks = baseBlocks.map((b, i) => ({ ...b, position: i + 1 }))
         }
 
         workouts.push({
@@ -856,7 +901,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
 
   // Calculated VDOT preview
   const refTimeSeconds = useMemo(
-    () => durationInputToSeconds(refTimeInput) || 1470,
+    () => raceTimeInputToSeconds(refTimeInput) || 1470,
     [refTimeInput],
   )
 
@@ -939,9 +984,14 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
   }
 
   const toggleDay = (dayId: number) => {
-    setSelectedDays((prev) =>
-      prev.includes(dayId) ? prev.filter((d) => d !== dayId) : [...prev, dayId],
-    )
+    const next = selectedDays.includes(dayId)
+      ? selectedDays.filter((d) => d !== dayId)
+      : [...selectedDays, dayId]
+    setSelectedDays(next)
+    // Si el día de fondo quedó deseleccionado, moverlo al último día elegido.
+    if (next.length > 0 && !next.includes(longRunDay)) {
+      setLongRunDay(next[next.length - 1])
+    }
   }
 
   const handleGeneratePlan = () => {
@@ -1636,12 +1686,23 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                   id="long-run-day"
                   className="w-64 bg-surface-container-high/80 border-border text-white"
                 >
-                  <SelectValue />
+                  <SelectValue placeholder="Elegí un día" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border text-white">
-                  <SelectItem value="0">Domingo (Recomendado)</SelectItem>
-                  <SelectItem value="6">Sábado</SelectItem>
-                  <SelectItem value="5">Viernes</SelectItem>
+                  {selectedDays.length === 0 ? (
+                    <SelectItem value={longRunDay.toString()} disabled>
+                      Seleccioná días de entrenamiento
+                    </SelectItem>
+                  ) : (
+                    [...selectedDays]
+                      .sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b))
+                      .map((dayId) => (
+                        <SelectItem key={dayId} value={dayId.toString()}>
+                          {DAYS_OF_WEEK.find((d) => d.id === dayId)?.label ??
+                            ""}
+                        </SelectItem>
+                      ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

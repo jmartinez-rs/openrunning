@@ -50,6 +50,18 @@ describe("running-math", () => {
     expect(parsePace(paces.interval)).toBeLessThan(parsePace(paces.threshold))
   })
 
+  it("derives realistic Jack Daniels paces (VDOT 40 threshold ~5:00-5:15)", () => {
+    const paces = getTrainingPaces(40)
+    const threshold = parsePace(paces.threshold)
+    expect(threshold).toBeGreaterThanOrEqual(295) // 4:55
+    expect(threshold).toBeLessThanOrEqual(315) // 5:15
+  })
+
+  it("clamps non-positive VDOT to 0 instead of returning negatives", () => {
+    // 10K in 50 hours -> would be a negative VDOT: must clamp to 0.
+    expect(calculateVDOT(10000, 180000)).toBe(0)
+  })
+
   it("calculates heart rate zones", () => {
     const zones = calculateHeartRateZones(190, 60)
     expect(zones.z1Recovery[0]).toBe(125)
