@@ -10,6 +10,8 @@ import {
   Footprints,
   Gauge,
   Loader2,
+  Minus,
+  Plus,
   Sparkles,
   TrendingUp,
   Trophy,
@@ -61,6 +63,7 @@ import {
   type PhaseColor,
   type PlanStatus,
   raceTimeInputToSeconds,
+  summarizeBlocks,
   WORKOUT_TYPE_META,
   type WorkoutType,
 } from "./running-utils"
@@ -446,7 +449,11 @@ function generatePlanStructure({
       const workouts: WorkoutDraft[] = []
 
       sortedDays.forEach((dayId, dayIdx) => {
-        const offset = dayId === 0 ? 6 : dayId - 1
+        // El offset se calcula respecto al día real en que arranca la semana
+        // (startDateISO), no asumiendo que arranca lunes. Así el día de fondo
+        // cae en el día elegido aunque el plan arranque a mitad de semana.
+        const weekStartDay = new Date(`${weekMonday}T12:00:00`).getDay()
+        const offset = (dayId - weekStartDay + 7) % 7
         const workoutDate = addDaysToIso(weekMonday, offset)
 
         const isLongRunDay =
@@ -1772,10 +1779,12 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               <Button
                 type="button"
                 onClick={handleGeneratePlan}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-base px-8 py-6 rounded-2xl shadow-card transition-all gap-3 cursor-pointer"
+                className="w-full max-w-md bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-sm sm:text-base px-4 py-5 rounded-2xl shadow-card transition-all gap-3 cursor-pointer"
               >
-                <Wand2 className="size-6" />
-                <span>⚡ Ejecutar Algoritmo & Generar Plan Estructurado</span>
+                <Wand2 className="size-6 shrink-0" />
+                <span className="whitespace-normal text-center">
+                  ⚡ Ejecutar Algoritmo & Generar Plan Estructurado
+                </span>
               </Button>
               <p className="text-xs text-muted-foreground">
                 Cada sesión del plan se creará con sus bloques exactos de
@@ -1895,6 +1904,16 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                             const typeMeta =
                               WORKOUT_TYPE_META[workout.type] ??
                               WORKOUT_TYPE_META.easy_run
+                            const updateWorkout = (
+                              patch: Partial<WorkoutDraft>,
+                            ) => {
+                              const newPhases = [...draft.phases]
+                              Object.assign(
+                                newPhases[pIdx].weeks[wIdx].workouts[wkIdx],
+                                patch,
+                              )
+                              setDraft({ ...draft, phases: newPhases })
+                            }
                             return (
                               <div
                                 key={wkIdx}
@@ -1910,43 +1929,88 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                                       typeMeta.badgeClass,
                                     )}
                                   >
-                                    {typeMeta.emoji} {typeMeta.label}
+                                    {typeMeta.label}
                                   </span>
                                 </div>
 
-                                <Input
-                                  value={workout.name}
-                                  onChange={(e) => {
-                                    const newPhases = [...draft.phases]
-                                    newPhases[pIdx].weeks[wIdx].workouts[
-                                      wkIdx
-                                    ].name = e.target.value
-                                    setDraft({ ...draft, phases: newPhases })
+                                <Select
+                                  value={workout.type}
+                                  onValueChange={(val) => {
+                                    const t = val as WorkoutType
+                                    updateWorkout({
+                                      type: t,
+                                      name:
+                                        WORKOUT_TYPE_META[t]?.label ??
+                                        workout.name,
+                                    })
                                   }}
-                                  className="h-7 text-xs font-bold px-2 py-1 bg-surface-container-high border-border text-white focus:border-primary rounded-lg"
-                                />
+                                >
+                                  <SelectTrigger className="h-7 text-xs font-bold px-2 py-1 bg-surface-container-high border-border text-white focus:border-primary rounded-lg">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-card border-border text-white">
+                                    {Object.entries(WORKOUT_TYPE_META).map(
+                                      ([key, meta]) => (
+                                        <SelectItem key={key} value={key}>
+                                          {meta.label}
+                                        </SelectItem>
+                                      ),
+                                    )}
+                                  </SelectContent>
+                                </Select>
 
                                 <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium">
                                   <span>Distancia:</span>
                                   <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updateWorkout({
+                                          distance_km: Math.max(
+                                            0,
+                                            Math.round(
+                                              ((workout.distance_km ?? 0) -
+                                                0.5) *
+                                                10,
+                                            ) / 10,
+                                          ),
+                                        })
+                                      }
+                                      className="size-6 rounded-md bg-surface-container-high border border-border text-muted-foreground hover:text-white flex items-center justify-center shrink-0"
+                                      aria-label="Bajar distancia"
+                                    >
+                                      <Minus className="size-3" />
+                                    </button>
                                     <Input
                                       type="number"
                                       step="0.5"
                                       value={workout.distance_km ?? ""}
-                                      onChange={(e) => {
-                                        const newPhases = [...draft.phases]
-                                        newPhases[pIdx].weeks[wIdx].workouts[
-                                          wkIdx
-                                        ].distance_km = e.target.value
-                                          ? parseFloat(e.target.value)
-                                          : null
-                                        setDraft({
-                                          ...draft,
-                                          phases: newPhases,
+                                      onChange={(e) =>
+                                        updateWorkout({
+                                          distance_km: e.target.value
+                                            ? parseFloat(e.target.value)
+                                            : null,
                                         })
-                                      }}
-                                      className="h-6 text-xs w-16 px-1.5 py-0 bg-surface-container-high border-border text-white font-extrabold focus:border-primary rounded-lg"
+                                      }
+                                      className="h-6 text-xs w-14 px-1.5 py-0 bg-surface-container-high border-border text-white font-extrabold focus:border-primary rounded-lg"
                                     />
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updateWorkout({
+                                          distance_km:
+                                            Math.round(
+                                              ((workout.distance_km ?? 0) +
+                                                0.5) *
+                                                10,
+                                            ) / 10,
+                                        })
+                                      }
+                                      className="size-6 rounded-md bg-surface-container-high border border-border text-muted-foreground hover:text-white flex items-center justify-center shrink-0"
+                                      aria-label="Subir distancia"
+                                    >
+                                      <Plus className="size-3" />
+                                    </button>
                                     <span className="text-[10px] text-muted-foreground">
                                       km
                                     </span>
@@ -1955,8 +2019,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
 
                                 {workout.blocks.length > 0 && (
                                   <span className="text-[10px] text-primary font-display truncate font-medium">
-                                    ✓ {workout.blocks.length} bloques
-                                    estructurados
+                                    ✓ {summarizeBlocks(workout.blocks)}
                                   </span>
                                 )}
                               </div>
@@ -1971,11 +2034,11 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
             })}
           </div>
 
-          <div className="flex justify-between pt-4">
+          <div className="flex flex-col sm:flex-row justify-between gap-2 pt-4">
             <Button
               type="button"
               variant="outline"
-              className="border-border text-muted-foreground"
+              className="w-full sm:w-auto border-border text-muted-foreground"
               onClick={() => setStep(5)}
             >
               Volver al Cuestionario
@@ -1984,7 +2047,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               type="button"
               onClick={handleSave}
               disabled={isPending}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-card gap-2 px-6 py-5 text-base"
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-card gap-2 px-4 sm:px-6 py-4 sm:py-5 text-sm sm:text-base"
             >
               {isPending && <Loader2 className="size-4 animate-spin" />}
               <span>

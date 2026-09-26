@@ -202,6 +202,47 @@ export function formatBlockDistance(meters: number | null | undefined): string {
   return `${Math.round(meters)} m`
 }
 
+/**
+ * Resumen corto de los bloques de una sesión para el editor del wizard:
+ * "Cal 2km · 8km · Enf 1km" | "Cal 1.5km · 4×800m · Enf 1.5km".
+ */
+export function summarizeBlocks(
+  blocks: Array<{
+    block_type?: string | null
+    repeats?: number | null
+    distance_m?: number | null
+  }>,
+): string {
+  if (!blocks || blocks.length === 0) return ""
+  const parts = blocks.map((b) => {
+    const dist = b.distance_m
+    const distText =
+      dist != null && dist > 0
+        ? dist >= 1000
+          ? `${Math.round(dist / 100) / 10}km`
+          : `${Math.round(dist)}m`
+        : ""
+    const reps = b.repeats && b.repeats > 1 ? `${b.repeats}×` : ""
+    switch (b.block_type) {
+      case "warmup":
+        return distText ? `Cal ${distText}` : "Cal"
+      case "main":
+        return distText || "Main"
+      case "interval":
+        return `${reps}${distText}`.trim() || "Int"
+      case "strides":
+        return `${reps}${distText}`.trim() || "Strides"
+      case "cooldown":
+        return distText ? `Enf ${distText}` : "Enf"
+      case "recovery":
+        return "Rec"
+      default:
+        return distText || "Bloque"
+    }
+  })
+  return parts.join(" · ")
+}
+
 /** Rango de ritmo de un bloque: "4:20" | "4:20–4:30" | "—" */
 export function formatPaceRange(block: {
   pace_seconds_per_km?: number | null
