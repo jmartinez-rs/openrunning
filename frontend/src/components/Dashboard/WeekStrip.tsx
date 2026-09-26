@@ -8,6 +8,7 @@ export interface DayStatus {
   isToday: boolean
   status: "done" | "plan" | "ovr" | "rest" | "empty"
   workoutTitle?: string
+  activityId?: string
 }
 
 interface WeekStripProps {

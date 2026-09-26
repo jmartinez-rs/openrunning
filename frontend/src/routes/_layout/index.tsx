@@ -104,6 +104,7 @@ function OpenRunningDashboard() {
         isToday,
         status,
         workoutTitle: dayData?.activities?.[0]?.name || undefined,
+        activityId: dayData?.activities?.[0]?.id || undefined,
       })
     }
     return result
@@ -192,6 +193,17 @@ function OpenRunningDashboard() {
     queryClient.invalidateQueries({ queryKey: ["dashboard"] })
   }
 
+  // Semana actual del plan activo (para que "Hoy" muestre la semana en el detalle)
+  const currentPlanWeek = useMemo(() => {
+    if (!activePlan?.start_date) return undefined
+    const start = new Date(activePlan.start_date)
+    const today = new Date()
+    const diffDays = Math.floor(
+      (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+    )
+    return Math.max(1, Math.floor(diffDays / 7) + 1)
+  }, [activePlan])
+
   return (
     <div className="col-span-12 flex flex-col gap-6 pb-20">
       {/* Header */}
@@ -233,7 +245,16 @@ function OpenRunningDashboard() {
           weekLabel={weekLabel}
           onPrevWeek={() => setWeekOffset((w) => w - 1)}
           onNextWeek={() => setWeekOffset((w) => w + 1)}
-          onSelectDay={() => setIsManualSheetOpen(true)}
+          onSelectDay={(day) => {
+            // Si el día tiene una actividad cargada, abrirla. Si no, no hacer nada
+            // (no abrir el registro manual desde acá).
+            if (day.activityId) {
+              navigate({
+                to: "/activities/$activityId",
+                params: { activityId: day.activityId },
+              })
+            }
+          }}
         />
 
         <TodayRow
@@ -245,6 +266,7 @@ function OpenRunningDashboard() {
               ? navigate({
                   to: "/routines/run/$planId",
                   params: { planId: activePlan.id },
+                  search: currentPlanWeek ? { week: currentPlanWeek } : {},
                 })
               : navigate({ to: "/routines" })
           }

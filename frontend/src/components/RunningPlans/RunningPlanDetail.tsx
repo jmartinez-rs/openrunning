@@ -15,7 +15,7 @@ import {
   Trash2,
   TrendingUp,
 } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import {
   RacesService,
@@ -103,7 +103,13 @@ function StatChip({
   )
 }
 
-export function RunningPlanDetail({ planId }: { planId: string }) {
+export function RunningPlanDetail({
+  planId,
+  initialWeek,
+}: {
+  planId: string
+  initialWeek?: number
+}) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { showSuccessToast, showErrorToast } = useCustomToast()
@@ -112,6 +118,7 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [collapseInitialized, setCollapseInitialized] = useState(false)
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null)
+  const weekRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   const query = useQuery({
     queryKey: ["running-plan", planId],
@@ -175,13 +182,35 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
       plan.phases?.flatMap((phase) => phase.weeks?.map((w) => w.id) ?? []) ?? []
 
     if (weekIds.length > 2) {
-      const currentWeekId = currentWeek?.weekId
+      // Si llegamos con ?week=, expandir esa semana; si no, la semana actual.
+      const targetWeekId = initialWeek
+        ? plan.phases
+            ?.flatMap((phase) => phase.weeks ?? [])
+            .find((w) => w.number === initialWeek)?.id
+        : currentWeek?.weekId
       const initialCollapsed = new Set(
-        weekIds.filter((id) => id !== currentWeekId),
+        weekIds.filter((id) => id !== targetWeekId),
       )
       setCollapsed(initialCollapsed)
     }
-  }, [plan, currentWeek, collapseInitialized])
+  }, [plan, currentWeek, collapseInitialized, initialWeek])
+
+  // Scroll a la semana indicada por ?week= (desde el dashboard "Hoy").
+  useEffect(() => {
+    if (!plan || !initialWeek) return
+    const targetId = plan.phases
+      ?.flatMap((phase) => phase.weeks ?? [])
+      .find((w) => w.number === initialWeek)?.id
+    if (!targetId) return
+    const el = weekRefs.current.get(targetId)
+    if (el) {
+      const t = window.setTimeout(
+        () => el.scrollIntoView({ behavior: "smooth", block: "start" }),
+        150,
+      )
+      return () => window.clearTimeout(t)
+    }
+  }, [plan, initialWeek])
 
   const toggleWeek = (weekId: string) => {
     setCollapsed((prev) => {
@@ -652,8 +681,12 @@ export function RunningPlanDetail({ planId }: { planId: string }) {
                   return (
                     <div
                       key={week.id}
+                      ref={(el) => {
+                        if (el) weekRefs.current.set(week.id, el)
+                        else weekRefs.current.delete(week.id)
+                      }}
                       className={cn(
-                        "rounded-xl border border-border bg-card/80 transition-all duration-200 overflow-hidden shadow-md",
+                        "rounded-xl border border-border bg-card/80 transition-all duration-200 overflow-hidden shadow-md scroll-mt-24",
                         isCurrentWeek &&
                           "ring-2 ring-primary border-primary/50 shadow-card",
                       )}
