@@ -1,11 +1,17 @@
-import { Calendar, MapPin } from "lucide-react"
+import { useNavigate } from "@tanstack/react-router"
+import { Calendar, Flag, MapPin, Pencil } from "lucide-react"
+import { useState } from "react"
 
 import type { RacePublic } from "@/client"
+import { Button } from "@/components/ui/button"
+import { RaceFinishDialog } from "./RaceFinishDialog"
 import { parseRaceNotes } from "./race-meta"
 import { formatRaceDate } from "./race-utils"
 
 export function SecondaryRaceCard({ race }: { race: RacePublic }) {
   const meta = parseRaceNotes(race.notes)
+  const [finishOpen, setFinishOpen] = useState(false)
+  const navigate = useNavigate()
 
   const priorityLabel = meta.priority === "B" ? "Tune-up Race" : "Test de Ritmo"
   const priorityColor =
@@ -65,6 +71,34 @@ export function SecondaryRaceCard({ race }: { race: RacePublic }) {
           </div>
         </div>
       </div>
+
+      <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/80 mt-3">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="rounded-xl border-border bg-card text-foreground hover:text-white hover:bg-surface-container-high"
+          onClick={() =>
+            navigate({ to: "/races/new", search: { edit: race.id } })
+          }
+        >
+          <Pencil className="mr-2 size-3.5" /> Editar
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+          onClick={() => setFinishOpen(true)}
+        >
+          <Flag className="mr-2 size-3.5" /> Finalizar
+        </Button>
+      </div>
+
+      <RaceFinishDialog
+        open={finishOpen}
+        onOpenChange={setFinishOpen}
+        race={race}
+      />
     </div>
   )
 }
