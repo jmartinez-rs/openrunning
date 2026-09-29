@@ -8,7 +8,7 @@ import { NextSessionCard } from "@/components/Dashboard/NextSessionCard"
 import { StravaSyncBar } from "@/components/Dashboard/StravaSyncBar"
 import { StreakCard } from "@/components/Dashboard/StreakCard"
 import { TargetRaceCard } from "@/components/Dashboard/TargetRaceCard"
-import { TodayRow } from "@/components/Dashboard/TodayRow"
+
 import { VolumeCard } from "@/components/Dashboard/VolumeCard"
 import { type DayStatus, WeekStrip } from "@/components/Dashboard/WeekStrip"
 import { ManualRunSheet } from "@/components/Sheets/ManualRunSheet"
@@ -175,37 +175,12 @@ function OpenRunningDashboard() {
 
   // 2. Today logic
   const todayData = dashboard?.timeline?.find((d) => d.date === todayIso)
-  const todayActivities = todayData?.activities || []
-  const hasCompletedActivity = todayActivities.length > 0
-
-  let todayTitle = "Día Libre / Recuperación"
-  let todayWorkoutType:
-    | "easy_run"
-    | "intervals"
-    | "tempo"
-    | "long_run"
-    | "rest" = "rest"
-
-  if (hasCompletedActivity) {
-    todayTitle = todayActivities[0].name || "Actividad completada"
-    todayWorkoutType = "easy_run"
-  }
+  const hasCompletedActivity = (todayData?.activities?.length ?? 0) > 0
 
   const handleManualRunSubmit = async (_data: any) => {
     // Refresh dashboard on submit
     queryClient.invalidateQueries({ queryKey: ["dashboard"] })
   }
-
-  // Semana actual del plan activo (para que "Hoy" muestre la semana en el detalle)
-  const currentPlanWeek = useMemo(() => {
-    if (!activePlan?.start_date) return undefined
-    const start = new Date(activePlan.start_date)
-    const today = new Date()
-    const diffDays = Math.floor(
-      (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-    )
-    return Math.max(1, Math.floor(diffDays / 7) + 1)
-  }, [activePlan])
 
   return (
     <div className="col-span-12 flex flex-col gap-6 pb-20">
@@ -263,21 +238,6 @@ function OpenRunningDashboard() {
               })
             }
           }}
-        />
-
-        <TodayRow
-          sessionTitle={todayTitle}
-          workoutType={todayWorkoutType}
-          isCompleted={hasCompletedActivity}
-          onAction={() =>
-            activePlan
-              ? navigate({
-                  to: "/routines/run/$planId",
-                  params: { planId: activePlan.id },
-                  search: currentPlanWeek ? { week: currentPlanWeek } : {},
-                })
-              : navigate({ to: "/routines" })
-          }
         />
 
         {activePlan && (

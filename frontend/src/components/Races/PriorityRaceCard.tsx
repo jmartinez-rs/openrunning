@@ -1,16 +1,19 @@
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import {
   Calendar,
   ChevronDown,
   ChevronUp,
+  Flag,
   Link as LinkIcon,
   MapPin,
+  Pencil,
   Target,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import type { RacePublic } from "@/client"
 import { Button } from "@/components/ui/button"
+import { RaceFinishDialog } from "./RaceFinishDialog"
 import { parseRaceNotes } from "./race-meta"
 import { formatRaceDate } from "./race-utils"
 
@@ -25,6 +28,8 @@ function getCountdown(date: string) {
 export function PriorityRaceCard({ race }: { race: RacePublic }) {
   const [countdown, setCountdown] = useState(() => getCountdown(race.date))
   const [expanded, setExpanded] = useState(false)
+  const [finishOpen, setFinishOpen] = useState(false)
+  const navigate = useNavigate()
   const meta = parseRaceNotes(race.notes)
 
   useEffect(() => {
@@ -210,6 +215,33 @@ export function PriorityRaceCard({ race }: { race: RacePublic }) {
           </div>
         </div>
       )}
+
+      {/* Acciones */}
+      <div className="flex items-center justify-end gap-2 p-4 border-t border-border bg-card">
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-xl border-border bg-card text-foreground hover:text-white hover:bg-surface-container-high"
+          onClick={() =>
+            navigate({ to: "/races/new", search: { edit: race.id } })
+          }
+        >
+          <Pencil className="mr-2 size-4" /> Editar
+        </Button>
+        <Button
+          type="button"
+          className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+          onClick={() => setFinishOpen(true)}
+        >
+          <Flag className="mr-2 size-4" /> Finalizar
+        </Button>
+      </div>
+
+      <RaceFinishDialog
+        open={finishOpen}
+        onOpenChange={setFinishOpen}
+        race={race}
+      />
     </div>
   )
 }

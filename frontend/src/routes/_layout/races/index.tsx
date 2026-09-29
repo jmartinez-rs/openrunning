@@ -46,11 +46,14 @@ function Races() {
   const races = query.data?.data ?? []
   const now = Date.now()
 
-  // Split into upcoming and completed
-  const upcoming = races.filter((race) => new Date(race.date).getTime() > now)
+  // Una carrera está completada si tiene resultado oficial o su fecha ya pasó.
+  const isCompleted = (race: RacePublic) =>
+    race.official_time_seconds != null || new Date(race.date).getTime() <= now
+
+  const upcoming = races.filter((race) => !isCompleted(race))
 
   const completed = races
-    .filter((race) => new Date(race.date).getTime() <= now)
+    .filter(isCompleted)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Newest first for history
 
   const handleOpenMemoryModal = (race: RacePublic) => {

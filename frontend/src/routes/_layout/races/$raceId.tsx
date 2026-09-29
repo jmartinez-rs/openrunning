@@ -89,7 +89,9 @@ function RaceDetail() {
   const cardio = activityQuery.data?.cardio
   const polyline = cardio?.map_summary_polyline
   const elevationMeters = cardio?.elevation_gain_meters
-  const isUpcoming = new Date(race.date).getTime() > Date.now()
+  const isUpcoming =
+    race.official_time_seconds == null &&
+    new Date(race.date).getTime() > Date.now()
 
   return (
     <div className="col-span-12 flex flex-col gap-6">
