@@ -12,6 +12,8 @@ from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
+    Activity,
+    ActivityCardio,
     Race,
     RunningPhase,
     RunningPlan,
@@ -129,6 +131,7 @@ def _create_structure(
                     notes=workout_in.notes,
                     cancelled=workout_in.cancelled,
                     status_override=workout_in.status_override,
+                    matched_activity_id=workout_in.matched_activity_id,
                 )
                 session.add(workout)
                 session.flush()
@@ -204,6 +207,7 @@ def _workout_public(
         notes=workout.notes,
         cancelled=workout.cancelled,
         status_override=workout.status_override,
+        matched_activity_id=workout.matched_activity_id,
         status=status_value,
         matched_activity=matched,
         blocks=[WorkoutBlockPublic.model_validate(block) for block in blocks],
@@ -412,6 +416,23 @@ def update_workout(
     plan = _get_owned_plan(session, current_user.id, plan_id)
     workout = _get_owned_workout(session, plan, workout_id)
     data = workout_in.model_dump(exclude_unset=True)
+    matched_id = data.get("matched_activity_id")
+    if matched_id is not None:
+        linked = session.exec(
+            select(Activity, ActivityCardio)
+            .join(ActivityCardio)
+            .where(
+                Activity.id == matched_id,
+                Activity.user_id == current_user.id,
+            )
+        ).first()
+        if not linked:
+            raise HTTPException(
+                status_code=404,
+                detail="La actividad a vincular no existe o no es cardio",
+            )
+        # Vincular una actividad implica completar la sesión con datos reales.
+        data["status_override"] = "completed"
     new_date = data.get("date")
     if new_date is not None and new_date != workout.date:
         conflict = session.exec(
@@ -485,6 +506,7 @@ def duplicate_workout(
         notes=workout.notes,
         cancelled=workout.cancelled,
         status_override=workout.status_override,
+        matched_activity_id=workout.matched_activity_id,
     )
     session.add(new_workout)
     session.flush()

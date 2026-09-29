@@ -1,5 +1,11 @@
 import { Link } from "@tanstack/react-router"
-import { CheckCircle2, ChevronRight, ExternalLink, XCircle } from "lucide-react"
+import {
+  CheckCircle2,
+  ChevronRight,
+  ExternalLink,
+  Link2,
+  XCircle,
+} from "lucide-react"
 
 import type { RunningWorkoutPublic } from "@/client"
 import { Badge } from "@/components/ui/badge"
@@ -103,6 +109,16 @@ export function WeekSessionCard({ workout, onClick }: WeekSessionCardProps) {
                 <span>Actividad</span>
                 <ExternalLink className="size-2.5" />
               </Link>
+            </Badge>
+          )}
+
+          {workout.matched_activity_id && (
+            <Badge
+              variant="outline"
+              className="gap-1 border-border text-[10px] text-muted-foreground"
+            >
+              <Link2 className="size-2.5" />
+              <span>Vinculada</span>
             </Badge>
           )}
 

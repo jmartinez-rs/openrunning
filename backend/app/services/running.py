@@ -20,7 +20,13 @@ from zoneinfo import ZoneInfo
 
 from sqlmodel import Session, col, select
 
-from app.models import Activity, ActivityCardio, RunningWorkout, WorkoutStatus
+from app.models import (
+    Activity,
+    ActivityCardio,
+    RunningPlan,
+    RunningWorkout,
+    WorkoutStatus,
+)
 
 RUNNING_TIMEZONE = ZoneInfo("America/Argentina/Buenos_Aires")
 
@@ -49,10 +55,41 @@ def resolve_workout_status(
     """
     if workout.cancelled:
         return ("cancelled", None)
+
+    # Actividad vinculada manualmente: la sesión se considera completada con
+    # los datos reales de esa actividad (p. ej. hecha en otro día).
+    if workout.matched_activity_id is not None:
+        match = session.exec(
+            select(Activity, ActivityCardio)
+            .join(ActivityCardio)
+            .where(Activity.id == workout.matched_activity_id)
+        ).first()
+        if match:
+            activity, cardio = match
+            return (
+                "completed",
+                {
+                    "activity_id": activity.id,
+                    "name": activity.name,
+                    "distance_meters": cardio.distance_meters,
+                    "duration_seconds": activity.duration_seconds,
+                },
+            )
+
     if workout.status_override is not None:
         return (workout.status_override, None)
 
     start, end = _activity_window(workout.date)
+    # Excluye actividades ya vinculadas manualmente a otra sesión del usuario
+    # (evita doble conteo cuando se reasigna una actividad a otro día).
+    linked = (
+        select(RunningWorkout.matched_activity_id)
+        .join(RunningPlan)
+        .where(
+            RunningPlan.user_id == user_id,
+            RunningWorkout.matched_activity_id.is_not(None),
+        )
+    )
     matches = session.exec(
         select(Activity, ActivityCardio)
         .join(ActivityCardio)
@@ -61,6 +98,7 @@ def resolve_workout_status(
             Activity.source_type == "strava",
             Activity.timestamp >= start,
             Activity.timestamp < end,
+            Activity.id.not_in(linked),
         )
         .order_by(col(Activity.timestamp).asc())
         .limit(1)

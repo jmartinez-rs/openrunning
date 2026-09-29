@@ -502,6 +502,7 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
             <WeekSessionCalendar
               mondayISO={weekMondayISO}
               workouts={weekWorkouts}
+              planId={plan.id}
             />
           )}
         </div>

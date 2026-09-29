@@ -679,6 +679,9 @@ class RunningWorkout(SQLModel, table=True):
     status_override: Literal["completed", "missed"] | None = Field(
         default=None, sa_column=Column("status_override", String(16), nullable=True)
     )
+    matched_activity_id: uuid.UUID | None = Field(
+        default=None, foreign_key="activity.id", ondelete="SET NULL", index=True
+    )
 
 
 class WorkoutBlock(SQLModel, table=True):
@@ -731,6 +734,7 @@ class WorkoutIn(SQLModel):
     notes: str | None = Field(default=None, max_length=4000)
     cancelled: bool = False
     status_override: Literal["completed", "missed"] | None = None
+    matched_activity_id: uuid.UUID | None = None
     blocks: list[WorkoutBlockIn] = Field(default_factory=list)
 
 
@@ -797,6 +801,7 @@ class RunningWorkoutUpdate(SQLModel):
 
     cancelled: bool | None = None
     status_override: Literal["completed", "missed"] | None = None
+    matched_activity_id: uuid.UUID | None = None
     date: dt.date | None = None
     type: WorkoutType | None = None
     objective: str | None = Field(default=None, max_length=255)
@@ -846,6 +851,7 @@ class RunningWorkoutPublic(SQLModel):
     notes: str | None
     cancelled: bool
     status_override: Literal["completed", "missed"] | None = None
+    matched_activity_id: uuid.UUID | None = None
     status: WorkoutStatus
     matched_activity: dict[str, object] | None
     blocks: list[WorkoutBlockPublic] = Field(default_factory=list)
