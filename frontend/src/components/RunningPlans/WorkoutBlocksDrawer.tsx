@@ -6,12 +6,16 @@ import {
   Copy,
   ExternalLink,
   Footprints,
+  Link2,
   Loader2,
   Sparkles,
+  Unlink,
   Zap,
 } from "lucide-react"
+import { useState } from "react"
 
 import {
+  ActivitiesService,
   ApiError,
   RunningPlansService,
   type RunningWorkoutPublic,
@@ -38,6 +42,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -130,13 +135,47 @@ export function WorkoutBlocksDrawer({
         workoutId: workout.id,
         requestBody:
           value === "auto"
-            ? { status_override: null, cancelled: false }
+            ? {
+                status_override: null,
+                cancelled: false,
+                matched_activity_id: null,
+              }
             : value === "cancelled"
-              ? { status_override: null, cancelled: true }
+              ? {
+                  status_override: null,
+                  cancelled: true,
+                  matched_activity_id: null,
+                }
               : { status_override: value, cancelled: false },
       }),
-    onSuccess: () => {
+    onSuccess: (_, value) => {
+      if (value === "auto" || value === "cancelled") {
+        setLinkedActivityId(null)
+      }
       showSuccessToast("Estado actualizado")
+      invalidate()
+    },
+    onError: handleError.bind(showErrorToast),
+  })
+
+  const linkActivityMutation = useMutation({
+    mutationFn: (activityId: string | null) =>
+      RunningPlansService.updateWorkout({
+        planId,
+        workoutId: workout.id,
+        requestBody:
+          activityId == null
+            ? { matched_activity_id: null, status_override: null }
+            : { matched_activity_id: activityId, status_override: "completed" },
+      }),
+    onSuccess: (_, activityId) => {
+      setLinkedActivityId(activityId)
+      setShowActivityPicker(false)
+      showSuccessToast(
+        activityId
+          ? "Actividad vinculada a la sesión"
+          : "Actividad desvinculada",
+      )
       invalidate()
     },
     onError: handleError.bind(showErrorToast),
@@ -145,6 +184,17 @@ export function WorkoutBlocksDrawer({
   const currentValue: StatusOption = workout.cancelled
     ? "cancelled"
     : (workout.status_override ?? "auto")
+
+  const [showActivityPicker, setShowActivityPicker] = useState(false)
+  const [linkedActivityId, setLinkedActivityId] = useState<string | null>(
+    workout.matched_activity_id ?? null,
+  )
+
+  const { data: activitiesData, isLoading: activitiesLoading } = useQuery({
+    queryKey: ["activities", "recent"],
+    queryFn: () => ActivitiesService.readActivities({ limit: 30 }),
+    enabled: open && showActivityPicker,
+  })
 
   const summaryDistance =
     workout.distance_km != null ? workout.distance_km : blocksDistanceKm(blocks)
@@ -438,6 +488,94 @@ export function WorkoutBlocksDrawer({
                 ) : null}
               </div>
             ) : null}
+
+            <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface-container-high/40 p-3.5">
+              <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+                <Link2 className="size-3.5 text-primary" />
+                Actividad vinculada
+              </h4>
+              {linkedActivityId ? (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Esta sesión está vinculada a una actividad concreta (por
+                    ejemplo, hecha otro día).
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-fit bg-surface-container-high border-border text-muted-foreground hover:text-white"
+                    disabled={linkActivityMutation.isPending}
+                    onClick={() => linkActivityMutation.mutate(null)}
+                  >
+                    <Unlink className="mr-2 size-3.5" /> Desvincular
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Si hiciste esta sesión otro día, vinculá la actividad real
+                    para que cuente con sus datos.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-fit bg-surface-container-high border-border text-muted-foreground hover:text-white"
+                    onClick={() => setShowActivityPicker((v) => !v)}
+                  >
+                    <Link2 className="mr-2 size-3.5" />
+                    {showActivityPicker
+                      ? "Ocultar actividades"
+                      : "Vincular actividad"}
+                  </Button>
+                </>
+              )}
+
+              {showActivityPicker && (
+                <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto pr-1">
+                  {activitiesLoading ? (
+                    <Skeleton className="h-16 w-full rounded-lg bg-surface-container-high/80" />
+                  ) : (activitiesData?.data ?? []).length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-2">
+                      No hay actividades recientes.
+                    </p>
+                  ) : (
+                    (activitiesData?.data ?? []).map((a) => {
+                      const distKm = (a.cardio?.distance_meters ?? 0) / 1000
+                      const isLinked = a.id === linkedActivityId
+                      return (
+                        <button
+                          key={a.id}
+                          type="button"
+                          disabled={linkActivityMutation.isPending}
+                          onClick={() => linkActivityMutation.mutate(a.id)}
+                          className={cn(
+                            "flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors cursor-pointer",
+                            isLinked
+                              ? "border-primary/50 bg-primary/10"
+                              : "border-border bg-card/60 hover:bg-surface-container-high/60",
+                          )}
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-bold text-white">
+                              {a.name ?? "Actividad"}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {formatShortDate(a.timestamp?.slice(0, 10))} ·{" "}
+                              {formatDistance(distKm)}
+                            </p>
+                          </div>
+                          {isLinked && (
+                            <CheckCircle2 className="size-4 text-primary shrink-0" />
+                          )}
+                        </button>
+                      )
+                    })
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

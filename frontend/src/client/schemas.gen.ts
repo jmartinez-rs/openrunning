@@ -2649,6 +2649,18 @@ export const RunningWorkoutPublicSchema = {
             ],
             title: 'Status Override'
         },
+        matched_activity_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Matched Activity Id'
+        },
         status: {
             type: 'string',
             enum: ['planned', 'completed', 'missed', 'cancelled'],
@@ -2703,6 +2715,18 @@ export const RunningWorkoutUpdateSchema = {
                 }
             ],
             title: 'Status Override'
+        },
+        matched_activity_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Matched Activity Id'
         },
         date: {
             anyOf: [
@@ -4511,6 +4535,18 @@ export const WorkoutInSchema = {
                 }
             ],
             title: 'Status Override'
+        },
+        matched_activity_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Matched Activity Id'
         },
         blocks: {
             items: {

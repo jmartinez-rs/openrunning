@@ -8,7 +8,7 @@ import uuid
 from datetime import UTC, datetime
 
 import httpx
-from sqlmodel import Session, col, func, select
+from sqlmodel import Session, col, func, or_, select
 
 from app.core.encryption import decrypt_secret
 from app.models import (
@@ -38,6 +38,8 @@ STRAVA_CARDIO_TYPES = {
 }
 MAX_PAGES = 10
 PAGE_SIZE = 10
+BACKFILL_PAGE_SIZE = 200
+BACKFILL_CAP = 3000
 
 
 def get_integration(
@@ -224,6 +226,11 @@ def sync_strava(session: Session, user: User) -> dict[str, object]:
     gear_message = str(gear_result.get("message", ""))
     if gear_message:
         message += f". {gear_message}"
+    backfill = _backfill_strava_gear(session, user, token)
+    if backfill.get("updated"):
+        message += f". Se actualizó el calzado de {backfill['updated']} actividades"
+    if backfill.get("assigned"):
+        message += f" ({backfill['assigned']} sesiones asignadas)"
     return {
         "provider": "strava",
         "imported": imported,
@@ -492,7 +499,7 @@ def _assign_gear_to_activities(
             Activity.user_id == user.id,
             Activity.source_type == "strava",
             ActivityCardio.gear_id == gear_id,
-            ActivityCardio.shoe_id == None,  # noqa: E711  (SQLAlchemy → IS NULL)
+            ActivityCardio.shoe_id == None,  # SQLAlchemy → IS NULL
         )
     ).all()
     if not rows:
@@ -502,6 +509,120 @@ def _assign_gear_to_activities(
         session.add(cardio)
     session.commit()
     return len(rows)
+
+
+def _backfill_strava_gear(
+    session: Session, user: User, token: AuthToken
+) -> dict[str, object]:
+    """Reconcilia el gear_id de actividades ya importadas con Strava.
+
+    El sync normal solo importa actividades nuevas y solo mira las ~100 más
+    recientes, así que si el usuario asigna o cambia calzado en Strava para
+    actividades viejas, el gear_id guardado queda desactualizado y el calzado
+    no se asigna. Este backfill recorre las actividades de Strava hacia atrás
+    (paginando con ``before``) y actualiza gear_id + reasigna calzado.
+    """
+    # Solo hace falta si hay actividades de Strava sin gear_id o con un
+    # gear_id que no corresponde a ningún calzado local (gear cambiado).
+    local_gear_ids = select(Shoe.strava_gear_id).where(
+        Shoe.user_id == user.id, Shoe.strava_gear_id.is_not(None)
+    )
+    pending = session.exec(
+        select(func.count())
+        .select_from(ActivityCardio)
+        .join(Activity)
+        .where(
+            Activity.user_id == user.id,
+            Activity.source_type == "strava",
+            or_(
+                col(ActivityCardio.gear_id).is_(None),
+                ~col(ActivityCardio.gear_id).in_(local_gear_ids),
+            ),
+        )
+    ).one()
+    if not pending:
+        return {"updated": 0, "assigned": 0}
+
+    access = _ensure_strava_access(session, token)
+    if not access:
+        return {"updated": 0, "assigned": 0}
+
+    existing_rows = session.exec(
+        select(Activity.source_id, ActivityCardio)
+        .join(ActivityCardio)
+        .where(
+            Activity.user_id == user.id,
+            Activity.source_type == "strava",
+        )
+    ).all()
+    by_source_id = {source_id: cardio for source_id, cardio in existing_rows}
+
+    headers = {"Authorization": f"Bearer {access}"}
+    updated = 0
+    fetched = 0
+    changed_gear_ids: set[str] = set()
+    before: int | None = None
+    try:
+        with httpx.Client(timeout=TIMEOUT_SECONDS) as client:
+            while True:
+                params: dict[str, str | int] = {"per_page": BACKFILL_PAGE_SIZE}
+                if before is not None:
+                    params["before"] = before
+                response = _get_with_retry(
+                    client, f"{STRAVA_API}/athlete/activities", headers, params
+                )
+                if response.status_code != 200:
+                    break
+                activities = response.json()
+                if not isinstance(activities, list) or not activities:
+                    break
+                fetched += len(activities)
+                oldest_ts: int | None = None
+                for item in activities:
+                    if not isinstance(item, dict):
+                        continue
+                    source_id = str(item.get("id") or "").strip()
+                    if not source_id:
+                        continue
+                    gear_id = str(item.get("gear_id") or "")[:64] or None
+                    row = by_source_id.get(source_id)
+                    if not row:
+                        continue
+                    if row.gear_id != gear_id:
+                        if gear_id and row.shoe_id is not None:
+                            shoe = session.get(Shoe, row.shoe_id)
+                            if shoe and shoe.strava_gear_id != gear_id:
+                                row.shoe_id = None
+                        row.gear_id = gear_id
+                        session.add(row)
+                        updated += 1
+                        if gear_id:
+                            changed_gear_ids.add(gear_id)
+                    start = item.get("start_date")
+                    if start:
+                        try:
+                            ts = int(
+                                datetime.fromisoformat(str(start)).timestamp()
+                            )
+                            if oldest_ts is None or ts < oldest_ts:
+                                oldest_ts = ts
+                        except ValueError:
+                            pass
+                session.commit()
+                if not oldest_ts:
+                    break
+                if before is not None and oldest_ts >= before:
+                    break
+                before = oldest_ts
+                if fetched >= BACKFILL_CAP:
+                    break
+    except httpx.RequestError:
+        pass
+
+    assigned = 0
+    for gear_id in changed_gear_ids:
+        assigned += _assign_gear_to_activities(session, user, gear_id)
+    return {"updated": updated, "assigned": assigned}
 
 
 def _strava_401_message(response: httpx.Response) -> str:
@@ -540,11 +661,21 @@ def _store_strava_activity(
         )
     ).first()
     if existing:
+        # Refrescar el gear_id si cambió en Strava (calzado asignado después).
+        cardio = session.exec(
+            select(ActivityCardio).where(ActivityCardio.activity_id == existing.id)
+        ).first()
+        if cardio:
+            new_gear = str(item.get("gear_id") or "")[:64] or None
+            if cardio.gear_id != new_gear:
+                cardio.gear_id = new_gear
+                session.add(cardio)
+                session.commit()
         return False
 
     start = item.get("start_date")
     timestamp = (
-        datetime.fromisoformat(str(start).replace("Z", "+00:00"))
+        datetime.fromisoformat(str(start))
         if start
         else datetime.now(UTC)
     )

@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Settings } from "lucide-react"
+import { Play } from "lucide-react"
 import { useMemo, useState } from "react"
 import { AnalyticsService, RunningPlansService, SyncService } from "@/client"
 import { CoachCard } from "@/components/Dashboard/CoachCard"
+import { NextSessionCard } from "@/components/Dashboard/NextSessionCard"
 import { StravaSyncBar } from "@/components/Dashboard/StravaSyncBar"
 import { StreakCard } from "@/components/Dashboard/StreakCard"
 import { TargetRaceCard } from "@/components/Dashboard/TargetRaceCard"
@@ -74,6 +75,8 @@ function OpenRunningDashboard() {
     mutationFn: () => SyncService.triggerSync({ provider: "strava" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      queryClient.invalidateQueries({ queryKey: ["shoes"] })
+      queryClient.invalidateQueries({ queryKey: ["shoe-stats"] })
     },
   })
 
@@ -210,7 +213,7 @@ function OpenRunningDashboard() {
       <div className="flex items-center justify-between pt-2">
         <div>
           <h1 className="text-2xl font-display font-black text-white tracking-tight">
-            ¡Hola, {user?.full_name?.split(" ")[0] || "Corredor"}! 👋
+            ¡Hola, {user?.full_name?.split(" ")[0] || "Corredor"}!
           </h1>
           <p className="text-xs text-muted-foreground capitalize font-medium">
             {new Date().toLocaleDateString("es-AR", {
@@ -222,11 +225,16 @@ function OpenRunningDashboard() {
         </div>
         <button
           type="button"
-          onClick={() => navigate({ to: "/settings" })}
-          className="p-2.5 rounded-xl bg-card/90 border border-white/5 text-muted-foreground hover:text-white transition-colors cursor-pointer shadow-card"
-          aria-label="Settings"
+          onClick={() => setIsManualSheetOpen(true)}
+          aria-label="RUN"
+          className="group flex flex-col items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
         >
-          <Settings className="w-5 h-5" />
+          <div className="flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_4px_16px_rgba(234,252,95,0.25)] transition-transform active:scale-95 group-hover:scale-105">
+            <Play className="size-5 fill-current stroke-none ml-0.5" />
+          </div>
+          <span className="text-[10px] font-bold leading-none text-primary tracking-wider">
+            RUN
+          </span>
         </button>
       </div>
 
@@ -271,6 +279,14 @@ function OpenRunningDashboard() {
               : navigate({ to: "/routines" })
           }
         />
+
+        {activePlan && (
+          <NextSessionCard
+            planId={activePlan.id}
+            hasCompletedActivityToday={hasCompletedActivity}
+            todayIso={todayIso}
+          />
+        )}
       </div>
 
       {/* Weekly Volume Card */}

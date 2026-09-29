@@ -428,6 +428,7 @@ export type RunningWorkoutPublic = {
     notes: (string | null);
     cancelled: boolean;
     status_override?: ('completed' | 'missed' | null);
+    matched_activity_id?: (string | null);
     status: 'planned' | 'completed' | 'missed' | 'cancelled';
     matched_activity: ({
     [key: string]: unknown;
@@ -447,6 +448,7 @@ export type status2 = 'planned' | 'completed' | 'missed' | 'cancelled';
 export type RunningWorkoutUpdate = {
     cancelled?: (boolean | null);
     status_override?: ('completed' | 'missed' | null);
+    matched_activity_id?: (string | null);
     date?: (string | null);
     type?: ('easy_run' | 'regeneration' | 'intervals' | 'tempo' | 'long_run' | 'test' | 'activation' | 'race' | null);
     objective?: (string | null);
@@ -727,6 +729,7 @@ export type WorkoutIn = {
     notes?: (string | null);
     cancelled?: boolean;
     status_override?: ('completed' | 'missed' | null);
+    matched_activity_id?: (string | null);
     blocks?: Array<WorkoutBlockIn>;
 };
 

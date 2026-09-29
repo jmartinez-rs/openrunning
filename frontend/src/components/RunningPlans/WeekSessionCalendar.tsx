@@ -1,5 +1,5 @@
 import { Check, ChevronRight, Moon, X } from "lucide-react"
-import type { ComponentType } from "react"
+import { type ComponentType, type MouseEvent, useState } from "react"
 
 import type { RunningWorkoutPublic } from "@/client"
 import { cn } from "@/lib/utils"
@@ -10,6 +10,7 @@ import {
   WORKOUT_TYPE_META,
   weekDaysISO,
 } from "./running-utils"
+import { WorkoutBlocksDrawer } from "./WorkoutBlocksDrawer"
 
 const DAY_LABELS = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"]
 
@@ -20,6 +21,7 @@ const dateFmt = new Intl.DateTimeFormat("es-AR", {
 
 interface WeekSessionCalendarProps {
   mondayISO: string
+  planId: string
   workouts: RunningWorkoutPublic[]
   className?: string
 }
@@ -132,6 +134,7 @@ const LEGEND = [
 
 export function WeekSessionCalendar({
   mondayISO,
+  planId,
   workouts,
   className,
 }: WeekSessionCalendarProps) {
@@ -145,6 +148,14 @@ export function WeekSessionCalendar({
 
   const byDate = new Map<string, RunningWorkoutPublic>()
   for (const w of workouts) byDate.set(w.date, w)
+
+  const [selected, setSelected] = useState<RunningWorkoutPublic | null>(null)
+
+  const openSession = (e: MouseEvent, workout: RunningWorkoutPublic) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setSelected(workout)
+  }
 
   // First upcoming planned session of the week (highlighted as "next").
   const nextDate = workouts
@@ -217,9 +228,11 @@ export function WeekSessionCalendar({
         {cells.map((c) => (
           <div
             key={c.dateISO}
+            onClick={c.workout ? (e) => openSession(e, c.workout!) : undefined}
             className={cn(
               "flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition-colors",
               c.meta.cellClass,
+              c.workout && "cursor-pointer hover:border-primary/40",
             )}
           >
             <div className="flex flex-col items-center">
@@ -275,9 +288,11 @@ export function WeekSessionCalendar({
         {cells.map((c) => (
           <div
             key={c.dateISO}
+            onClick={c.workout ? (e) => openSession(e, c.workout!) : undefined}
             className={cn(
               "flex items-center gap-3 px-3 py-2.5",
               c.isToday && "bg-primary/5",
+              c.workout && "cursor-pointer active:bg-surface-container-high/60",
             )}
           >
             <div className="w-12 shrink-0">
@@ -326,6 +341,17 @@ export function WeekSessionCalendar({
           </span>
         ))}
       </div>
+
+      {selected && (
+        <WorkoutBlocksDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open) setSelected(null)
+          }}
+          planId={planId}
+          workout={selected}
+        />
+      )}
     </div>
   )
 }
