@@ -79,7 +79,7 @@ services:
     volumes:
       - ./backend:/app/backend
       - openrunning-storage:/app/storage
-    command: ["fastapi", "dev", "app/main.py", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["bash", "scripts/start-backend.sh"]
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8000/api/v1/utils/health-check/"]
       interval: 15s
