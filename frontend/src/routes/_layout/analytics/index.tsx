@@ -8,7 +8,7 @@ import {
   Timer,
   Trophy,
 } from "lucide-react"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import {
   Bar,
   BarChart,
@@ -25,18 +25,27 @@ import {
   YAxis,
 } from "recharts"
 
-import { ActivitiesService, AnalyticsService, RacesService } from "@/client"
+import {
+  ActivitiesService,
+  type ActivityPublic,
+  AnalyticsService,
+  RacesService,
+} from "@/client"
 import { formatPace } from "@/components/Activities/activity-utils"
 import { ChartCard } from "@/components/Analytics/ChartCard"
 import {
   AXIS_TICK_STYLE,
   CHART_HEIGHTS,
   DOMAIN_COLORS,
+  HR_MAX_COLOR,
+  MONTH_LABELS_ES,
   TOOLTIP_CONTENT_STYLE,
 } from "@/components/Analytics/chart-theme"
+import { PeriodSelector } from "@/components/Analytics/PeriodSelector"
 import { RunningHeatmap } from "@/components/Analytics/RunningHeatmap"
 import { StatTile } from "@/components/Analytics/StatTile"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_layout/analytics/")({
   component: RunningStats,
@@ -46,6 +55,15 @@ export const Route = createFileRoute("/_layout/analytics/")({
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const PERIOD_OPTIONS = [
+  { key: "3M", label: "3M", months: 3 },
+  { key: "6M", label: "6M", months: 6 },
+  { key: "12M", label: "12M", months: 12 },
+  { key: "24M", label: "24M", months: 24 },
+] as const
+
+type PeriodKey = (typeof PERIOD_OPTIONS)[number]["key"]
 
 function getMonday(date: Date): Date {
   const result = new Date(date)
@@ -67,12 +85,8 @@ function formatDate(date: Date): string {
 
 function formatMonthLabel(month: string): string {
   if (!month) return ""
-  const date = new Date(`${month}-01T12:00:00`)
-  if (Number.isNaN(date.getTime())) return month
-  return new Intl.DateTimeFormat("es-AR", { month: "short" })
-    .format(date)
-    .replace(".", "")
-    .toUpperCase()
+  const index = Number(month.slice(5, 7)) - 1
+  return MONTH_LABELS_ES[index] ?? month
 }
 
 function formatWeekLabel(week: string): string {
@@ -108,74 +122,83 @@ const HR_ZONE_COLORS = ["#4d5a1a", "#6a8220", "#a9cc33", "#EAFC5F", "#EF4444"]
 
 function RunningStats() {
   const navigate = useNavigate()
+  const [period, setPeriod] = useState<PeriodKey>("12M")
+  const [monthlyMetric, setMonthlyMetric] = useState<"km" | "sessions">("km")
+
+  const periodOption =
+    PERIOD_OPTIONS.find((option) => option.key === period) ?? PERIOD_OPTIONS[2]
+  const months = periodOption.months
+  const weeks = Math.round(months * 4.345)
+
+  const periodRange = useMemo(() => {
+    const now = new Date()
+    const from = new Date(now)
+    from.setMonth(from.getMonth() - months)
+    return { fromDate: formatDate(from), toDate: formatDate(now) }
+  }, [months])
 
   // ── Queries ──
 
-  /** Cardio monthly (12 months for heatmap and charts) */
+  /** Cardio monthly — ventana del selector global */
   const cardioMonthlyQuery = useQuery({
-    queryKey: ["stats-cardio-monthly"],
-    queryFn: () => AnalyticsService.readCardioMonthly({ months: 12 }),
+    queryKey: ["stats-cardio-monthly", months],
+    queryFn: () => AnalyticsService.readCardioMonthly({ months }),
   })
 
-  /** Best paces */
+  /** Best paces (all-time) */
   const pacesQuery = useQuery({
     queryKey: ["stats-best-paces"],
     queryFn: () => AnalyticsService.readCardioBestPaces(),
   })
 
-  /** HR zones (latest 12 weeks) */
+  /** HR zones — ventana del selector global */
   const hrZonesQuery = useQuery({
-    queryKey: ["stats-hr-zones"],
-    queryFn: () => AnalyticsService.readCardioHrZones({ weeks: 12 }),
+    queryKey: ["stats-hr-zones", weeks],
+    queryFn: () => AnalyticsService.readCardioHrZones({ weeks }),
   })
 
-  /** HR trend (latest 12 weeks) */
+  /** HR trend — ventana del selector global */
   const hrTrendQuery = useQuery({
-    queryKey: ["stats-hr-trend"],
-    queryFn: () => AnalyticsService.readCardioHrTrend({ weeks: 12 }),
+    queryKey: ["stats-hr-trend", weeks],
+    queryFn: () => AnalyticsService.readCardioHrTrend({ weeks }),
   })
 
-  /** Active weeks (6 weeks for streak + tile KPIs) */
-  const activeWeeksQuery = useQuery({
-    queryKey: ["stats-active-weeks"],
-    queryFn: async () => {
-      const thisMonday = getMonday(new Date())
-      const weekStarts = Array.from({ length: 6 }, (_, i) =>
-        addDays(thisMonday, (i - 5) * 7),
-      )
-      const dashboards = await Promise.all(
-        weekStarts.map((start) =>
-          AnalyticsService.readDashboard({ weekStart: formatDate(start) }),
-        ),
-      )
-      return dashboards
-    },
+  /** Cardio analytics del período (tile de ritmo) */
+  const cardioPeriodQuery = useQuery({
+    queryKey: ["stats-cardio-period", period],
+    queryFn: () => AnalyticsService.readCardioAnalytics(periodRange),
   })
 
-  /** Recent activities (for the heatmap + list) */
+  /** Recent activities (for the recent list + all-time totals) */
   const activitiesQuery = useQuery({
     queryKey: ["stats-recent-activities"],
     queryFn: () => ActivitiesService.readActivities({ limit: 100 }),
+  })
+
+  /** Heatmap activities — paginadas para cubrir toda la ventana */
+  const heatmapActivitiesQuery = useQuery({
+    queryKey: ["stats-heatmap-activities", period],
+    queryFn: async () => {
+      const collected: ActivityPublic[] = []
+      const pageSize = 100
+      for (let skip = 0; skip <= 2000; skip += pageSize) {
+        const page = await ActivitiesService.readActivities({
+          fromDate: periodRange.fromDate,
+          limit: pageSize,
+          skip,
+        })
+        const batch = page.data ?? []
+        collected.push(...batch)
+        if (batch.length < pageSize) break
+      }
+      return collected
+    },
   })
 
   /** Races (for the Carreras tile) */
   const racesQuery = useQuery({
     queryKey: ["stats-races"],
     queryFn: () => RacesService.readRaces({ limit: 100 }),
-  })
-
-  /** Cardio analytics for 30d (for pace tile) */
-  const cardio30dQuery = useQuery({
-    queryKey: ["stats-cardio-30d"],
-    queryFn: () => {
-      const now = new Date()
-      const from = new Date(now)
-      from.setDate(from.getDate() - 30)
-      return AnalyticsService.readCardioAnalytics({
-        fromDate: formatDate(from),
-        toDate: formatDate(now),
-      })
-    },
   })
 
   // ── Derived data ──
@@ -222,37 +245,51 @@ function RunningStats() {
     (a) => a.timestamp?.slice(0, 7) === thisMonthKey,
   ).length
 
-  // Week streak: count consecutive weeks (from current back) with at least 1 active day
+  // Week streak: count consecutive active weeks back from the current one,
+  // with a grace week so an in-progress empty week doesn't collapse it.
   const weekStreak = useMemo(() => {
-    const dashboards = activeWeeksQuery.data ?? []
+    const weeksWithActivity = new Set<string>()
+    for (const a of allActivities) {
+      weeksWithActivity.add(formatDate(getMonday(new Date(a.timestamp))))
+    }
+    let cursor = getMonday(new Date())
+    if (!weeksWithActivity.has(formatDate(cursor))) {
+      cursor = addDays(cursor, -7)
+    }
     let streak = 0
-    for (let i = dashboards.length - 1; i >= 0; i--) {
-      const kpis = dashboards[i]?.kpis
-      if (kpis && kpis.active_days > 0) {
-        streak++
-      } else {
-        break
-      }
+    while (weeksWithActivity.has(formatDate(cursor))) {
+      streak++
+      cursor = addDays(cursor, -7)
     }
     return streak
-  }, [activeWeeksQuery.data])
+  }, [allActivities])
 
-  const avgPace30d = cardio30dQuery.data?.average_pace_seconds_per_km
+  const avgPace = cardioPeriodQuery.data?.average_pace_seconds_per_km
 
-  // Heatmap data: build from activities
+  // Heatmap data: period-scoped activities + unlinked races inside the window
+  const heatmapActivities = heatmapActivitiesQuery.data ?? []
   const heatmapData = useMemo(() => {
-    return allActivities
+    const days = heatmapActivities
       .filter((a) => a.cardio?.distance_meters)
       .map((a) => ({
         date: a.timestamp.slice(0, 10),
         km: (a.cardio?.distance_meters ?? 0) / 1000,
         sessions: 1,
       }))
-  }, [allActivities])
+    for (const r of unlinkedRacesAsActivities) {
+      if (!r.cardio?.distance_meters) continue
+      if (r.timestamp.slice(0, 10) < periodRange.fromDate) continue
+      days.push({
+        date: r.timestamp.slice(0, 10),
+        km: r.cardio.distance_meters / 1000,
+        sessions: 1,
+      })
+    }
+    return days
+  }, [heatmapActivities, unlinkedRacesAsActivities, periodRange.fromDate])
 
-  // Monthly distance chart (frontend override to include manual races)
+  // Monthly volume (frontend override to include manual races)
   const monthlyKm = useMemo(() => {
-    // Start with backend data
     const backendData = [...(cardioMonthlyQuery.data ?? [])].map((m) => ({
       name: formatMonthLabel(m.month as string),
       monthKey: m.month as string,
@@ -260,10 +297,12 @@ function RunningStats() {
       sessions: Number(m.sessions ?? 0),
     }))
 
-    // Add unlinked races to the monthly aggregations
+    const minMonthKey = periodRange.fromDate.slice(0, 7)
     for (const r of unlinkedRacesAsActivities) {
       if (!r.cardio?.distance_meters) continue
       const monthKey = r.timestamp.slice(0, 7)
+      // No inyectar meses fuera de la ventana del selector de período.
+      if (monthKey < minMonthKey) continue
       let bucket = backendData.find((b) => b.monthKey === monthKey)
       if (!bucket) {
         bucket = {
@@ -279,7 +318,19 @@ function RunningStats() {
     }
 
     return backendData.sort((a, b) => a.monthKey.localeCompare(b.monthKey))
-  }, [cardioMonthlyQuery.data, unlinkedRacesAsActivities])
+  }, [cardioMonthlyQuery.data, unlinkedRacesAsActivities, periodRange.fromDate])
+
+  const lastMonth = monthlyKm[monthlyKm.length - 1]
+  const monthlyKpi =
+    monthlyMetric === "km"
+      ? lastMonth
+        ? `${lastMonth.km.toFixed(1)} km`
+        : undefined
+      : lastMonth
+        ? `${lastMonth.sessions}`
+        : undefined
+  const monthlyKpiHint =
+    monthlyMetric === "km" ? "km · último mes" : "sesiones · último mes"
 
   // Best paces sorted
   const paces = useMemo(() => {
@@ -290,14 +341,14 @@ function RunningStats() {
     )
   }, [pacesQuery.data])
 
-  // HR zones donut (latest week)
+  // HR zones donut (latest week in the window)
   const latestHrZones = useMemo(() => {
-    const weeks = (hrZonesQuery.data?.weeks ?? []) as Array<{
+    const rows = (hrZonesQuery.data?.weeks ?? []) as Array<{
       week: string
       zones?: Array<{ zone: number; label: string; seconds: number }>
     }>
-    if (weeks.length === 0) return null
-    const last = weeks[weeks.length - 1]
+    if (rows.length === 0) return null
+    const last = rows[rows.length - 1]
     const zones = (last.zones ?? []).filter((z) => z.seconds > 0)
     if (zones.length === 0) return null
     return zones
@@ -326,6 +377,25 @@ function RunningStats() {
       .slice(0, 6)
   }, [allActivities])
 
+  const hrEmptyText = (
+    <>
+      <p>Sin datos de pulso en los últimos {periodOption.label}.</p>
+      <p className="mt-1 text-muted-foreground/80">
+        Tus actividades no incluyen frecuencia cardíaca.
+      </p>
+    </>
+  )
+  const hrEmptyAction = (
+    <Button
+      asChild
+      variant="outline"
+      size="sm"
+      className="rounded-full border-border bg-secondary text-xs font-bold text-foreground hover:bg-surface-bright"
+    >
+      <Link to="/settings">Sincronizar actividades</Link>
+    </Button>
+  )
+
   // ── Render ──
 
   return (
@@ -351,6 +421,19 @@ function RunningStats() {
         </Button>
       </div>
 
+      {/* ── Global period selector — one instrument for every card ── */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="text-[11px] font-bold font-display uppercase tracking-wider text-muted-foreground">
+          Período
+        </span>
+        <PeriodSelector
+          value={period}
+          options={PERIOD_OPTIONS}
+          onChange={(key) => setPeriod(key as PeriodKey)}
+          className="w-full justify-between sm:w-auto sm:justify-start"
+        />
+      </div>
+
       {/* ── Stat Tiles (2×2 grid) ── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
@@ -367,28 +450,35 @@ function RunningStats() {
           icon={<Flame className="size-4" />}
           label="Racha"
           value={weekStreak > 0 ? `${weekStreak} sem` : "—"}
+          hint={
+            weekStreak > 0
+              ? undefined
+              : "Sin semanas activas · sincronizá Strava"
+          }
+          to={weekStreak > 0 ? undefined : "/settings"}
         />
         <StatTile
           icon={<Timer className="size-4" />}
-          label="Ritmo 30d"
-          value={avgPace30d ? formatPace(avgPace30d) : "—"}
-          valueColor={avgPace30d ? DOMAIN_COLORS.cardio : undefined}
+          label={`Ritmo ${periodOption.label}`}
+          value={avgPace ? formatPace(avgPace) : "—"}
+          valueColor={avgPace ? DOMAIN_COLORS.cardio : undefined}
         />
       </div>
 
       {/* ── Activity Heatmap ── */}
-      <div className="rounded-2xl bg-card border border-border p-4 sm:p-5 shadow-card transition-all hover:border-primary/20">
+      <div className="rounded-2xl bg-card border border-border p-4 sm:p-5 shadow-card">
         <h2 className="mb-3 text-[11px] font-bold uppercase font-display tracking-wider text-muted-foreground">
-          Actividad — últimos 12 meses{" "}
+          Actividad — últimos {periodOption.label}{" "}
           <span className="normal-case tracking-normal font-normal font-sans opacity-70">
             · por distancia
           </span>
         </h2>
-        {activitiesQuery.isLoading ? (
+        {heatmapActivitiesQuery.isLoading ? (
           <div className="h-28 animate-pulse rounded-xl bg-secondary" />
         ) : (
           <RunningHeatmap
             data={heatmapData}
+            weeks={weeks}
             onDay={(iso) =>
               navigate({
                 to: "/activities",
@@ -399,38 +489,85 @@ function RunningStats() {
         )}
       </div>
 
-      {/* ── Best Paces ── */}
+      {/* ── Monthly volume (single card, km │ sesiones toggle) ── */}
       <ChartCard
-        title="Mejores marcas por distancia"
-        loading={pacesQuery.isLoading}
-        error={pacesQuery.isError}
-        onRetry={() => pacesQuery.refetch()}
+        title={`Volumen mensual · ${periodOption.label}`}
+        action={
+          <div className="inline-flex shrink-0 rounded-full border border-border bg-secondary/60 p-0.5">
+            {(["km", "sessions"] as const).map((metric) => (
+              <button
+                key={metric}
+                type="button"
+                aria-pressed={monthlyMetric === metric}
+                onClick={() => setMonthlyMetric(metric)}
+                className={cn(
+                  "rounded-full px-3 py-1 text-[11px] font-bold font-display uppercase tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
+                  monthlyMetric === metric
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {metric === "km" ? "km" : "sesiones"}
+              </button>
+            ))}
+          </div>
+        }
+        kpi={monthlyKpi}
+        kpiHint={monthlyKpiHint}
+        loading={cardioMonthlyQuery.isLoading}
+        error={cardioMonthlyQuery.isError}
+        onRetry={() => cardioMonthlyQuery.refetch()}
         empty={
-          !pacesQuery.isLoading && !pacesQuery.isError && paces.length === 0
+          !cardioMonthlyQuery.isLoading &&
+          !cardioMonthlyQuery.isError &&
+          monthlyKm.length === 0
         }
       >
-        <div className="flex flex-col gap-2 py-1">
-          {paces.map((pace, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-secondary/30 px-3.5 py-2.5"
+        <div className="text-muted-foreground">
+          <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
+            <BarChart
+              data={monthlyKm}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
             >
-              <span className="text-sm font-bold font-display text-foreground">
-                {String(pace.distance_label)}
-              </span>
-              <span className="text-lg font-black font-display tabular-nums text-primary">
-                {formatPace(Number(pace.pace_seconds_per_km))}
-              </span>
-              <div className="flex flex-col items-end gap-0.5">
-                <span className="text-sm font-bold font-display tabular-nums text-foreground">
-                  {formatRaceTime(Number(pace.duration_seconds))}
-                </span>
-                <span className="text-xs font-medium text-muted-foreground">
-                  {String(pace.date ?? "").slice(0, 10)}
-                </span>
-              </div>
-            </div>
-          ))}
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#262626"
+              />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={AXIS_TICK_STYLE}
+                dy={10}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={AXIS_TICK_STYLE}
+                allowDecimals={monthlyMetric === "sessions" ? false : undefined}
+              />
+              <Tooltip
+                contentStyle={TOOLTIP_CONTENT_STYLE}
+                cursor={{ fill: "rgba(255,255,255,0.05)" }}
+                formatter={(val: any) =>
+                  monthlyMetric === "km"
+                    ? [`${Number(val).toFixed(1)} km`, "Distancia"]
+                    : [`${val}`, "Sesiones"]
+                }
+              />
+              <Bar
+                dataKey={monthlyMetric}
+                name={monthlyMetric === "km" ? "Distancia" : "Sesiones"}
+                fill={
+                  monthlyMetric === "km"
+                    ? DOMAIN_COLORS.cardio
+                    : DOMAIN_COLORS.active
+                }
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </ChartCard>
 
@@ -438,7 +575,7 @@ function RunningStats() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Zonas de FC (donut) */}
         <ChartCard
-          title="Zonas de frecuencia cardíaca"
+          title={`Zonas de frecuencia cardíaca · ${periodOption.label}`}
           loading={hrZonesQuery.isLoading}
           error={hrZonesQuery.isError}
           onRetry={() => hrZonesQuery.refetch()}
@@ -447,6 +584,8 @@ function RunningStats() {
             !hrZonesQuery.isError &&
             latestHrZones === null
           }
+          emptyText={hrEmptyText}
+          emptyAction={hrEmptyAction}
         >
           <div className="text-muted-foreground">
             <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
@@ -518,7 +657,7 @@ function RunningStats() {
 
         {/* Frecuencia cardíaca (tendencia) */}
         <ChartCard
-          title="Frecuencia cardíaca"
+          title={`Frecuencia cardíaca · ${periodOption.label}`}
           loading={hrTrendQuery.isLoading}
           error={hrTrendQuery.isError}
           onRetry={() => hrTrendQuery.refetch()}
@@ -527,6 +666,8 @@ function RunningStats() {
             !hrTrendQuery.isError &&
             hrTrendData === null
           }
+          emptyText={hrEmptyText}
+          emptyAction={hrEmptyAction}
         >
           <div className="text-muted-foreground">
             <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
@@ -561,9 +702,9 @@ function RunningStats() {
                   type="monotone"
                   dataKey="maxHr"
                   name="FC Máx"
-                  stroke="#ef4444"
+                  stroke={HR_MAX_COLOR}
                   strokeWidth={2}
-                  dot={{ r: 4, fill: "#ef4444" }}
+                  dot={{ r: 4, fill: HR_MAX_COLOR }}
                 />
                 <Line
                   type="monotone"
@@ -579,122 +720,40 @@ function RunningStats() {
         </ChartCard>
       </div>
 
-      {/* ── Two-column section: Distance + Sessions ── */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* Distancia mensual */}
-        <ChartCard
-          title="Distancia mensual"
-          kpi={
-            monthlyKm.length > 0
-              ? `${monthlyKm[monthlyKm.length - 1].km.toFixed(1)} km`
-              : undefined
-          }
-          kpiHint="último mes"
-          loading={cardioMonthlyQuery.isLoading}
-          error={cardioMonthlyQuery.isError}
-          onRetry={() => cardioMonthlyQuery.refetch()}
-          empty={
-            !cardioMonthlyQuery.isLoading &&
-            !cardioMonthlyQuery.isError &&
-            monthlyKm.length === 0
-          }
-        >
-          <div className="text-muted-foreground">
-            <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
-              <BarChart
-                data={monthlyKm}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="#262626"
-                />
-                <XAxis
-                  dataKey="name"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={AXIS_TICK_STYLE}
-                  dy={10}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={AXIS_TICK_STYLE}
-                />
-                <Tooltip
-                  contentStyle={TOOLTIP_CONTENT_STYLE}
-                  cursor={{
-                    fill: "rgba(255,255,255,0.05)",
-                  }}
-                  formatter={(val: any) => [
-                    `${Number(val).toFixed(1)} km`,
-                    "Distancia",
-                  ]}
-                />
-                <Bar
-                  dataKey="km"
-                  fill={DOMAIN_COLORS.cardio}
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartCard>
-
-        {/* Sesiones mensuales */}
-        <ChartCard
-          title="Sesiones por mes"
-          loading={cardioMonthlyQuery.isLoading}
-          error={cardioMonthlyQuery.isError}
-          onRetry={() => cardioMonthlyQuery.refetch()}
-          empty={
-            !cardioMonthlyQuery.isLoading &&
-            !cardioMonthlyQuery.isError &&
-            monthlyKm.length === 0
-          }
-        >
-          <div className="text-muted-foreground">
-            <ResponsiveContainer width="100%" height={CHART_HEIGHTS.md}>
-              <BarChart
-                data={monthlyKm}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="#262626"
-                />
-                <XAxis
-                  dataKey="name"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={AXIS_TICK_STYLE}
-                  dy={10}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={AXIS_TICK_STYLE}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  contentStyle={TOOLTIP_CONTENT_STYLE}
-                  cursor={{
-                    fill: "rgba(255,255,255,0.05)",
-                  }}
-                />
-                <Bar
-                  dataKey="sessions"
-                  name="Sesiones"
-                  fill={DOMAIN_COLORS.active}
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartCard>
-      </div>
+      {/* ── Best Paces ── */}
+      <ChartCard
+        title="Mejores marcas por distancia"
+        loading={pacesQuery.isLoading}
+        error={pacesQuery.isError}
+        onRetry={() => pacesQuery.refetch()}
+        empty={
+          !pacesQuery.isLoading && !pacesQuery.isError && paces.length === 0
+        }
+      >
+        <div className="flex flex-col gap-2 py-1">
+          {paces.map((pace, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-secondary/30 px-3.5 py-2.5"
+            >
+              <span className="text-sm font-bold font-display text-foreground">
+                {String(pace.distance_label)}
+              </span>
+              <span className="text-lg font-black font-display tabular-nums text-primary">
+                {formatPace(Number(pace.pace_seconds_per_km))}
+              </span>
+              <div className="flex flex-col items-end gap-0.5">
+                <span className="text-sm font-bold font-display tabular-nums text-foreground">
+                  {formatRaceTime(Number(pace.duration_seconds))}
+                </span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {String(pace.date ?? "").slice(0, 10)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ChartCard>
 
       {/* ── Recent Workouts ── */}
       {recentActivities.length > 0 && (
@@ -732,7 +791,7 @@ function RunningStats() {
                   key={activity.id}
                   to="/activities/$activityId"
                   params={{ activityId: activity.id }}
-                  className="flex items-center gap-3.5 rounded-2xl bg-card border border-border px-4 py-3 shadow-card transition-all hover:bg-secondary hover:border-primary/20 group"
+                  className="flex items-center gap-3.5 rounded-2xl bg-card border border-border px-4 py-3 shadow-card transition-colors hover:bg-secondary hover:border-primary/20 group"
                 >
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold group-hover:scale-110 transition-transform">
                     <MapPin className="size-4" />
@@ -751,7 +810,7 @@ function RunningStats() {
                   </div>
                   {pace && (
                     <span className="shrink-0 text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20 tabular-nums">
-                      {pace} /km
+                      {pace}
                     </span>
                   )}
                   <ChevronRight className="size-4 shrink-0 text-muted-foreground" />

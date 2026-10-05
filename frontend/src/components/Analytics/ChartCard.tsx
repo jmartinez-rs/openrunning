@@ -7,12 +7,16 @@ import { cn } from "@/lib/utils"
 
 interface ChartCardProps {
   title: string
+  /** Optional control rendered at the right of the header (e.g. a metric toggle). */
+  action?: ReactNode
   kpi?: ReactNode
   kpiHint?: string
   loading?: boolean
   error?: boolean
   empty?: boolean
-  emptyText?: string
+  emptyText?: ReactNode
+  /** Optional next step shown under the empty message. */
+  emptyAction?: ReactNode
   onRetry?: () => void
   className?: string
   children?: ReactNode
@@ -20,12 +24,14 @@ interface ChartCardProps {
 
 export function ChartCard({
   title,
+  action,
   kpi,
   kpiHint,
   loading = false,
   error = false,
   empty = false,
   emptyText = "Todavía no hay datos para este período.",
+  emptyAction,
   onRetry,
   className,
   children,
@@ -33,24 +39,27 @@ export function ChartCard({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-2xl bg-card border border-border p-5 shadow-card transition-all hover:border-primary/20",
+        "flex flex-col rounded-2xl bg-card border border-border p-5 shadow-card",
         className,
       )}
     >
-      <div className="flex flex-col gap-1">
-        <h3 className="text-[11px] font-bold font-display uppercase tracking-wider text-muted-foreground">
-          {title}
-        </h3>
-        {kpi !== undefined && (
-          <p className="text-3xl font-black font-display text-foreground">
-            {kpi}
-            {kpiHint && (
-              <span className="ml-2 text-xs font-normal font-sans text-muted-foreground">
-                {kpiHint}
-              </span>
-            )}
-          </p>
-        )}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h3 className="text-[11px] font-bold font-display uppercase tracking-wider text-muted-foreground">
+            {title}
+          </h3>
+          {kpi !== undefined && (
+            <p className="text-3xl font-black font-display text-foreground">
+              {kpi}
+              {kpiHint && (
+                <span className="ml-2 text-xs font-normal font-sans text-muted-foreground">
+                  {kpiHint}
+                </span>
+              )}
+            </p>
+          )}
+        </div>
+        {action}
       </div>
       <div className="mt-3 flex flex-1 flex-col">
         {loading ? (
@@ -74,10 +83,11 @@ export function ChartCard({
             )}
           </div>
         ) : empty ? (
-          <div className="flex flex-1 items-center justify-center py-6 text-center">
-            <p className="text-xs font-medium text-muted-foreground">
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center">
+            <div className="text-xs font-medium text-muted-foreground">
               {emptyText}
-            </p>
+            </div>
+            {emptyAction}
           </div>
         ) : (
           <div className="text-foreground">{children}</div>

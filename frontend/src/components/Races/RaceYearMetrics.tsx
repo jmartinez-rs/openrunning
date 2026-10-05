@@ -58,7 +58,7 @@ export function RaceYearMetrics({ completed }: { completed: RacePublic[] }) {
         variant="outline"
         className="mt-6 w-full rounded-xl bg-card border-border text-foreground hover:text-white hover:bg-surface-container-high"
       >
-        <Link to="/analytics/cardio">
+        <Link to="/analytics">
           Ver detalles
           <ArrowRight className="ml-2 size-4" />
         </Link>
