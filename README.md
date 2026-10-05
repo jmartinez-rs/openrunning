@@ -140,6 +140,10 @@ Then expose two domains in Dockploy:
 The `db` service is **not** exposed to the internet (no host port) — only the backend reaches it
 through the internal network.
 
+> **Migrations:** the `backend` service applies pending Alembic migrations on startup
+> (`scripts/start-backend.sh`), so restarting the backend is enough to pick up new migrations. The
+> `migrate` service still runs once per stack to seed the initial data/superuser.
+
 > **Note:** the compose runs the Vite dev server and the FastAPI dev server (auto-reload). This is
 > fine for a personal self-hosted instance. For a more production-grade setup (compiled frontend
 > served by the backend on a single origin, `uvicorn` without reload), open an issue and we'll add
