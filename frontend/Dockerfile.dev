@@ -6,6 +6,13 @@ COPY frontend/package.json ./
 COPY frontend/bun.lock* ./
 RUN bun install
 
+# Copiamos el código y la config a la imagen para que el contenedor sea
+# self-contained. En dev local el bind-mount ./frontend:/app/frontend pisa
+# estos archivos y habilita el hot-reload; en un PaaS que construye solo la
+# imagen (sin aplicar bind-mounts) el server igual tiene vite.config.ts
+# (con allowedHosts) y el código.
+COPY frontend/ ./
+
 EXPOSE 5173
 
 CMD ["bun", "run", "dev", "--host", "0.0.0.0", "--port", "5173"]
