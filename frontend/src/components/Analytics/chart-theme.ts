@@ -41,3 +41,22 @@ export const CHART_HEIGHTS = {
   md: 300,
   lg: 360,
 } as const
+
+/** Etiquetas de mes unificadas a 3 letras (evita "SEPT" de Intl). */
+export const MONTH_LABELS_ES = [
+  "ENE",
+  "FEB",
+  "MAR",
+  "ABR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AGO",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DIC",
+] as const
+
+/** Rojo de FC máxima (red-400): asegura AA sobre el fondo del chart. */
+export const HR_MAX_COLOR = "#F87171"

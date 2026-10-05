@@ -1,4 +1,7 @@
+import { Link } from "@tanstack/react-router"
 import type { ReactNode } from "react"
+
+import { cn } from "@/lib/utils"
 
 interface StatTileProps {
   icon: ReactNode
@@ -6,11 +9,27 @@ interface StatTileProps {
   value: ReactNode
   /** Optional color override for the value text */
   valueColor?: string
+  /** Optional supporting line under the value (empty states, context). */
+  hint?: ReactNode
+  /** When set, the whole tile becomes a link. */
+  to?: string
 }
 
-export function StatTile({ icon, label, value, valueColor }: StatTileProps) {
-  return (
-    <div className="flex flex-col gap-2 rounded-2xl bg-card border border-border p-4 shadow-card hover:border-primary/20 transition-all">
+export function StatTile({
+  icon,
+  label,
+  value,
+  valueColor,
+  hint,
+  to,
+}: StatTileProps) {
+  const base = cn(
+    "flex flex-col gap-2 rounded-2xl bg-card border border-border p-4 shadow-card",
+    to && "transition-colors hover:border-primary/30",
+  )
+
+  const content = (
+    <>
       <div className="flex items-center gap-2">
         <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
           {icon}
@@ -25,6 +44,19 @@ export function StatTile({ icon, label, value, valueColor }: StatTileProps) {
       >
         {value}
       </div>
-    </div>
+      {hint && (
+        <p className="text-[11px] font-medium text-muted-foreground">{hint}</p>
+      )}
+    </>
   )
+
+  if (to) {
+    return (
+      <Link to={to} className={base}>
+        {content}
+      </Link>
+    )
+  }
+
+  return <div className={base}>{content}</div>
 }
