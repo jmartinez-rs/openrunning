@@ -540,19 +540,41 @@ export function computeProgress(summary: {
   }
 }
 
-/** ISO dates for Monday→Sunday of the week containing `referenceDate`. */
-export function getWeekBoundsISO(referenceDate?: Date): {
-  monday: string
-  sunday: string
+/** JS getDay() (0=domingo) → ISO weekday (1=lunes … 7=domingo). */
+export function getDayToIsoWeekday(getDay: number): number {
+  return getDay === 0 ? 7 : getDay
+}
+
+/** ISO weekday (1=lunes … 7=domingo) → JS getDay() (0=domingo … 6=sábado). */
+export function isoWeekdayToGetDay(isoWeekday: number): number {
+  return isoWeekday === 7 ? 0 : isoWeekday
+}
+
+/** ISO date of the week start (aligned to `weekStartDayIso`) for `iso`. */
+export function alignIsoToWeekStart(iso: string, weekStartDayIso = 1): string {
+  const d = new Date(`${iso}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return iso
+  const currentIso = getDayToIsoWeekday(d.getDay())
+  const delta = (currentIso - weekStartDayIso + 7) % 7
+  return addDaysToIso(iso, -delta)
+}
+
+/** ISO dates for the week (start→end) containing `referenceDate`. */
+export function getWeekBoundsISO(
+  referenceDate?: Date,
+  weekStartDayIso = 1,
+): {
+  weekStart: string
+  weekEnd: string
 } {
   const d = referenceDate ?? new Date()
-  const day = d.getDay() // 0=Sun
-  const diff = day === 0 ? -6 : 1 - day
-  const monday = new Date(d)
-  monday.setDate(d.getDate() + diff)
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  return { monday: isoLocal(monday), sunday: isoLocal(sunday) }
+  const currentIso = getDayToIsoWeekday(d.getDay())
+  const delta = (currentIso - weekStartDayIso + 7) % 7
+  const start = new Date(d)
+  start.setDate(d.getDate() - delta)
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+  return { weekStart: isoLocal(start), weekEnd: isoLocal(end) }
 }
 
 function isoLocal(date: Date): string {
@@ -560,6 +582,22 @@ function isoLocal(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0")
   const d = String(date.getDate()).padStart(2, "0")
   return `${y}-${m}-${d}`
+}
+
+/** Today's ISO date (YYYY-MM-DD) in local time. */
+export function todayIsoLocal(): string {
+  return isoLocal(new Date())
+}
+
+/** True when `today` (ISO) falls inside the [start, end] plan window. */
+export function isWithinPlanRange(
+  today: string,
+  startDate?: string | null,
+  endDate?: string | null,
+): boolean {
+  if (!startDate || today < startDate) return false
+  if (endDate && today > endDate) return false
+  return true
 }
 
 /**
@@ -590,6 +628,7 @@ export function getCurrentWeekFromPhases(
     }>
   }>,
   referenceDate?: Date,
+  weekStartDayIso = 1,
 ): {
   phaseName: string
   phaseColor: string
@@ -630,10 +669,50 @@ export function getCurrentWeekFromPhases(
       }
     }
   }
+
+  // Fallback para semanas sin fechas completas: reconstruye la grilla de 7 días
+  // alineada al inicio de semana del plan a partir de la primera semana datada.
+  let first: {
+    phase: (typeof phases)[number]
+    week: NonNullable<(typeof phases)[number]["weeks"]>[number]
+  } | null = null
+  for (const phase of phases) {
+    for (const week of phase.weeks ?? []) {
+      if (!week.start_date) continue
+      if (!first || week.number < first.week.number) first = { phase, week }
+    }
+  }
+  if (!first?.week.start_date) return null
+
+  const gridStart = alignIsoToWeekStart(first.week.start_date, weekStartDayIso)
+  const refMs = new Date(`${today}T12:00:00`).getTime()
+  const gridMs = new Date(`${gridStart}T12:00:00`).getTime()
+  const offset = Math.floor(Math.round((refMs - gridMs) / 86_400_000) / 7)
+  const targetNumber = first.week.number + offset
+
+  for (const phase of phases) {
+    for (const week of phase.weeks ?? []) {
+      if (week.number !== targetNumber) continue
+      const start = addDaysToIso(
+        gridStart,
+        (week.number - first.week.number) * 7,
+      )
+      const end = addDaysToIso(start, 6)
+      return {
+        phaseName: phase.name,
+        phaseColor: phase.color,
+        weekNumber: week.number,
+        weekId: week.id,
+        startDate: week.start_date ?? start,
+        endDate: week.end_date ?? end,
+        workouts: week.workouts ?? [],
+      }
+    }
+  }
   return null
 }
 
-/** Generate an array of 7 ISO date strings for Mon→Sun of a given week. */
+/** Generate an array of 7 ISO date strings starting at the given week anchor. */
 export function weekDaysISO(mondayISO: string): string[] {
   const base = new Date(`${mondayISO}T12:00:00`)
   if (Number.isNaN(base.getTime())) return []

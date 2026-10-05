@@ -131,7 +131,11 @@ export function buildPlanMarkdown(
   const phases = plan.phases ?? []
 
   if (scope === "current") {
-    const current = getCurrentWeekFromPhases(phases)
+    const current = getCurrentWeekFromPhases(
+      phases,
+      undefined,
+      plan.week_start_day ?? 1,
+    )
     if (current) {
       sections.push(`## ${current.phaseName} · Semana ${current.weekNumber}`)
       sections.push("")

@@ -344,6 +344,7 @@ def create_plan(
         target_pace_seconds_per_km=plan_in.target_pace_seconds_per_km,
         start_date=plan_in.start_date,
         end_date=plan_in.end_date,
+        week_start_day=plan_in.week_start_day,
         status=plan_in.status,
         notes=plan_in.notes,
         created_at=now,
@@ -383,6 +384,7 @@ def replace_plan(
     plan.target_pace_seconds_per_km = plan_in.target_pace_seconds_per_km
     plan.start_date = plan_in.start_date
     plan.end_date = plan_in.end_date
+    plan.week_start_day = plan_in.week_start_day
     plan.status = plan_in.status
     plan.notes = plan_in.notes
     plan.updated_at = datetime.now(UTC)

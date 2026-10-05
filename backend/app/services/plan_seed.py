@@ -65,6 +65,7 @@ def export_plan_to_json(
         "target_pace_seconds_per_km": plan.target_pace_seconds_per_km,
         "start_date": str(plan.start_date),
         "end_date": str(plan.end_date) if plan.end_date else None,
+        "week_start_day": plan.week_start_day,
         "status": plan.status,
         "notes": plan.notes,
         "phases": [
@@ -155,6 +156,7 @@ def import_plan_from_json(
         target_pace_seconds_per_km=payload.get("target_pace_seconds_per_km"),
         start_date=_parse_date(payload.get("start_date")),
         end_date=_parse_date(payload.get("end_date")),
+        week_start_day=payload.get("week_start_day", 1),
         status=payload.get("status", "active"),
         notes=payload.get("notes"),
     )

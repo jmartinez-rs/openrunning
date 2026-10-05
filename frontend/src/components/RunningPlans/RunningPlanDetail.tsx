@@ -60,10 +60,12 @@ import {
   formatObjectiveText,
   formatPace,
   getCurrentWeekFromPhases,
+  isWithinPlanRange,
   PHASE_COLORS,
   type PhaseColor,
   PLAN_STATUS_META,
   type PlanStatus,
+  todayIsoLocal,
 } from "./running-utils"
 import { WeekSessionCard } from "./WeekSessionCard"
 import { WorkoutBlocksDrawer } from "./WorkoutBlocksDrawer"
@@ -137,10 +139,15 @@ export function RunningPlanDetail({
 
   const phases = plan?.phases ?? []
 
-  const currentWeek = useMemo(
-    () => (phases.length > 0 ? getCurrentWeekFromPhases(phases) : null),
-    [phases],
-  )
+  const currentWeek = useMemo(() => {
+    if (!plan || phases.length === 0) return null
+    // La semana 1 puede arrancar antes de start_date: sin ventana real de plan
+    // no marcamos ninguna semana como actual.
+    if (!isWithinPlanRange(todayIsoLocal(), plan.start_date, plan.end_date)) {
+      return null
+    }
+    return getCurrentWeekFromPhases(phases, undefined, plan.week_start_day ?? 1)
+  }, [phases, plan])
 
   const summary = useMemo(() => {
     let weeks = 0
@@ -253,6 +260,7 @@ export function RunningPlanDetail({
           target_pace_seconds_per_km: plan!.target_pace_seconds_per_km,
           start_date: plan!.start_date,
           end_date: plan!.end_date,
+          week_start_day: plan!.week_start_day,
           status: newStatus,
           race_id: plan!.race_id,
           notes: plan!.notes,

@@ -59,7 +59,9 @@ import {
   blocksDistanceKm,
   formatDistance,
   formatShortDate,
+  getDayToIsoWeekday,
   type Intensity,
+  isoWeekdayToGetDay,
   PHASE_COLORS,
   type PhaseColor,
   type PlanStatus,
@@ -136,6 +138,7 @@ interface PlanDraft {
   target_pace_seconds_per_km: number | null
   start_date: string
   end_date: string
+  week_start_day: number
   status: PlanStatus
   race_id: string | null
   notes: string
@@ -164,6 +167,17 @@ const DAYS_OF_WEEK = [
   { id: 0, label: "Domingo", short: "D" },
 ]
 
+// Opciones de inicio de semana en ISO weekday (1=Lunes … 7=Domingo).
+const WEEK_START_DAY_OPTIONS = [
+  { value: 1, label: "Lunes" },
+  { value: 2, label: "Martes" },
+  { value: 3, label: "Miércoles" },
+  { value: 4, label: "Jueves" },
+  { value: 5, label: "Viernes" },
+  { value: 6, label: "Sábado" },
+  { value: 7, label: "Domingo" },
+]
+
 /** ISO (YYYY-MM-DD) del lunes de la semana actual. */
 function getCurrentWeekStartIso(): string {
   const now = new Date()
@@ -186,6 +200,7 @@ function createEmptyDraft(): PlanDraft {
     target_pace_seconds_per_km: null,
     start_date: today,
     end_date: "",
+    week_start_day: 1,
     status: "active",
     race_id: null,
     notes: "",
@@ -203,6 +218,7 @@ function publicToDraft(plan: RunningPlanPublic): PlanDraft {
     target_pace_seconds_per_km: plan.target_pace_seconds_per_km,
     start_date: plan.start_date,
     end_date: plan.end_date ?? "",
+    week_start_day: plan.week_start_day ?? 1,
     status: plan.status,
     race_id: plan.race_id,
     notes: plan.notes ?? "",
@@ -268,6 +284,7 @@ function buildPayload(draft: PlanDraft): RunningPlanCreate {
     target_pace_seconds_per_km: draft.target_pace_seconds_per_km,
     start_date: draft.start_date,
     end_date: draft.end_date || null,
+    week_start_day: draft.week_start_day,
     status: draft.status,
     race_id: draft.race_id,
     notes: draft.notes.trim() || null,
@@ -321,7 +338,7 @@ function buildPayload(draft: PlanDraft): RunningPlanCreate {
 // Engine — Algoritmo de Generación de Sesiones Estructuradas
 // ---------------------------------------------------------------------------
 
-function generatePlanStructure({
+export function generatePlanStructure({
   draft,
   planType: _planType,
   targetKm,
@@ -348,7 +365,15 @@ function generatePlanStructure({
 }): PlanDraft {
   const startDateISO =
     draft.start_date || new Date().toISOString().split("T")[0]
-  const calculatedEndDate = addDaysToIso(startDateISO, numWeeks * 7 - 1)
+
+  // Alineamos la grilla de semanas al día de inicio elegido (week_start_day).
+  const wsd = draft.week_start_day || 1 // 1..7
+  const wsdGetDay = isoWeekdayToGetDay(wsd)
+  const startGetDay = new Date(`${startDateISO}T12:00:00`).getDay()
+  const startIso = getDayToIsoWeekday(startGetDay)
+  const delta = (startIso - wsd + 7) % 7
+  const firstWeekStart = addDaysToIso(startDateISO, -delta)
+  const calculatedEndDate = addDaysToIso(firstWeekStart, numWeeks * 7 - 1)
 
   // Calculate VDOT & Paces using Jack Daniels formulas
   const vdot = calculateVDOT(refDistanceKm * 1000, refTimeSeconds)
@@ -411,10 +436,10 @@ function generatePlanStructure({
     },
   ].filter((p) => p.start <= p.end)
 
-  // Sorted days ensuring longRunDay is handled
+  // Orden de días coherente con el inicio de semana; la tirada larga va al final.
   const sortedDays = [...selectedDays].sort((a, b) => {
-    const orderA = a === longRunDay ? 99 : a === 0 ? 7 : a
-    const orderB = b === longRunDay ? 99 : b === 0 ? 7 : b
+    const orderA = a === longRunDay ? 99 : (a - wsdGetDay + 7) % 7
+    const orderB = b === longRunDay ? 99 : (b - wsdGetDay + 7) % 7
     return orderA - orderB
   })
 
@@ -429,8 +454,8 @@ function generatePlanStructure({
     const weeksInPhase: WeekDraft[] = []
 
     for (let wNum = spec.start; wNum <= spec.end; wNum++) {
-      const weekMonday = addDaysToIso(startDateISO, (wNum - 1) * 7)
-      const weekSunday = addDaysToIso(weekMonday, 6)
+      const weekStart = addDaysToIso(firstWeekStart, (wNum - 1) * 7)
+      const weekEnd = addDaysToIso(weekStart, 6)
 
       // Calculate weekly long run target distance
       const progressRatio = wNum / numWeeks
@@ -450,12 +475,12 @@ function generatePlanStructure({
       const workouts: WorkoutDraft[] = []
 
       sortedDays.forEach((dayId, dayIdx) => {
-        // El offset se calcula respecto al día real en que arranca la semana
-        // (startDateISO), no asumiendo que arranca lunes. Así el día de fondo
-        // cae en el día elegido aunque el plan arranque a mitad de semana.
-        const weekStartDay = new Date(`${weekMonday}T12:00:00`).getDay()
-        const offset = (dayId - weekStartDay + 7) % 7
-        const workoutDate = addDaysToIso(weekMonday, offset)
+        // Offset respecto al día de inicio de semana elegido (week_start_day).
+        const offset = (dayId - wsdGetDay + 7) % 7
+        const workoutDate = addDaysToIso(weekStart, offset)
+
+        // No agendar sesiones antes del inicio real del plan.
+        if (workoutDate < startDateISO) return
 
         const isLongRunDay =
           dayId === longRunDay ||
@@ -768,8 +793,8 @@ function generatePlanStructure({
 
       weeksInPhase.push({
         number: wNum,
-        start_date: weekMonday,
-        end_date: weekSunday,
+        start_date: weekStart,
+        end_date: weekEnd,
         name: "",
         objective: `Volumen semana: ~${formatDistance(
           workouts.reduce((acc, curr) => acc + (curr.distance_km || 0), 0),
@@ -1715,6 +1740,40 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                   )}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Week start day selector */}
+            <div className="flex flex-col gap-3 border-t border-border pt-4">
+              <Label
+                htmlFor="week-start-day"
+                className="font-semibold text-muted-foreground"
+              >
+                Día de Inicio de Semana
+              </Label>
+              <Select
+                value={draft.week_start_day.toString()}
+                onValueChange={(val) =>
+                  setDraft({ ...draft, week_start_day: parseInt(val, 10) })
+                }
+              >
+                <SelectTrigger
+                  id="week-start-day"
+                  className="w-64 bg-surface-container-high/80 border-border text-white"
+                >
+                  <SelectValue placeholder="Elegí un día" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border text-white">
+                  {WEEK_START_DAY_OPTIONS.map((d) => (
+                    <SelectItem key={d.value} value={d.value.toString()}>
+                      {d.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Las semanas se alinean a este día: la semana 1 arranca en el
+                inicio de semana que contiene la fecha de inicio del plan.
+              </p>
             </div>
 
             <div className="flex justify-between border-t border-border pt-4">

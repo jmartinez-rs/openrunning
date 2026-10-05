@@ -23,7 +23,9 @@ import {
   formatDistance,
   formatPace,
   getWeekBoundsISO,
+  isWithinPlanRange,
   PLAN_STATUS_META,
+  todayIsoLocal,
   WORKOUT_TYPE_META,
 } from "./running-utils"
 import { WeekSessionCalendar } from "./WeekSessionCalendar"
@@ -196,7 +198,7 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
     allWeeks.sort((a, b) => a.number - b.number)
 
     // Find "current" week based on today
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayIsoLocal()
     let currentIndex = allWeeks.findIndex(
       (w) =>
         w.start_date &&
@@ -205,8 +207,13 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
         today <= w.end_date,
     )
 
-    // Fallback if not active today
-    if (currentIndex === -1 && allWeeks.length > 0) currentIndex = 0
+    if (!isWithinPlanRange(today, plan.start_date, plan.end_date)) {
+      // Fuera de la ventana del plan: no hay semana actual (solo preview).
+      currentIndex = -1
+    } else if (currentIndex === -1 && allWeeks.length > 0) {
+      // Fallback si el plan está activo pero hoy no cae en ninguna semana.
+      currentIndex = 0
+    }
 
     const targetIndex = Math.max(0, currentIndex + weekOffset)
     const selected = allWeeks[targetIndex]
@@ -222,10 +229,11 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
       selectedWeekData: selected,
       previousDist: calculateDistance(previous),
     }
-  }, [phases, weekOffset])
+  }, [phases, weekOffset, plan.start_date, plan.end_date])
 
-  const { monday } = getWeekBoundsISO()
-  const weekMondayISO = selectedWeekData?.start_date ?? monday
+  const planWeekStartDay = detailQuery.data?.week_start_day ?? 1
+  const { weekStart } = getWeekBoundsISO(undefined, planWeekStartDay)
+  const weekStartISO = selectedWeekData?.start_date ?? weekStart
 
   // Week stats (selected week)
   const weekWorkouts = selectedWeekData?.workouts ?? []
@@ -500,7 +508,8 @@ export function ActivePlanHero({ plan }: ActivePlanHeroProps) {
             <Skeleton className="h-32 w-full rounded-2xl bg-surface-container-high/80" />
           ) : (
             <WeekSessionCalendar
-              mondayISO={weekMondayISO}
+              mondayISO={weekStartISO}
+              weekStartDay={planWeekStartDay}
               workouts={weekWorkouts}
               planId={plan.id}
             />

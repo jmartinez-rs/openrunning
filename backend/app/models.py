@@ -595,6 +595,8 @@ class RunningPlanBase(SQLModel):
     target_pace_seconds_per_km: float | None = Field(default=None, ge=0)
     start_date: dt.date
     end_date: dt.date | None = None
+    # ISO weekday convention: 1=Monday ... 7=Sunday
+    week_start_day: int = Field(default=1, ge=1, le=7)
     notes: str | None = Field(default=None, max_length=4000)
 
 
@@ -892,6 +894,7 @@ class RunningPlanPublic(SQLModel):
     target_pace_seconds_per_km: float | None
     start_date: dt.date
     end_date: dt.date | None
+    week_start_day: int
     status: PlanStatus
     notes: str | None
     created_at: datetime
