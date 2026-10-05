@@ -55,7 +55,9 @@ import {
   blocksDistanceKm,
   computeProgress,
   formatDateRange,
+  formatDistance,
   formatDuration,
+  formatObjectiveText,
   formatPace,
   getCurrentWeekFromPhases,
   PHASE_COLORS,
@@ -84,18 +86,18 @@ function StatChip({
   className?: string
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-border bg-surface-container-high/60 px-3.5 py-2 transition-colors">
-      {Icon && <Icon className="size-4 text-muted-foreground shrink-0" />}
+    <div className="flex items-center gap-2.5">
+      {Icon && <Icon className="size-4 text-primary/80 shrink-0" />}
       <div className="flex flex-col">
         <span
           className={cn(
-            "text-sm font-extrabold text-white leading-tight",
+            "text-base font-display font-black text-white leading-none tracking-tight tabular-nums",
             className,
           )}
         >
           {value}
         </span>
-        <span className="text-[11px] text-muted-foreground leading-tight font-medium">
+        <span className="mt-1 text-[11px] text-muted-foreground leading-none font-medium">
           {label}
         </span>
       </div>
@@ -173,6 +175,10 @@ export function RunningPlanDetail({
   }, [phases])
 
   const progress = useMemo(() => computeProgress(summary), [summary])
+
+  // Antes de arrancar el plan, el chrome de 0 completadas / 0 perdidas / 0% es
+  // ruido: se colapsa en una sola línea.
+  const hasStarted = progress.completed > 0 || progress.missed > 0
 
   // Initial collapse state: keep current week expanded, collapse others if many
   useEffect(() => {
@@ -386,7 +392,7 @@ export function RunningPlanDetail({
     : phases
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       {/* Top Bar Navigation & Actions */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -396,6 +402,7 @@ export function RunningPlanDetail({
               variant="ghost"
               size="icon"
               aria-label="Volver a rutinas"
+              className="size-11 sm:size-10"
               asChild
             >
               <Link to="/routines">
@@ -404,7 +411,7 @@ export function RunningPlanDetail({
             </Button>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="truncate text-2xl font-bold tracking-tight">
+                <h1 className="truncate text-2xl font-display font-black tracking-tight">
                   {plan.name}
                 </h1>
 
@@ -418,7 +425,7 @@ export function RunningPlanDetail({
                 >
                   <SelectTrigger
                     className={cn(
-                      "w-auto h-7 px-3 gap-1.5 border font-extrabold text-xs rounded-full shadow-xs cursor-pointer hover:brightness-105 transition-all",
+                      "w-auto h-11 sm:h-7 px-3 gap-1.5 border font-extrabold text-xs rounded-full shadow-xs cursor-pointer hover:brightness-105 transition-all",
                       planStatus.className,
                     )}
                   >
@@ -447,7 +454,7 @@ export function RunningPlanDetail({
                 </Select>
               </div>
               <p className="truncate text-xs text-muted-foreground mt-0.5">
-                {plan.goal ? `${plan.goal} · ` : ""}
+                {plan.goal ? `${formatObjectiveText(plan.goal)} · ` : ""}
                 {formatDateRange(plan.start_date, plan.end_date)}
               </p>
             </div>
@@ -456,7 +463,12 @@ export function RunningPlanDetail({
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" size="sm">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-11 sm:h-9"
+                >
                   <Download className="mr-2 size-4" /> Exportar
                 </Button>
               </DropdownMenuTrigger>
@@ -498,7 +510,13 @@ export function RunningPlanDetail({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button type="button" variant="outline" size="sm" asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-11 sm:h-9"
+              asChild
+            >
               <Link to="/routines/run/new" search={{ edit: planId }}>
                 <Pencil className="mr-2 size-4" /> Editar plan
               </Link>
@@ -507,6 +525,7 @@ export function RunningPlanDetail({
               type="button"
               variant="destructive"
               size="sm"
+              className="h-11 sm:h-9"
               disabled={deletePlan.isPending}
               onClick={handleDelete}
             >
@@ -532,27 +551,36 @@ export function RunningPlanDetail({
 
       {/* Progress & Target Time Hero Card */}
       <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card/80 p-5 shadow-card">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           {/* Progress bar */}
-          <div className="flex flex-col gap-1.5 flex-1 max-w-md">
+          <div className="flex max-w-md flex-1 flex-col gap-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-muted-foreground">
                 Progreso General
               </span>
-              <span className="font-bold text-primary">
-                {progress.percent}% completado
+              <span className="font-display font-bold text-primary tabular-nums">
+                {hasStarted
+                  ? `${progress.percent}% completado`
+                  : "Aún no empezaste"}
               </span>
             </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-container-high">
+            <div
+              role="progressbar"
+              aria-label="Progreso general del plan"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress.percent}
+              className="h-2.5 w-full overflow-hidden rounded-full bg-surface-container-high"
+            >
               <div className="flex h-full">
                 <div
-                  className="h-full rounded-l-full bg-gradient-to-r from-primary/70 to-primary transition-all duration-500"
+                  className="h-full rounded-l-full bg-gradient-to-r from-primary/70 to-primary transition-[width] duration-500"
                   style={{
                     width: `${(progress.completed / (progress.total || 1)) * 100}%`,
                   }}
                 />
                 <div
-                  className="h-full bg-destructive/70 transition-all duration-500"
+                  className="h-full bg-destructive/70 transition-[width] duration-500"
                   style={{
                     width: `${(progress.missed / (progress.total || 1)) * 100}%`,
                   }}
@@ -561,30 +589,33 @@ export function RunningPlanDetail({
             </div>
           </div>
 
-          {/* Target Race Time / Pace */}
+          {/* Target Race Time / Pace — tonos planos, sin chips anidados */}
           {(plan.target_time_seconds || plan.target_pace_seconds_per_km) && (
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
               {plan.target_time_seconds && (
-                <div className="flex items-center gap-2 rounded-xl bg-primary/15 border border-primary/30 px-3.5 py-1.5 text-primary">
-                  <Timer className="size-4 shrink-0" />
+                <div className="flex items-center gap-2.5">
+                  <Timer className="size-4 shrink-0 text-primary" />
                   <div className="flex flex-col">
-                    <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">
+                    <span className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground">
                       Tiempo Objetivo
                     </span>
-                    <span className="text-sm font-extrabold leading-tight">
+                    <span className="text-lg font-display font-black leading-tight text-primary tabular-nums">
                       {formatDuration(plan.target_time_seconds)}
                     </span>
                   </div>
                 </div>
               )}
+              {plan.target_time_seconds && plan.target_pace_seconds_per_km && (
+                <div className="hidden h-9 w-px bg-border sm:block" />
+              )}
               {plan.target_pace_seconds_per_km && (
-                <div className="flex items-center gap-2 rounded-xl bg-surface-container-high border border-border px-3.5 py-1.5 text-white">
+                <div className="flex items-center gap-2.5">
                   <TrendingUp className="size-4 shrink-0 text-primary" />
                   <div className="flex flex-col">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                    <span className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground">
                       Ritmo Objetivo
                     </span>
-                    <span className="text-sm font-extrabold leading-tight">
+                    <span className="text-lg font-display font-black leading-tight text-white tabular-nums">
                       {formatPace(plan.target_pace_seconds_per_km)}
                     </span>
                   </div>
@@ -594,8 +625,8 @@ export function RunningPlanDetail({
           )}
         </div>
 
-        {/* Quick Stats Chips */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        {/* Quick Stats — una sola superficie, sin chips anidados */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-border pt-4 sm:grid-cols-3 lg:grid-cols-6">
           <StatChip label="Semanas" value={summary.weeks} icon={CalendarDays} />
           <StatChip
             label="Sesiones total"
@@ -604,24 +635,37 @@ export function RunningPlanDetail({
           />
           <StatChip
             label="Km planificados"
-            value={`${summary.plannedKm} km`}
+            value={formatDistance(summary.plannedKm)}
             icon={TrendingUp}
           />
-          <StatChip
-            label="Completadas"
-            value={progress.completed}
-            className="text-primary"
-          />
-          <StatChip
-            label="Perdidas"
-            value={progress.missed}
-            className="text-destructive"
-          />
-          <StatChip
-            label="Pendientes"
-            value={progress.planned}
-            className="text-muted-foreground"
-          />
+          {hasStarted ? (
+            <>
+              <StatChip
+                label="Completadas"
+                value={progress.completed}
+                className="text-primary"
+              />
+              <StatChip
+                label="Perdidas"
+                value={progress.missed}
+                className="text-destructive"
+              />
+              <StatChip
+                label="Pendientes"
+                value={progress.planned}
+                className="text-muted-foreground"
+              />
+            </>
+          ) : (
+            <div className="col-span-2 flex items-center gap-2 sm:col-span-3 lg:col-span-3">
+              <span className="font-display text-base font-black text-primary tabular-nums">
+                0 / {progress.total}
+              </span>
+              <span className="text-xs font-medium text-muted-foreground">
+                sesiones completadas · Aún no empezaste
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -634,14 +678,14 @@ export function RunningPlanDetail({
       />
 
       {/* Plan Phases & Weeks Container */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5">
         {filteredPhases.map((phase) => {
           const phaseColor =
             PHASE_COLORS[phase.color as PhaseColor] ?? PHASE_COLORS.slate
           return (
             <section key={phase.id} className="flex flex-col gap-3">
-              {/* Phase Header */}
-              <div className="flex items-start gap-3 rounded-xl border border-border bg-card/90 p-3.5">
+              {/* Phase Header — identidad tipográfica + tonalidad, sin card anidada */}
+              <div className="flex items-start gap-3 px-0.5">
                 <div
                   className={cn(
                     "w-1.5 self-stretch rounded-full",
@@ -650,13 +694,13 @@ export function RunningPlanDetail({
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="font-bold text-base text-white">
+                    <h3 className="font-display font-bold text-base text-white">
                       {phase.name}
-                    </h2>
+                    </h3>
                     <Badge
                       variant="secondary"
                       className={cn(
-                        "shrink-0 text-xs font-semibold",
+                        "shrink-0 text-[11px] font-semibold",
                         phaseColor.badge,
                       )}
                     >
@@ -665,7 +709,7 @@ export function RunningPlanDetail({
                   </div>
                   {phase.objective && (
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {phase.objective}
+                      {formatObjectiveText(phase.objective)}
                     </p>
                   )}
                 </div>
@@ -686,7 +730,7 @@ export function RunningPlanDetail({
                         else weekRefs.current.delete(week.id)
                       }}
                       className={cn(
-                        "rounded-xl border border-border bg-card/80 transition-all duration-200 overflow-hidden shadow-md scroll-mt-24",
+                        "rounded-xl border border-border bg-card/80 transition-colors duration-200 overflow-hidden shadow-md scroll-mt-24",
                         isCurrentWeek &&
                           "ring-2 ring-primary border-primary/50 shadow-card",
                       )}
@@ -695,6 +739,8 @@ export function RunningPlanDetail({
                       <button
                         type="button"
                         onClick={() => toggleWeek(week.id)}
+                        aria-expanded={!isCollapsed}
+                        aria-controls={`week-panel-${week.id}`}
                         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-container-high/60"
                       >
                         <div className="flex items-center gap-3 min-w-0">
@@ -704,14 +750,15 @@ export function RunningPlanDetail({
                             <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                           )}
                           <div className="flex flex-wrap items-center gap-2 min-w-0">
-                            <span className="font-bold text-sm text-white">
+                            <span className="font-display font-bold text-sm text-white">
                               Semana {week.number}
                             </span>
-                            {week.name && (
-                              <span className="truncate text-xs text-muted-foreground font-medium">
-                                · {week.name}
-                              </span>
-                            )}
+                            {week.name &&
+                              week.name !== `Semana ${week.number}` && (
+                                <span className="truncate text-xs text-muted-foreground font-medium">
+                                  · {week.name}
+                                </span>
+                              )}
                             {isCurrentWeek && (
                               <Badge className="bg-primary text-primary-foreground text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md">
                                 Semana Actual
@@ -729,10 +776,14 @@ export function RunningPlanDetail({
 
                       {/* Accordion Content */}
                       {!isCollapsed && (
-                        <div className="flex flex-col gap-3 border-t border-border p-4 bg-surface-container-lowest/40">
+                        <section
+                          id={`week-panel-${week.id}`}
+                          aria-label={`Semana ${week.number}`}
+                          className="flex flex-col gap-3 border-t border-border p-4 bg-surface-container-lowest/40"
+                        >
                           {week.objective && (
                             <p className="text-xs text-muted-foreground font-medium italic">
-                              Objetivo: {week.objective}
+                              Objetivo: {formatObjectiveText(week.objective)}
                             </p>
                           )}
 
@@ -757,7 +808,7 @@ export function RunningPlanDetail({
                               ))}
                             </div>
                           )}
-                        </div>
+                        </section>
                       )}
                     </div>
                   )

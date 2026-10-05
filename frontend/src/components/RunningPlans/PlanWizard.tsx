@@ -57,6 +57,7 @@ import {
   addDaysToIso,
   type BlockType,
   blocksDistanceKm,
+  formatDistance,
   formatShortDate,
   type Intensity,
   PHASE_COLORS,
@@ -477,8 +478,8 @@ function generatePlanStructure({
           type = wNum === numWeeks ? "race" : "long_run"
           name =
             wNum === numWeeks
-              ? `Día de Carrera Objetivo (${targetKm} km)`
-              : `Tirada Larga de Fondo (${weekLongKm} km)`
+              ? `Día de Carrera Objetivo (${formatDistance(targetKm)})`
+              : `Tirada Larga de Fondo (${formatDistance(weekLongKm)})`
           distKm = weekLongKm
           targetPace = wNum === numWeeks ? predictedPaceSec : longRunPaceSec
           intensity = wNum === numWeeks ? "hard" : "moderate"
@@ -752,7 +753,7 @@ function generatePlanStructure({
           date: workoutDate,
           type,
           name,
-          objective: `${name} (${distKm} km @ ${mathFormatPace(targetPace)}/km)`,
+          objective: `${name} (${formatDistance(distKm)} @ ${mathFormatPace(targetPace)}/km)`,
           distance_km: distKm,
           duration_seconds: null,
           pace_seconds_per_km: targetPace,
@@ -769,8 +770,10 @@ function generatePlanStructure({
         number: wNum,
         start_date: weekMonday,
         end_date: weekSunday,
-        name: `Semana ${wNum}`,
-        objective: `Volumen semana: ~${workouts.reduce((acc, curr) => acc + (curr.distance_km || 0), 0)} km`,
+        name: "",
+        objective: `Volumen semana: ~${formatDistance(
+          workouts.reduce((acc, curr) => acc + (curr.distance_km || 0), 0),
+        )}`,
         notes: "",
         workouts,
       })
@@ -796,7 +799,7 @@ function generatePlanStructure({
     name: planName,
     goal:
       draft.goal ||
-      `Completar ${targetKm} km en ${formatTime(predictedFinishSec)} (${mathFormatPace(predictedPaceSec)}/km)`,
+      `Completar ${formatDistance(targetKm)} en ${formatTime(predictedFinishSec)} (${mathFormatPace(predictedPaceSec)}/km)`,
     distance_km: targetKm,
     target_time_seconds: predictedFinishSec,
     target_pace_seconds_per_km: predictedPaceSec,
@@ -1278,7 +1281,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                           value={r.id}
                           className="focus:bg-surface-container-high focus:text-primary text-foreground"
                         >
-                          {r.event_name} ({r.distance_km} km)
+                          {r.event_name} ({formatDistance(r.distance_km)})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1752,7 +1755,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                   Distancia & Bloque
                 </span>
                 <span className="font-extrabold text-white">
-                  {targetKm} km en {numWeeks} Semanas
+                  {formatDistance(targetKm)} en {numWeeks} Semanas
                 </span>
               </div>
               <div className="flex flex-col">
@@ -1890,11 +1893,12 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                           </span>
                           <span className="text-xs font-semibold text-primary">
                             Total:{" "}
-                            {week.workouts.reduce(
-                              (acc, w) => acc + (w.distance_km || 0),
-                              0,
-                            )}{" "}
-                            km
+                            {formatDistance(
+                              week.workouts.reduce(
+                                (acc, w) => acc + (w.distance_km || 0),
+                                0,
+                              ),
+                            )}
                           </span>
                         </div>
 

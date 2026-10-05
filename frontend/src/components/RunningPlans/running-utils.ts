@@ -33,6 +33,8 @@ export type PhaseColor =
   | "violet"
   | "slate"
 
+// Kinetic Volt: la identidad de tipo de sesión es tonal (tints del acento +
+// énfasis neutro). El hue queda reservado a estados reales (completada/perdida).
 export const WORKOUT_TYPE_META: Record<
   WorkoutType,
   { label: string; emoji: string; badgeClass: string }
@@ -40,42 +42,42 @@ export const WORKOUT_TYPE_META: Record<
   easy_run: {
     label: "Rodaje suave",
     emoji: "🟢",
-    badgeClass: "bg-emerald-500/15 text-emerald-600",
+    badgeClass: "bg-surface-container-high text-muted-foreground",
   },
   regeneration: {
     label: "Regenerativo",
     emoji: "🔵",
-    badgeClass: "bg-sky-500/15 text-sky-600",
+    badgeClass: "bg-surface-container-high text-muted-foreground",
   },
   intervals: {
     label: "Intervalos",
     emoji: "🟣",
-    badgeClass: "bg-purple-500/15 text-purple-600",
+    badgeClass: "bg-primary/20 text-primary",
   },
   tempo: {
     label: "Tempo",
     emoji: "🟠",
-    badgeClass: "bg-orange-500/15 text-orange-600",
+    badgeClass: "bg-primary/15 text-primary",
   },
   long_run: {
     label: "Fondo",
     emoji: "🟡",
-    badgeClass: "bg-amber-500/15 text-amber-600",
+    badgeClass: "bg-primary/10 text-primary",
   },
   test: {
     label: "Test",
     emoji: "🔴",
-    badgeClass: "bg-red-500/15 text-red-600",
+    badgeClass: "bg-primary/20 text-primary",
   },
   activation: {
     label: "Activación",
     emoji: "⚫",
-    badgeClass: "bg-slate-500/15 text-slate-600",
+    badgeClass: "bg-surface-container-high text-muted-foreground",
   },
   race: {
     label: "Carrera",
     emoji: "🏁",
-    badgeClass: "bg-domain-cardio/15 text-domain-cardio",
+    badgeClass: "bg-domain-cardio/20 text-domain-cardio",
   },
 }
 
@@ -91,7 +93,7 @@ export const WORKOUT_STATUS_META: Record<
   completed: {
     label: "Completada",
     variant: "secondary",
-    className: "bg-emerald-500/15 text-emerald-600 border-transparent",
+    className: "bg-primary/15 text-primary border-transparent",
   },
   missed: { label: "Perdida", variant: "destructive" },
   cancelled: {
@@ -144,17 +146,22 @@ export const BLOCK_TYPE_META: Record<BlockType, { label: string }> = {
   strides: { label: "Progresiones" },
 }
 
+// La identidad de fase es tonal: tints Kinetic Volt ordenados por intensidad
+// más énfasis neutro. El hue se reserva para estados reales (actual/perdida).
 export const PHASE_COLORS: Record<PhaseColor, { bar: string; badge: string }> =
   {
-    emerald: {
-      bar: "bg-emerald-500",
-      badge: "bg-emerald-500/15 text-emerald-600",
+    emerald: { bar: "bg-primary", badge: "bg-primary/20 text-primary" },
+    sky: { bar: "bg-primary/60", badge: "bg-primary/15 text-primary" },
+    amber: { bar: "bg-primary/40", badge: "bg-primary/10 text-primary" },
+    violet: { bar: "bg-primary/25", badge: "bg-primary/10 text-primary" },
+    red: {
+      bar: "bg-on-surface-variant",
+      badge: "bg-surface-container-high text-muted-foreground",
     },
-    amber: { bar: "bg-amber-500", badge: "bg-amber-500/15 text-amber-600" },
-    red: { bar: "bg-red-500", badge: "bg-red-500/15 text-red-600" },
-    sky: { bar: "bg-sky-500", badge: "bg-sky-500/15 text-sky-600" },
-    violet: { bar: "bg-violet-500", badge: "bg-violet-500/15 text-violet-600" },
-    slate: { bar: "bg-slate-400", badge: "bg-slate-500/15 text-slate-600" },
+    slate: {
+      bar: "bg-outline",
+      badge: "bg-surface-container-high text-muted-foreground",
+    },
   }
 
 const dateFmt = new Intl.DateTimeFormat("es-AR", {
@@ -193,6 +200,15 @@ export function formatDuration(seconds?: number | null): string {
 export function formatDistance(km?: number | null): string {
   if (km == null || Number.isNaN(km)) return "—"
   return `${numFmt.format(km)} km`
+}
+
+/**
+ * Normaliza separadores decimales en texto libre (objetivos/notas) al formato
+ * es-AR: "6.2 km" → "6,2 km". Los objetivos históricos se guardaron con puntos.
+ */
+export function formatObjectiveText(text?: string | null): string | null {
+  if (!text) return text ?? null
+  return text.replace(/(\d)\.(\d)/g, "$1,$2")
 }
 
 /** Distancia de un bloque: "1 km" | "400 m" | "—" */

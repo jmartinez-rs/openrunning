@@ -61,6 +61,7 @@ import {
   formatBlockDistance,
   formatDistance,
   formatDuration,
+  formatObjectiveText,
   formatPace,
   formatPaceRange,
   formatRecovery,
@@ -267,19 +268,19 @@ export function WorkoutBlocksDrawer({
             {activeShoes.length > 0 ? (
               <div className="flex flex-col gap-2 rounded-xl bg-surface-container-high/40 border border-border p-3.5">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+                  <h4 className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
                     <Footprints className="size-3.5 text-primary" />
                     Calzado sugerido para hoy
                   </h4>
                   {recommendedShoe ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
                       <Sparkles className="size-3" /> Recomendación
                     </span>
                   ) : null}
                 </div>
 
                 {recommendedShoe ? (
-                  <div className="flex items-center gap-3 bg-card/80 p-2.5 rounded-xl border border-border/60">
+                  <div className="flex items-center gap-3 rounded-xl bg-surface-container-high/60 p-2.5">
                     <div className="size-10 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-xs text-white shrink-0 overflow-hidden border border-border">
                       {recommendedShoe.photo_url ? (
                         <img
@@ -316,18 +317,18 @@ export function WorkoutBlocksDrawer({
 
             {workout.objective ? (
               <div className="flex flex-col gap-1 rounded-xl bg-surface-container-high/40 border border-border p-3">
-                <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                <h4 className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                   Objetivo Principal
                 </h4>
                 <p className="text-sm font-semibold text-white">
-                  {workout.objective}
+                  {formatObjectiveText(workout.objective)}
                 </p>
               </div>
             ) : null}
 
             {workout.description ? (
               <div className="flex flex-col gap-1 rounded-xl bg-surface-container-high/40 border border-border p-3">
-                <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                <h4 className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                   Descripción / Instrucciones
                 </h4>
                 <p className="text-xs whitespace-pre-wrap text-muted-foreground">
@@ -338,26 +339,26 @@ export function WorkoutBlocksDrawer({
 
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-xl border border-border bg-surface-container-high/60 p-3">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">
+                <p className="text-[11px] uppercase font-bold text-muted-foreground">
                   Distancia
                 </p>
-                <p className="text-sm font-extrabold text-white">
+                <p className="text-sm font-display font-extrabold text-white">
                   {formatDistance(summaryDistance)}
                 </p>
               </div>
               <div className="rounded-xl border border-border bg-surface-container-high/60 p-3">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">
+                <p className="text-[11px] uppercase font-bold text-muted-foreground">
                   Duración
                 </p>
-                <p className="text-sm font-extrabold text-white">
+                <p className="text-sm font-display font-extrabold text-white">
                   {formatDuration(workout.duration_seconds)}
                 </p>
               </div>
               <div className="rounded-xl border border-border bg-surface-container-high/60 p-3">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">
+                <p className="text-[11px] uppercase font-bold text-muted-foreground">
                   Ritmo Medio
                 </p>
-                <p className="text-sm font-extrabold text-primary">
+                <p className="text-sm font-display font-extrabold text-primary">
                   {formatPace(workout.pace_seconds_per_km)}
                 </p>
               </div>
@@ -490,7 +491,7 @@ export function WorkoutBlocksDrawer({
             ) : null}
 
             <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface-container-high/40 p-3.5">
-              <h4 className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+              <h4 className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
                 <Link2 className="size-3.5 text-primary" />
                 Actividad vinculada
               </h4>
@@ -551,10 +552,10 @@ export function WorkoutBlocksDrawer({
                           disabled={linkActivityMutation.isPending}
                           onClick={() => linkActivityMutation.mutate(a.id)}
                           className={cn(
-                            "flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors cursor-pointer",
+                            "flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors cursor-pointer",
                             isLinked
-                              ? "border-primary/50 bg-primary/10"
-                              : "border-border bg-card/60 hover:bg-surface-container-high/60",
+                              ? "bg-primary/10"
+                              : "bg-surface-container-high/50 hover:bg-surface-container-high/80",
                           )}
                         >
                           <div className="min-w-0">
