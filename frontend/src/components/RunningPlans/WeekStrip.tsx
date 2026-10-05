@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils"
 import {
+  alignIsoToWeekStart,
   formatDistance,
   getShortDayName,
   WORKOUT_TYPE_META,
@@ -19,8 +20,10 @@ interface WorkoutSlot {
 }
 
 interface WeekStripProps {
-  /** ISO date of the Monday of the week to display */
+  /** ISO date of the week's first day (anchor for the 7-day window). */
   mondayISO: string
+  /** ISO weekday (1=Lunes … 7=Domingo) the columns must start on. */
+  weekStartDay?: number
   /** Workouts to render in the strip */
   workouts: WorkoutSlot[]
   /** Optional: compact mode hides labels */
@@ -42,11 +45,16 @@ function shortLabel(workout: WorkoutSlot): string {
 
 export function WeekStrip({
   mondayISO,
+  weekStartDay,
   workouts,
   compact = false,
   className,
 }: WeekStripProps) {
-  const days = weekDaysISO(mondayISO)
+  const anchor =
+    weekStartDay != null
+      ? alignIsoToWeekStart(mondayISO, weekStartDay)
+      : mondayISO
+  const days = weekDaysISO(anchor)
   const today = new Date()
   const todayISO = [
     today.getFullYear(),

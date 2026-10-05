@@ -29,16 +29,16 @@ export function PhaseTimeline({
           <div className="flex size-7 items-center justify-center rounded-xl bg-primary/15 text-primary border border-primary/30">
             <Layers className="size-4" />
           </div>
-          <h3 className="text-sm font-bold text-white">
+          <h2 className="text-sm font-bold text-white">
             Fases del Plan ({phases.length})
-          </h3>
+          </h2>
         </div>
 
         {selectedPhaseId && (
           <button
             type="button"
             onClick={() => onSelectPhase(null)}
-            className="text-xs font-bold text-primary hover:text-primary transition-colors"
+            className="inline-flex min-h-11 items-center px-1 text-xs font-bold text-primary transition-colors hover:text-primary sm:min-h-0"
           >
             Ver todas las semanas
           </button>
@@ -46,7 +46,12 @@ export function PhaseTimeline({
       </div>
 
       {/* Visual Phase Progress Bar */}
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface-container-high border border-border/60 p-0.5">
+      <div
+        role="toolbar"
+        aria-label="Filtrar semanas por fase"
+        aria-orientation="horizontal"
+        className="flex h-3 w-full overflow-hidden rounded-full bg-surface-container-high border border-border/60 p-0.5"
+      >
         {phases.map((phase) => {
           const phaseWeeks = phase.end_week - phase.start_week + 1 || 1
           const widthPct = (phaseWeeks / totalWeeks) * 100
@@ -59,12 +64,15 @@ export function PhaseTimeline({
           const isSelected = selectedPhaseId === phase.id
 
           return (
-            <div
+            <button
               key={phase.id}
+              type="button"
               onClick={() => onSelectPhase(isSelected ? null : phase.id)}
+              aria-label={`${phase.name}: Semanas ${phase.start_week}-${phase.end_week}`}
+              aria-pressed={isSelected}
               title={`${phase.name}: Semanas ${phase.start_week}-${phase.end_week}`}
               className={cn(
-                "group relative h-full cursor-pointer transition-all duration-200 hover:brightness-125 rounded-sm",
+                "group relative h-full rounded-sm transition-all duration-200 hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 phaseColor.bar,
                 isCurrentPhase &&
                   "ring-2 ring-primary ring-offset-1 ring-offset-card z-10",
@@ -81,8 +89,9 @@ export function PhaseTimeline({
         <button
           type="button"
           onClick={() => onSelectPhase(null)}
+          aria-pressed={selectedPhaseId === null}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer border",
+            "inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer border sm:min-h-0 sm:py-1.5",
             selectedPhaseId === null
               ? "bg-primary/20 text-primary border-primary/50 shadow-sm"
               : "bg-surface-container-high/80 text-muted-foreground border-border hover:bg-surface-container-high hover:text-white",
@@ -105,8 +114,9 @@ export function PhaseTimeline({
               key={phase.id}
               type="button"
               onClick={() => onSelectPhase(isSelected ? null : phase.id)}
+              aria-pressed={isSelected}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer border",
+                "inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer border sm:min-h-0 sm:py-1.5",
                 isSelected
                   ? "bg-primary text-primary-foreground border-primary shadow-md"
                   : cn(
@@ -122,7 +132,7 @@ export function PhaseTimeline({
                 (S{phase.start_week}-{phase.end_week})
               </span>
               {isCurrentPhase && (
-                <Badge className="ml-1 border-primary/40 bg-primary/20 px-1.5 py-0 text-[10px] text-primary font-extrabold">
+                <Badge className="ml-1 border-primary/40 bg-primary/20 px-1.5 py-0 text-[11px] text-primary font-extrabold">
                   Actual
                 </Badge>
               )}

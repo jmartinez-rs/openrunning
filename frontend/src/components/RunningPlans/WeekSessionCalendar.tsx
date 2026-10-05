@@ -4,6 +4,7 @@ import { type ComponentType, type MouseEvent, useState } from "react"
 import type { RunningWorkoutPublic } from "@/client"
 import { cn } from "@/lib/utils"
 import {
+  alignIsoToWeekStart,
   blocksDistanceKm,
   formatDistance,
   formatPace,
@@ -20,7 +21,10 @@ const dateFmt = new Intl.DateTimeFormat("es-AR", {
 })
 
 interface WeekSessionCalendarProps {
+  /** ISO date of the week's first day (anchor for the 7-day window). */
   mondayISO: string
+  /** ISO weekday (1=Lunes … 7=Domingo) the columns must start on. */
+  weekStartDay?: number
   planId: string
   workouts: RunningWorkoutPublic[]
   className?: string
@@ -134,11 +138,16 @@ const LEGEND = [
 
 export function WeekSessionCalendar({
   mondayISO,
+  weekStartDay,
   planId,
   workouts,
   className,
 }: WeekSessionCalendarProps) {
-  const days = weekDaysISO(mondayISO)
+  const anchor =
+    weekStartDay != null
+      ? alignIsoToWeekStart(mondayISO, weekStartDay)
+      : mondayISO
+  const days = weekDaysISO(anchor)
   const today = new Date()
   const todayISO = [
     today.getFullYear(),

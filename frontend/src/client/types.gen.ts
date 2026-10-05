@@ -332,6 +332,7 @@ export type RunningPlanCreate = {
     target_pace_seconds_per_km?: (number | null);
     start_date: string;
     end_date?: (string | null);
+    week_start_day?: number;
     notes?: (string | null);
     status?: 'planned' | 'active' | 'completed';
     race_id?: (string | null);
@@ -354,6 +355,7 @@ export type RunningPlanPublic = {
     target_pace_seconds_per_km: (number | null);
     start_date: string;
     end_date: (string | null);
+    week_start_day: number;
     status: 'planned' | 'active' | 'completed';
     notes: (string | null);
     created_at: string;
@@ -397,6 +399,7 @@ export type RunningPlanUpdate = {
     target_pace_seconds_per_km?: (number | null);
     start_date: string;
     end_date?: (string | null);
+    week_start_day?: number;
     notes?: (string | null);
     status?: 'planned' | 'active' | 'completed';
     race_id?: (string | null);

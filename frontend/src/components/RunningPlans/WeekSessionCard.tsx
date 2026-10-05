@@ -50,10 +50,9 @@ export function WeekSessionCard({ workout, onClick }: WeekSessionCardProps) {
     <div
       onClick={onClick}
       className={cn(
-        "group relative flex flex-col gap-2.5 rounded-xl border border-border bg-card/90 p-3.5 shadow-md transition-all duration-200 hover:border-primary/40 hover:bg-card cursor-pointer",
-        workout.status === "completed" && "border-primary/40 bg-primary/20",
-        workout.status === "missed" &&
-          "border-destructive/40 bg-destructive/20",
+        "group relative flex flex-col gap-2.5 rounded-xl bg-surface-container-high/40 p-3.5 transition-colors duration-200 hover:bg-surface-container-high/70 cursor-pointer",
+        workout.status === "completed" && "bg-primary/20",
+        workout.status === "missed" && "bg-destructive/20",
         workout.cancelled && "opacity-60",
       )}
     >
@@ -99,7 +98,7 @@ export function WeekSessionCard({ workout, onClick }: WeekSessionCardProps) {
             <Badge
               variant="outline"
               asChild
-              className="gap-1 border-primary/40 bg-primary/10 text-[10px] text-primary hover:bg-primary/20"
+              className="gap-1 border-primary/40 bg-primary/10 text-[11px] text-primary hover:bg-primary/20"
               onClick={(e) => e.stopPropagation()}
             >
               <Link
@@ -115,7 +114,7 @@ export function WeekSessionCard({ workout, onClick }: WeekSessionCardProps) {
           {workout.matched_activity_id && (
             <Badge
               variant="outline"
-              className="gap-1 border-border text-[10px] text-muted-foreground"
+              className="gap-1 border-border text-[11px] text-muted-foreground"
             >
               <Link2 className="size-2.5" />
               <span>Vinculada</span>
@@ -128,7 +127,7 @@ export function WeekSessionCard({ workout, onClick }: WeekSessionCardProps) {
 
       {/* Session Title & Objective */}
       <div>
-        <h4 className="font-bold text-white group-hover:text-primary transition-colors text-sm">
+        <h4 className="font-display font-bold text-white group-hover:text-primary transition-colors text-sm">
           {workout.name || typeMeta.label}
         </h4>
         {workout.objective && (
@@ -141,11 +140,14 @@ export function WeekSessionCard({ workout, onClick }: WeekSessionCardProps) {
       {/* Metrics Row (Distance, Pace, Duration) */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pt-1.5 border-t border-border">
         {distanceText && (
-          <span className="font-extrabold text-white">{distanceText}</span>
+          <span className="font-display font-extrabold text-white">
+            {distanceText}
+          </span>
         )}
         {paceText && paceText !== "—" && (
           <span>
-            Ritmo: <strong className="text-foreground">{paceText}</strong>
+            Ritmo:{" "}
+            <strong className="font-display text-foreground">{paceText}</strong>
           </span>
         )}
 

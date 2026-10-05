@@ -2030,6 +2030,13 @@ export const RunningPlanCreateSchema = {
             ],
             title: 'End Date'
         },
+        week_start_day: {
+            type: 'integer',
+            maximum: 7,
+            minimum: 1,
+            title: 'Week Start Day',
+            default: 1
+        },
         notes: {
             anyOf: [
                 {
@@ -2166,6 +2173,10 @@ export const RunningPlanPublicSchema = {
             ],
             title: 'End Date'
         },
+        week_start_day: {
+            type: 'integer',
+            title: 'Week Start Day'
+        },
         status: {
             type: 'string',
             enum: ['planned', 'active', 'completed'],
@@ -2201,7 +2212,7 @@ export const RunningPlanPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'user_id', 'race_id', 'name', 'goal', 'distance_km', 'distance_unit', 'target_time_seconds', 'target_pace_seconds_per_km', 'start_date', 'end_date', 'status', 'notes', 'created_at', 'updated_at'],
+    required: ['id', 'user_id', 'race_id', 'name', 'goal', 'distance_km', 'distance_unit', 'target_time_seconds', 'target_pace_seconds_per_km', 'start_date', 'end_date', 'week_start_day', 'status', 'notes', 'created_at', 'updated_at'],
     title: 'RunningPlanPublic'
 } as const;
 
@@ -2389,6 +2400,13 @@ export const RunningPlanUpdateSchema = {
                 }
             ],
             title: 'End Date'
+        },
+        week_start_day: {
+            type: 'integer',
+            maximum: 7,
+            minimum: 1,
+            title: 'Week Start Day',
+            default: 1
         },
         notes: {
             anyOf: [
