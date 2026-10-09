@@ -1,29 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 import {
-  Activity,
   ArrowLeft,
-  Calendar,
   Check,
-  ChevronRight,
-  Flag,
+  ChevronDown,
+  ChevronUp,
   Footprints,
-  Gauge,
+  HelpCircle,
   Loader2,
   Minus,
+  Mountain,
   Plus,
+  SlidersHorizontal,
   Sparkles,
   TrendingUp,
   Trophy,
-  Wand2,
-  Zap,
 } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import {
   ActivitiesService,
   AnalyticsService,
-  type RacePublic,
   RacesService,
   type RunningPlanCreate,
   type RunningPlanPublic,
@@ -42,6 +39,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import useCustomToast from "@/hooks/useCustomToast"
 import {
   calculateVDOT,
@@ -145,37 +148,14 @@ interface PlanDraft {
   phases: PhaseDraft[]
 }
 
-const ONBOARDING_STEPS = [
-  { id: 1, title: "1. Objetivo Principal", desc: "Tipo de plan y distancia" },
-  { id: 2, title: "2. Nivel & VDOT", desc: "Marca reciente y ritmos" },
-  { id: 3, title: "3. Volumen Actual", desc: "Kilometraje habitual" },
-  { id: 4, title: "4. Disponibilidad", desc: "Frecuencia y Tirada Larga" },
-  {
-    id: 5,
-    title: "5. Motor Algorítmico",
-    desc: "Generar plan con estructurado",
-  },
-] as const
-
 const DAYS_OF_WEEK = [
-  { id: 1, label: "Lunes", short: "L" },
-  { id: 2, label: "Martes", short: "M" },
-  { id: 3, label: "Miércoles", short: "X" },
-  { id: 4, label: "Jueves", short: "J" },
-  { id: 5, label: "Viernes", short: "V" },
-  { id: 6, label: "Sábado", short: "S" },
-  { id: 0, label: "Domingo", short: "D" },
-]
-
-// Opciones de inicio de semana en ISO weekday (1=Lunes … 7=Domingo).
-const WEEK_START_DAY_OPTIONS = [
-  { value: 1, label: "Lunes" },
-  { value: 2, label: "Martes" },
-  { value: 3, label: "Miércoles" },
-  { value: 4, label: "Jueves" },
-  { value: 5, label: "Viernes" },
-  { value: 6, label: "Sábado" },
-  { value: 7, label: "Domingo" },
+  { id: 1, label: "Lunes", short: "Lun" },
+  { id: 2, label: "Martes", short: "Mar" },
+  { id: 3, label: "Miércoles", short: "Mié" },
+  { id: 4, label: "Jueves", short: "Jue" },
+  { id: 5, label: "Viernes", short: "Vie" },
+  { id: 6, label: "Sábado", short: "Sáb" },
+  { id: 0, label: "Domingo", short: "Dom" },
 ]
 
 /** ISO (YYYY-MM-DD) del lunes de la semana actual. */
@@ -838,24 +818,33 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
   const navigate = useNavigate()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
-  const [step, setStep] = useState<number>(1)
+  const [step, setStep] = useState<number>(editId ? 4 : 1)
   const [draft, setDraft] = useState<PlanDraft>(createEmptyDraft)
 
-  // Questionnaire / Onboarding state (wizard style)
+  // Questionnaire / Onboarding state (Paccer style)
+  const [userLevel, setUserLevel] = useState<string>("intermediate")
+  const [hasInjury, setHasInjury] = useState<boolean>(false)
+  const [showAdvancedVdot, setShowAdvancedVdot] = useState<boolean>(false)
+  const [showFullEditor, setShowFullEditor] = useState<boolean>(Boolean(editId))
+
+  const [terrain, setTerrain] = useState<"road" | "trail">("road")
   const [planType, setPlanType] = useState<string>("race")
   const [goalType, setGoalType] = useState<"finish" | "time" | "performance">("finish")
+  const [raceName, setRaceName] = useState<string>("")
+  const [raceDate, setRaceDate] = useState<string>("")
+  const [targetKm, setTargetKm] = useState<number>(21.1)
+  const [numWeeks, setNumWeeks] = useState<number>(12)
+
   const [confidence, setConfidence] = useState<"measured" | "declared" | "estimated">("measured")
   const [conservativeMode, setConservativeMode] = useState<boolean>(false)
   const [warnings, setWarnings] = useState<Array<{ code: string; severity: string; message: string }>>([])
-  const [targetKm, setTargetKm] = useState<number>(21.1)
-  const [numWeeks, setNumWeeks] = useState<number>(12)
-  const [userLevel, setUserLevel] = useState<string>("intermediate")
+
   const [refDistanceKm, setRefDistanceKm] = useState<number>(5)
   const [refTimeInput, setRefTimeInput] = useState<string>("00:24:30")
   const [currentWeeklyKm, setCurrentWeeklyKm] = useState<number | "">("")
   const [longestRunKm, setLongestRunKm] = useState<number | "">("")
-  const [selectedDays, setSelectedDays] = useState<number[]>([2, 4, 6, 0]) // Tue, Thu, Sat, Sun
-  const [longRunDay, setLongRunDay] = useState<number>(0) // Sunday
+  const [selectedDays, setSelectedDays] = useState<number[]>([1, 3, 5, 6]) // Lun, Mié, Vie, Sáb (Paccer default)
+  const [longRunDay, setLongRunDay] = useState<number>(6) // Sáb (Paccer default)
 
   // Best marks reales del usuario (para autocompletar el tiempo de referencia)
   const bestPacesQuery = useQuery({
@@ -1044,27 +1033,38 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
   const generateDraftMutation = useMutation({
     mutationFn: async () => {
       const todayIso = new Date().toISOString().split("T")[0]
+      const defaultWeeklyKm =
+        userLevel === "beginner" ? 18.0 : userLevel === "intermediate" ? 30.0 : 50.0
+      const defaultLongestKm =
+        userLevel === "beginner" ? 7.0 : userLevel === "intermediate" ? 12.0 : 18.0
+
       const payload = {
         plan_type: planType,
         goal_type: goalType,
         target_km: targetKm,
         target_time_seconds: refTimeSeconds > 0 ? refTimeSeconds : null,
         num_weeks: numWeeks,
-        start_date: todayIso,
-        week_start_day: 1,
+        start_date: draft.start_date || todayIso,
+        week_start_day: draft.week_start_day || 1,
         selected_days: selectedDays.map((d) => (d === 0 ? 7 : d)),
         long_run_day: longRunDay === 0 ? 7 : longRunDay,
         baseline: {
           weekly_km: {
-            value: currentWeeklyKm === "" ? 20.0 : Number(currentWeeklyKm),
+            value:
+              currentWeeklyKm === ""
+                ? defaultWeeklyKm
+                : Number(currentWeeklyKm),
             confidence: confidence,
           },
           longest_run_km: {
-            value: longestRunKm === "" ? 8.0 : Number(longestRunKm),
+            value:
+              longestRunKm === ""
+                ? defaultLongestKm
+                : Number(longestRunKm),
             confidence: confidence,
           },
           vdot: {
-            value: calculatedVdot || 35.0,
+            value: calculatedVdot || (userLevel === "beginner" ? 32.0 : userLevel === "intermediate" ? 42.0 : 50.0),
             confidence: confidence,
           },
           runs_per_week: {
@@ -1073,37 +1073,70 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           },
         },
         confidence: confidence,
-        conservative_mode: conservativeMode,
+        conservative_mode: conservativeMode || hasInjury,
       }
       return RunningPlansService.generateDraft({ requestBody: payload as any })
     },
     onSuccess: (res: any) => {
+      const fallbackName =
+        draft.name.trim() ||
+        (raceName.trim()
+          ? `Plan ${raceName.trim()}`
+          : `Plan ${targetKm}K (${numWeeks} sem)`)
       if (res?.draft) {
-        setDraft(publicToDraft(res.draft as any))
+        const d = publicToDraft(res.draft as any)
+        if (!d.name) d.name = fallbackName
+        setDraft(d)
         setWarnings(res.warnings || [])
       } else {
-        setDraft(publicToDraft(res as any))
+        const d = publicToDraft(res as any)
+        if (!d.name) d.name = fallbackName
+        setDraft(d)
       }
-      showSuccessToast("¡Motor V2 ejecutado! Plan generado con periodización y descargas.")
-      setStep(6)
+      showSuccessToast("¡Plan generado con éxito según tu rutina y nivel!")
+      setStep(4)
     },
     onError: () => {
+      const fallbackName =
+        draft.name.trim() ||
+        (raceName.trim()
+          ? `Plan ${raceName.trim()}`
+          : `Plan ${targetKm}K (${numWeeks} sem)`)
+      const defaultWeeklyKm =
+        userLevel === "beginner" ? 18 : userLevel === "intermediate" ? 30 : 50
+      const defaultLongestKm =
+        userLevel === "beginner" ? 7 : userLevel === "intermediate" ? 12 : 18
+
       const generated = generatePlanStructure({
-        draft,
+        draft: {
+          ...draft,
+          name: fallbackName,
+          notes: [
+            draft.notes,
+            `Modalidad: ${terrain === "trail" ? "Trail / Montaña" : "Asfalto"}`,
+            hasInjury
+              ? "Antecedente de lesión: Progresión conservadora activa"
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" | "),
+        },
         planType,
         targetKm,
         numWeeks,
         userLevel,
         refDistanceKm,
         refTimeSeconds,
-        currentWeeklyKm: currentWeeklyKm === "" ? 0 : currentWeeklyKm,
-        longestRunKm: longestRunKm === "" ? 0 : longestRunKm,
+        currentWeeklyKm:
+          currentWeeklyKm === "" ? defaultWeeklyKm : Number(currentWeeklyKm),
+        longestRunKm:
+          longestRunKm === "" ? defaultLongestKm : Number(longestRunKm),
         selectedDays,
         longRunDay,
       })
       setDraft(generated)
       showSuccessToast("Plan generado localmente.")
-      setStep(6)
+      setStep(4)
     },
   })
 
@@ -1172,7 +1205,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           </div>
         </div>
 
-        {step === 6 && (
+        {step === 4 && (
           <Button
             type="button"
             onClick={handleSave}
@@ -1189,848 +1222,876 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
         )}
       </div>
 
-      {/* Step Indicator Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 border-b border-border pb-4">
-        {ONBOARDING_STEPS.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setStep(s.id)}
-            className={cn(
-              "flex flex-col gap-1 p-2.5 rounded-xl text-left border transition-all duration-200 cursor-pointer",
-              step === s.id
-                ? "border-primary/60 bg-primary/15 text-primary shadow-sm"
-                : "border-border bg-card/80 text-muted-foreground hover:bg-surface-container-high hover:text-white",
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <span
+      {/* Paccer-style Step Indicator Bar */}
+      <div className="flex items-center justify-between max-w-sm mx-auto w-full px-4 mb-2">
+        {[1, 2, 3, 4].map((stepNumber, index) => {
+          const isCompleted = step > stepNumber
+          const isCurrent = step === stepNumber
+          return (
+            <div
+              key={stepNumber}
+              className="flex items-center flex-1 last:flex-none"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  if (step > stepNumber || (step === 4 && stepNumber <= 3)) {
+                    setStep(stepNumber)
+                  }
+                }}
+                disabled={step < stepNumber}
+                aria-label={`Paso ${stepNumber}`}
                 className={cn(
-                  "size-5 rounded-full flex items-center justify-center text-[10px] font-bold",
-                  step === s.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-surface-container-high text-muted-foreground border border-border",
+                  "size-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300",
+                  isCompleted
+                    ? "bg-primary text-black shadow-xs cursor-pointer hover:scale-105"
+                    : isCurrent
+                      ? "bg-primary text-black ring-4 ring-primary/25 shadow-glow"
+                      : "bg-surface-container-high text-muted-foreground border border-border/80 cursor-not-allowed",
                 )}
               >
-                {s.id}
-              </span>
-              {step > s.id && <Check className="size-3.5 text-primary" />}
+                {isCompleted ? (
+                  <Check className="size-4.5 stroke-[3]" />
+                ) : (
+                  stepNumber
+                )}
+              </button>
+              {index < 3 && (
+                <div
+                  className={cn(
+                    "flex-1 h-1 mx-2 rounded-full transition-colors duration-300",
+                    step > stepNumber
+                      ? "bg-primary"
+                      : "bg-surface-container-high",
+                  )}
+                />
+              )}
             </div>
-            <span className="font-bold text-xs truncate">{s.title}</span>
-          </button>
-        ))}
+          )
+        })}
       </div>
 
-      {/* STEP 1: Objetivo Principal */}
+      {/* STEP 1: Vamos a empezar (1-criar-treino-nivel.png) */}
       {step === 1 && (
-        <Card className="p-6 bg-card border-border shadow-card rounded-2xl">
-          <CardHeader className="px-0 pt-0">
-            <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
-              <Trophy className="size-5 text-primary" />
-              1. Tu Objetivo Principal
-            </CardTitle>
+        <Card className="max-w-xl mx-auto w-full p-6 sm:p-8 bg-card border-border/80 shadow-card rounded-3xl">
+          <CardHeader className="px-0 pt-0 pb-6">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Vamos a empezar
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Definí tu base de entrenamiento.
+            </p>
           </CardHeader>
+
           <CardContent className="px-0 flex flex-col gap-6">
-            {/* Plan Type Cards */}
+            {/* Nivel de carrera */}
             <div className="flex flex-col gap-3">
-              <Label className="font-semibold text-xs text-muted-foreground">
-                ¿Cuál es tu tipo de objetivo?
-              </Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-sm text-white">
+                  ¿Cuál es tu nivel corriendo?
+                </span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                      >
+                        <HelpCircle className="size-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-surface-container-high text-white border-border text-xs">
+                      Permite estimar el volumen semanal seguro y ritmos iniciales.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
+              <div className="flex flex-col gap-3">
                 {[
-                  {
-                    id: "race",
-                    title: "Carrera Oficial",
-                    desc: "Preparar un evento oficial con fecha límite",
-                    icon: Trophy,
-                  },
-                  {
-                    id: "distance",
-                    title: "Cubrir Distancia",
-                    desc: "Superar 5K, 10K, 15K, 21K o 42K por tu cuenta",
-                    icon: Flag,
-                  },
-                  {
-                    id: "faster",
-                    title: "Mejorar Marca",
-                    desc: "Aumentar velocidad y bajar tiempos",
-                    icon: Zap,
-                  },
                   {
                     id: "beginner",
-                    title: "Empezar a Correr",
-                    desc: "Plan desde cero para ganar hábito y resistencia",
-                    icon: Footprints,
+                    title: "Principiante",
+                    desc: "Estoy empezando ahora.",
+                    weeklyKm: 18,
+                    longestKm: 7,
+                    refTime: "00:32:00",
                   },
-                ].map((type) => (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => setPlanType(type.id)}
-                    className={cn(
-                      "flex flex-col gap-2 p-4 rounded-xl border text-left transition-all cursor-pointer",
-                      planType === type.id
-                        ? "border-primary/60 bg-primary/15 text-primary shadow-sm ring-1 ring-primary/40"
-                        : "border-border bg-surface-container-high/40 text-muted-foreground hover:bg-surface-container-high hover:border-border",
-                    )}
-                  >
-                    <type.icon
+                  {
+                    id: "intermediate",
+                    title: "Intermedio",
+                    desc: "Ya corro con regularidad.",
+                    weeklyKm: 30,
+                    longestKm: 12,
+                    refTime: "00:24:30",
+                  },
+                  {
+                    id: "advanced",
+                    title: "Avanzado",
+                    desc: "Foco en rendimiento.",
+                    weeklyKm: 50,
+                    longestKm: 18,
+                    refTime: "00:19:45",
+                  },
+                ].map((lvl) => {
+                  const isSelected = userLevel === lvl.id
+                  return (
+                    <button
+                      key={lvl.id}
+                      type="button"
+                      onClick={() => {
+                        setUserLevel(lvl.id)
+                        if (!volumeEdited.current) setCurrentWeeklyKm(lvl.weeklyKm)
+                        if (!longestEdited.current) setLongestRunKm(lvl.longestKm)
+                        if (!refTimeEdited.current) setRefTimeInput(lvl.refTime)
+                      }}
                       className={cn(
-                        "size-6",
-                        planType === type.id
-                          ? "text-primary"
-                          : "text-muted-foreground",
+                        "flex items-center gap-4 p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer",
+                        isSelected
+                          ? "bg-primary text-black border-primary shadow-md font-bold"
+                          : "bg-surface-container-high/60 border-border/80 text-white hover:bg-surface-container-high hover:border-border",
                       )}
-                    />
-                    <div>
-                      <h4 className="font-bold text-sm text-white">
-                        {type.title}
-                      </h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {type.desc}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Goal Type selection (Hito 2) */}
-            <div className="flex flex-col gap-3 border-t border-border pt-4">
-              <Label className="font-semibold text-xs text-muted-foreground">
-                Enfoque del Objetivo (Goal Type)
-              </Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {[
-                  {
-                    id: "finish",
-                    title: "Completar Distancia",
-                    desc: "Cruzar la meta con solidez y buenas sensaciones",
-                  },
-                  {
-                    id: "time",
-                    title: "Buscar Tiempo",
-                    desc: "Alcanzar una marca personal o ritmo objetivo",
-                  },
-                  {
-                    id: "performance",
-                    title: "Alto Rendimiento",
-                    desc: "Exprimir potencial con bloques de máxima exigencia",
-                  },
-                ].map((g) => (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => setGoalType(g.id as any)}
-                    className={cn(
-                      "flex flex-col gap-1 p-3 rounded-xl border text-left transition-all cursor-pointer",
-                      goalType === g.id
-                        ? "border-primary/60 bg-primary/15 text-primary ring-1 ring-primary/40 font-bold"
-                        : "border-border bg-surface-container-high/40 text-muted-foreground hover:bg-surface-container-high",
-                    )}
-                  >
-                    <span className="font-bold text-xs text-white">{g.title}</span>
-                    <span className="text-[11px] text-muted-foreground">{g.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Distance Target Selection */}
-            <div className="flex flex-col gap-3 border-t border-border pt-4">
-              <Label className="font-semibold text-xs text-muted-foreground">
-                Distancia Objetivo
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { label: "5K", km: 5 },
-                  { label: "10K", km: 10 },
-                  { label: "15K", km: 15 },
-                  { label: "21.1K (Media Maratón)", km: 21.1 },
-                  { label: "42.2K (Maratón)", km: 42.2 },
-                  { label: "50K (Ultra)", km: 50 },
-                ].map((d) => (
-                  <button
-                    key={d.km}
-                    type="button"
-                    onClick={() => {
-                      setTargetKm(d.km)
-                      setRefDistanceKm(d.km)
-                      setDraft({ ...draft, distance_km: d.km })
-                    }}
-                    className={cn(
-                      "px-4 py-2 rounded-xl border font-bold text-xs transition-all cursor-pointer",
-                      targetKm === d.km
-                        ? "bg-primary/20 text-primary border-primary/60 shadow-xs"
-                        : "bg-surface-container-high/60 text-muted-foreground border-border hover:bg-surface-container-high hover:text-white",
-                    )}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Plan Duration / Race Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border pt-4">
-              {planType === "race" && (
-                <div className="flex flex-col gap-2">
-                  <Label
-                    htmlFor="race-select"
-                    className="font-semibold text-xs text-muted-foreground"
-                  >
-                    Carrera Objetivo Guardada
-                  </Label>
-                  <Select
-                    value={draft.race_id ?? "none"}
-                    onValueChange={(val) =>
-                      setDraft({
-                        ...draft,
-                        race_id: val === "none" ? null : val,
-                      })
-                    }
-                  >
-                    <SelectTrigger
-                      id="race-select"
-                      className="bg-surface-container-high border-border text-white rounded-xl"
                     >
-                      <SelectValue placeholder="Seleccionar de tus carreras" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border text-white">
-                      <SelectItem
-                        value="none"
-                        className="focus:bg-surface-container-high focus:text-primary text-foreground"
+                      <div
+                        className={cn(
+                          "p-2.5 rounded-xl transition-colors",
+                          isSelected
+                            ? "bg-black/10 text-black"
+                            : "bg-card text-muted-foreground",
+                        )}
                       >
-                        Sin carrera vinculada
-                      </SelectItem>
-                      {(racesQuery.data?.data ?? []).map((r: RacePublic) => (
-                        <SelectItem
-                          key={r.id}
-                          value={r.id}
-                          className="focus:bg-surface-container-high focus:text-primary text-foreground"
+                        <Footprints className="size-6" />
+                      </div>
+                      <div className="flex flex-col flex-1">
+                        <span
+                          className={cn(
+                            "text-base font-bold",
+                            isSelected ? "text-black" : "text-white",
+                          )}
                         >
-                          {r.event_name} ({formatDistance(r.distance_km)})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                          {lvl.title}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-xs mt-0.5",
+                            isSelected
+                              ? "text-black/80 font-medium"
+                              : "text-muted-foreground",
+                          )}
+                        >
+                          {lvl.desc}
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Pregunta Lesiones */}
+            <div className="flex flex-col gap-2.5 pt-2">
+              <span className="font-bold text-sm text-white">
+                ¿Alguna lesión activa o reciente?
+              </span>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHasInjury(false)
+                    setConservativeMode(false)
+                    setConfidence("measured")
+                  }}
+                  className={cn(
+                    "h-13 rounded-2xl border font-bold text-sm transition-all cursor-pointer",
+                    !hasInjury
+                      ? "bg-primary text-black border-primary shadow-xs"
+                      : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white hover:bg-surface-container-high",
+                  )}
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHasInjury(true)
+                    setConservativeMode(true)
+                    setConfidence("estimated")
+                  }}
+                  className={cn(
+                    "h-13 rounded-2xl border font-bold text-sm transition-all cursor-pointer",
+                    hasInjury
+                      ? "bg-primary text-black border-primary shadow-xs"
+                      : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white hover:bg-surface-container-high",
+                  )}
+                >
+                  Sí
+                </button>
+              </div>
+              {hasInjury && (
+                <div className="text-xs text-amber-200 bg-amber-500/10 border border-amber-500/30 p-3 rounded-2xl mt-1 flex items-start gap-2">
+                  <Sparkles className="size-4 shrink-0 text-amber-400 mt-0.5" />
+                  <span>
+                    Modo Preventivo activo: el plan comenzará con incrementos más
+                    pausados y semanas de descarga para proteger tus articulaciones.
+                  </span>
                 </div>
               )}
-
-              <div className="flex flex-col gap-2">
-                <Label
-                  htmlFor="num-weeks-select"
-                  className="font-semibold text-xs text-muted-foreground"
-                >
-                  Duración del Bloque (Semanas)
-                </Label>
-                <Select
-                  value={numWeeks.toString()}
-                  onValueChange={(val) => setNumWeeks(parseInt(val, 10))}
-                >
-                  <SelectTrigger
-                    id="num-weeks-select"
-                    className="bg-surface-container-high border-border text-white rounded-xl"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border text-white">
-                    <SelectItem
-                      value="6"
-                      className="focus:bg-surface-container-high focus:text-primary text-foreground"
-                    >
-                      6 Semanas (Expreso)
-                    </SelectItem>
-                    <SelectItem
-                      value="8"
-                      className="focus:bg-surface-container-high focus:text-primary text-foreground"
-                    >
-                      8 Semanas (Corto)
-                    </SelectItem>
-                    <SelectItem
-                      value="12"
-                      className="focus:bg-surface-container-high focus:text-primary text-foreground"
-                    >
-                      12 Semanas (Recomendado)
-                    </SelectItem>
-                    <SelectItem
-                      value="16"
-                      className="focus:bg-surface-container-high focus:text-primary text-foreground"
-                    >
-                      16 Semanas (Maratón 42K)
-                    </SelectItem>
-                    <SelectItem
-                      value="20"
-                      className="focus:bg-surface-container-high focus:text-primary text-foreground"
-                    >
-                      20 Semanas (Ultra / Bloque Extendido)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
-            <div className="flex justify-end pt-2">
+            {/* Opciones avanzadas de Ritmos y VDOT colapsable */}
+            <div className="border-t border-border/80 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedVdot(!showAdvancedVdot)}
+                className="flex items-center justify-between w-full text-xs text-muted-foreground hover:text-white py-1 transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-2 font-medium">
+                  <SlidersHorizontal className="size-3.5" />
+                  Ajustes avanzados de Ritmos & VDOT (Opcional)
+                </span>
+                {showAdvancedVdot ? (
+                  <ChevronUp className="size-4" />
+                ) : (
+                  <ChevronDown className="size-4" />
+                )}
+              </button>
+
+              {showAdvancedVdot && (
+                <div className="flex flex-col gap-4 mt-3 p-4 rounded-2xl bg-surface-container-high/40 border border-border/80 animate-in fade-in duration-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-xs text-muted-foreground">
+                        Distancia de referencia
+                      </Label>
+                      <Select
+                        value={refDistanceKm.toString()}
+                        onValueChange={(val) => {
+                          setRefDistanceKm(parseFloat(val))
+                          refTimeEdited.current = false
+                        }}
+                      >
+                        <SelectTrigger className="h-10 bg-card border-border text-white rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border text-white">
+                          <SelectItem value="5">5K Reciente</SelectItem>
+                          <SelectItem value="10">10K Reciente</SelectItem>
+                          <SelectItem value="21.1">21.1K Reciente</SelectItem>
+                          <SelectItem value="42.2">42.2K Reciente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-xs text-muted-foreground">
+                        Tiempo reciente (hh:mm:ss)
+                      </Label>
+                      <Input
+                        value={refTimeInput}
+                        onChange={(e) => {
+                          refTimeEdited.current = true
+                          setRefTimeInput(e.target.value)
+                        }}
+                        className="h-10 bg-card border-border text-white rounded-xl font-mono text-xs"
+                      />
+                      {bestTimeForRef && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRefTimeInput(formatTime(bestTimeForRef))
+                            refTimeEdited.current = true
+                          }}
+                          className="text-[11px] text-primary text-left hover:underline cursor-pointer"
+                        >
+                          Usar mejor marca registrada: {formatTime(bestTimeForRef)}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-card border border-border/60 text-xs">
+                    <span className="text-muted-foreground">VDOT Estimado:</span>
+                    <span className="font-extrabold text-primary font-mono text-sm">
+                      {calculatedVdot || 35}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Botón de acción */}
+            <div className="flex flex-col gap-2.5 mt-2">
               <Button
                 type="button"
                 onClick={() => setStep(2)}
-                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-card shadow-primary/20 rounded-xl cursor-pointer"
+                className="w-full h-14 rounded-2xl bg-white text-black hover:bg-neutral-200 font-bold text-base cursor-pointer shadow-card"
               >
-                <span>Siguiente: Nivel & Ritmos VDOT</span>
-                <ChevronRight className="size-4" />
+                Continuar
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => navigate({ to: "/routines" })}
+                className="text-xs text-muted-foreground hover:text-white cursor-pointer"
+              >
+                Mantener plan actual
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* STEP 2: Nivel & Marca Reciente (Cálculo VDOT en vivo) */}
+      {/* STEP 2: Defina sua meta (2-criar-treino-meta.png) */}
       {step === 2 && (
-        <Card className="p-6 bg-card/90 border-border shadow-card text-white">
-          <CardHeader className="px-0 pt-0">
-            <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
-              <Gauge className="size-5 text-primary" />
-              2. Nivel Actual & Calculadora VDOT (Dato Clave)
-            </CardTitle>
+        <Card className="max-w-xl mx-auto w-full p-6 sm:p-8 bg-card border-border/80 shadow-card rounded-3xl">
+          <CardHeader className="px-0 pt-0 pb-6">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Definí tu meta
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Elegí el foco de tu entrenamiento.
+            </p>
           </CardHeader>
+
           <CardContent className="px-0 flex flex-col gap-6">
-            {/* Level selection */}
-            <div className="flex flex-col gap-3">
-              <Label className="font-semibold text-sm text-muted-foreground">
-                Tu Nivel Auto-Percibido
-              </Label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { id: "beginner", label: "Principiante" },
-                  { id: "intermediate", label: "Intermedio" },
-                  { id: "advanced", label: "Avanzado" },
-                  { id: "elite", label: "Élite" },
-                ].map((lvl) => (
-                  <button
-                    key={lvl.id}
-                    type="button"
-                    onClick={() => setUserLevel(lvl.id)}
-                    className={cn(
-                      "py-2.5 px-3 rounded-xl border text-center font-bold text-xs transition-all",
-                      userLevel === lvl.id
-                        ? "bg-primary/20 text-primary border-primary/60 shadow-xs"
-                        : "bg-surface-container-high/60 text-muted-foreground border-border hover:bg-surface-container-high hover:text-white",
-                    )}
-                  >
-                    {lvl.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Reference Performance Input */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border pt-4">
-              <div className="flex flex-col gap-2">
-                <Label
-                  htmlFor="ref-dist"
-                  className="font-semibold text-muted-foreground"
-                >
-                  Distancia de Referencia Reciente
-                </Label>
-                <Select
-                  value={refDistanceKm.toString()}
-                  onValueChange={(val) => {
-                    setRefDistanceKm(parseFloat(val))
-                    refTimeEdited.current = false
-                  }}
-                >
-                  <SelectTrigger
-                    id="ref-dist"
-                    className="bg-surface-container-high/80 border-border text-white"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border text-white">
-                    <SelectItem value="5">5K Reciente</SelectItem>
-                    <SelectItem value="10">10K Reciente</SelectItem>
-                    <SelectItem value="15">15K Reciente</SelectItem>
-                    <SelectItem value="21.1">21.1K (Media Maratón)</SelectItem>
-                    <SelectItem value="42.2">42.2K (Maratón)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label
-                  htmlFor="ref-time"
-                  className="font-semibold text-muted-foreground"
-                >
-                  Mejor Tiempo Reciente (hh:mm:ss o mm:ss)
-                </Label>
-                <Input
-                  id="ref-time"
-                  placeholder="00:24:30"
-                  value={refTimeInput}
-                  onChange={(e) => {
-                    refTimeEdited.current = true
-                    setRefTimeInput(e.target.value)
-                  }}
-                  className="bg-surface-container-high/80 border-border text-white font-display"
-                />
-                {bestTimeForRef ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRefTimeInput(formatTime(bestTimeForRef))
-                      refTimeEdited.current = true
-                    }}
-                    className="inline-flex items-center gap-1 self-start text-[11px] font-semibold text-primary bg-primary/10 border border-primary/20 rounded-full px-2.5 py-1 hover:bg-primary/20 transition-colors"
-                  >
-                    <Sparkles className="size-3" />
-                    Usar mi mejor marca ({formatTime(bestTimeForRef)})
-                  </button>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">
-                    Sin marca registrada para esta distancia — escribila
-                    manualmente.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Calculated VDOT Live Preview Card */}
-            <div className="flex flex-col gap-3 rounded-xl border border-primary/30 bg-gradient-to-br from-card via-card to-primary/10 p-4 shadow-card">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-primary text-primary-foreground font-extrabold text-xs">
-                    VDOT: {calculatedVdot}
-                  </Badge>
-                  <span className="text-xs font-bold text-white">
-                    Ritmos de Entrenamiento Calculados por Algoritmo (Jack
-                    Daniels)
-                  </span>
-                </div>
-
-                <Badge
-                  variant="outline"
-                  className="text-xs border-primary/40 text-primary"
-                >
-                  Ref: {refDistanceKm}K en {formatTime(refTimeSeconds)} → Obj: {targetKm}K
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
-                <div className="flex flex-col p-2.5 rounded-lg border border-border bg-card/80">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                    Rodaje Suave (Z2)
-                  </span>
-                  <span className="text-sm font-extrabold text-primary">
-                    {calculatedPaces.easyMin} - {calculatedPaces.easyMax} /km
-                  </span>
-                </div>
-
-                <div className="flex flex-col p-2.5 rounded-lg border border-border bg-card/80">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                    Ritmo Tempo (Umbral)
-                  </span>
-                  <span className="text-sm font-extrabold text-primary">
-                    {calculatedPaces.threshold} /km
-                  </span>
-                </div>
-
-                <div className="flex flex-col p-2.5 rounded-lg border border-border bg-card/80">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                    Intervalos (VO2 Max)
-                  </span>
-                  <span className="text-sm font-extrabold text-primary">
-                    {calculatedPaces.interval} /km
-                  </span>
-                </div>
-
-                <div className="flex flex-col p-2.5 rounded-lg border border-border bg-card/80">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                    Marca Base {targetKm}K (Actual)
-                  </span>
-                  <span className="text-sm font-extrabold text-muted-foreground">
-                    {formatTime(predictedRaceSec)}
-                  </span>
-                </div>
-
-                <div className="flex flex-col p-2.5 rounded-lg border border-primary/40 bg-primary/10">
-                  <span className="text-[10px] uppercase font-bold text-primary">
-                    Meta Estimada ({numWeeks} sem)
-                  </span>
-                  <span className="text-sm font-extrabold text-primary">
-                    ~{formatTime(projectedTargetSec)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between border-t border-border pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="border-border text-muted-foreground"
-                onClick={() => setStep(1)}
-              >
-                Atrás
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setStep(3)}
-                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
-              >
-                <span>Siguiente: Volumen Actual</span>
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* STEP 3: Volumen Actual & Antecedentes */}
-      {step === 3 && (
-        <Card className="p-6 bg-card/90 border-border shadow-card text-white">
-          <CardHeader className="px-0 pt-0">
-            <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
-              <Activity className="size-5 text-primary" />
-              3. Volumen Semanal Actual & Prevención de Lesiones
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 flex flex-col gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex flex-col gap-3">
-                <Label
-                  htmlFor="current-weekly"
-                  className="font-semibold text-muted-foreground"
-                >
-                  Kilometraje Semanal Promedio Actual
-                </Label>
-                <Input
-                  id="current-weekly"
-                  type="number"
-                  min="0"
-                  placeholder="Ej: 25"
-                  value={currentWeeklyKm}
-                  onChange={(e) => {
-                    volumeEdited.current = true
-                    const value = e.target.value
-                    setCurrentWeeklyKm(
-                      value === "" ? "" : Math.max(0, parseInt(value, 10) || 0),
-                    )
-                  }}
-                  className="font-extrabold text-base bg-surface-container-high/80 border-border text-white"
-                />
-                <p className="text-xs text-muted-foreground">
-                  El algoritmo usará este dato para que el volumen de la Semana
-                  1 no supere un incremento del 10-15%.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <Label
-                  htmlFor="longest-run"
-                  className="font-semibold text-muted-foreground"
-                >
-                  Tirada Más Larga Reciente del Último Mes
-                </Label>
-                <Input
-                  id="longest-run"
-                  type="number"
-                  min="0"
-                  placeholder="Ej: 12"
-                  value={longestRunKm}
-                  onChange={(e) => {
-                    longestEdited.current = true
-                    const value = e.target.value
-                    setLongestRunKm(
-                      value === "" ? "" : Math.max(0, parseInt(value, 10) || 0),
-                    )
-                  }}
-                  className="font-extrabold text-base bg-surface-container-high/80 border-border text-white"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Permite escalar la distancia de la tirada larga del fin de
-                  semana progresivamente.
-                </p>
-              </div>
-            </div>
-
-            {/* Confidence & Conservative Mode (Hito 2) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border pt-4">
-              <div className="flex flex-col gap-2">
-                <Label className="font-semibold text-xs text-muted-foreground">
-                  Confianza de los Datos de Entrenamiento (Confidence)
-                </Label>
-                <Select
-                  value={confidence}
-                  onValueChange={(val) => setConfidence(val as any)}
-                >
-                  <SelectTrigger className="bg-surface-container-high/80 border-border text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border text-white">
-                    <SelectItem value="measured">
-                      Medido (GPS / Strava verificado - Carga completa)
-                    </SelectItem>
-                    <SelectItem value="declared">
-                      Declarado (Tengo certeza razonable - Margen 5%)
-                    </SelectItem>
-                    <SelectItem value="estimated">
-                      Estimado (Aproximado / Recuperando hábito - Margen 10%)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex flex-col gap-2 justify-end">
+            {/* Modalidad de la corrida */}
+            <div className="flex flex-col gap-2.5">
+              <span className="font-bold text-sm text-white">
+                Modalidad de carrera
+              </span>
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setConservativeMode(!conservativeMode)}
+                  onClick={() => setTerrain("road")}
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer",
-                    conservativeMode
-                      ? "border-amber-500/60 bg-amber-500/15 text-amber-200"
-                      : "border-border bg-surface-container-high/40 text-muted-foreground hover:bg-surface-container-high",
+                    "h-13 rounded-2xl border font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2",
+                    terrain === "road"
+                      ? "bg-primary text-black border-primary shadow-xs"
+                      : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white hover:bg-surface-container-high",
+                  )}
+                >
+                  <span>Asfalto</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTerrain("trail")}
+                  className={cn(
+                    "h-13 rounded-2xl border font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2",
+                    terrain === "trail"
+                      ? "bg-primary text-black border-primary shadow-xs"
+                      : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white hover:bg-surface-container-high",
+                  )}
+                >
+                  <Mountain className="size-4" />
+                  <span>Trail</span>
+                </button>
+              </div>
+            </div>
+
+            {/* ¿Cuál es tu objetivo? */}
+            <div className="flex flex-col gap-2.5">
+              <span className="font-bold text-sm text-white">
+                ¿Cuál es tu objetivo?
+              </span>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPlanType("race")}
+                  className={cn(
+                    "flex items-center gap-4 p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer",
+                    planType === "race"
+                      ? "bg-primary text-black border-primary shadow-md font-bold"
+                      : "bg-surface-container-high/60 border-border/80 text-white hover:bg-surface-container-high hover:border-border",
                   )}
                 >
                   <div
                     className={cn(
-                      "size-4 rounded border flex items-center justify-center transition-colors",
-                      conservativeMode
-                        ? "bg-amber-500 border-amber-500 text-black"
-                        : "border-border bg-card",
+                      "p-2.5 rounded-xl transition-colors",
+                      planType === "race"
+                        ? "bg-black/10 text-black"
+                        : "bg-card text-muted-foreground",
                     )}
                   >
-                    {conservativeMode && <Check className="size-3 stroke-[3]" />}
+                    <Trophy className="size-6" />
                   </div>
-                  <div className="flex flex-col">
-                    <span className="font-bold text-xs text-white">
-                      Modo Conservador (Prevención de lesiones)
+                  <div className="flex flex-col flex-1">
+                    <span
+                      className={cn(
+                        "text-base font-bold",
+                        planType === "race" ? "text-black" : "text-white",
+                      )}
+                    >
+                      Entrenar para una prueba
                     </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      Inicia con 10% menos de volumen y progresión más pausada
+                    <span
+                      className={cn(
+                        "text-xs mt-0.5",
+                        planType === "race"
+                          ? "text-black/80 font-medium"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      Ciclo de entrenamiento completo.
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPlanType("distance")}
+                  className={cn(
+                    "flex items-center gap-4 p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer",
+                    planType !== "race"
+                      ? "bg-primary text-black border-primary shadow-md font-bold"
+                      : "bg-surface-container-high/60 border-border/80 text-white hover:bg-surface-container-high hover:border-border",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "p-2.5 rounded-xl transition-colors",
+                      planType !== "race"
+                        ? "bg-black/10 text-black"
+                        : "bg-card text-muted-foreground",
+                    )}
+                  >
+                    <Footprints className="size-6" />
+                  </div>
+                  <div className="flex flex-col flex-1">
+                    <span
+                      className={cn(
+                        "text-base font-bold",
+                        planType !== "race" ? "text-black" : "text-white",
+                      )}
+                    >
+                      Solo correr
+                    </span>
+                    <span
+                      className={cn(
+                        "text-xs mt-0.5",
+                        planType !== "race"
+                          ? "text-black/80 font-medium"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      Mantener salud y evolucionar sin prueba.
                     </span>
                   </div>
                 </button>
               </div>
             </div>
 
-            <div className="flex justify-between border-t border-border pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="border-border text-muted-foreground"
-                onClick={() => setStep(2)}
-              >
-                Atrás
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setStep(4)}
-                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
-              >
-                <span>Siguiente: Disponibilidad Semanal</span>
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            {/* Campos condicionales para carrera (idéntico a imagen 2) */}
+            {planType === "race" ? (
+              <div className="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-surface-container-high/40 border border-border/80">
+                {/* Objetivo en la prueba */}
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground">
+                    ¿Cuál es tu objetivo en la prueba?
+                  </Label>
+                  <Select
+                    value={goalType}
+                    onValueChange={(val) => setGoalType(val as any)}
+                  >
+                    <SelectTrigger className="h-12 bg-card border-border text-white rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border text-white">
+                      <SelectItem value="finish">Terminar bien</SelectItem>
+                      <SelectItem value="time">Cumplir un tiempo objetivo</SelectItem>
+                      <SelectItem value="performance">
+                        Buscar récord personal (PB)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-      {/* STEP 4: Disponibilidad Semanal & Tirada Larga */}
-      {step === 4 && (
-        <Card className="p-6 bg-card/90 border-border shadow-card text-white">
-          <CardHeader className="px-0 pt-0">
-            <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
-              <Calendar className="size-5 text-primary" />
-              4. Disponibilidad Semanal & Días de Entrenamiento
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-0 flex flex-col gap-6">
-            {/* Days Selection */}
-            <div className="flex flex-col gap-3">
-              <Label className="font-semibold text-sm text-muted-foreground">
-                Seleccioná los Días en los que Podés Salir a Correr
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                {DAYS_OF_WEEK.map((d) => {
-                  const isSelected = selectedDays.includes(d.id)
-                  return (
-                    <button
-                      key={d.id}
-                      type="button"
-                      onClick={() => toggleDay(d.id)}
-                      className={cn(
-                        "flex flex-col items-center justify-center size-14 rounded-xl border transition-all font-bold text-sm",
-                        isSelected
-                          ? "bg-primary/20 text-primary border-primary/60 shadow-xs"
-                          : "bg-surface-container-high/60 text-muted-foreground border-border hover:bg-surface-container-high hover:text-white",
-                      )}
-                    >
-                      <span>{d.short}</span>
-                      <span className="text-[10px] font-normal opacity-80">
-                        {d.label.slice(0, 3)}
+                {/* Distancia de la carrera */}
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground">
+                    Distancia objetivo
+                  </Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { label: "5K", km: 5 },
+                      { label: "10K", km: 10 },
+                      { label: "21K", km: 21.1 },
+                      { label: "42K", km: 42.2 },
+                    ].map((d) => (
+                      <button
+                        key={d.km}
+                        type="button"
+                        onClick={() => {
+                          setTargetKm(d.km)
+                          setRefDistanceKm(d.km)
+                          setDraft({ ...draft, distance_km: d.km })
+                        }}
+                        className={cn(
+                          "h-11 rounded-xl border text-xs font-bold transition-all cursor-pointer",
+                          targetKm === d.km
+                            ? "bg-primary text-black border-primary shadow-xs"
+                            : "bg-card border-border text-muted-foreground hover:text-white",
+                        )}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Nombre de la prueba */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold text-muted-foreground">
+                      Nombre de la prueba
+                    </Label>
+                    {(racesQuery.data?.data ?? []).length > 0 && (
+                      <span className="text-[11px] text-primary">
+                        o seleccioná de tus carreras abajo
                       </span>
-                    </button>
-                  )
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Seleccionaste {selectedDays.length} días por semana.
-              </p>
-            </div>
-
-            {/* Long Run Day selector */}
-            <div className="flex flex-col gap-3 border-t border-border pt-4">
-              <Label
-                htmlFor="long-run-day"
-                className="font-semibold text-muted-foreground"
-              >
-                Día Preferido para la Tirada Larga (Fondo)
-              </Label>
-              <Select
-                value={longRunDay.toString()}
-                onValueChange={(val) => setLongRunDay(parseInt(val, 10))}
-              >
-                <SelectTrigger
-                  id="long-run-day"
-                  className="w-64 bg-surface-container-high/80 border-border text-white"
-                >
-                  <SelectValue placeholder="Elegí un día" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border text-white">
-                  {selectedDays.length === 0 ? (
-                    <SelectItem value={longRunDay.toString()} disabled>
-                      Seleccioná días de entrenamiento
-                    </SelectItem>
-                  ) : (
-                    [...selectedDays]
-                      .sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b))
-                      .map((dayId) => (
-                        <SelectItem key={dayId} value={dayId.toString()}>
-                          {DAYS_OF_WEEK.find((d) => d.id === dayId)?.label ??
-                            ""}
-                        </SelectItem>
-                      ))
+                    )}
+                  </div>
+                  <Input
+                    placeholder="Ej: Maratón de Buenos Aires"
+                    value={raceName}
+                    onChange={(e) => {
+                      setRaceName(e.target.value)
+                      setDraft({ ...draft, name: e.target.value })
+                    }}
+                    className="h-12 bg-card border-border text-white rounded-xl"
+                  />
+                  {(racesQuery.data?.data ?? []).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {(racesQuery.data?.data ?? []).slice(0, 3).map((r) => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => {
+                            setRaceName(r.event_name)
+                            setDraft({
+                              ...draft,
+                              name: `Plan para ${r.event_name}`,
+                              race_id: r.id,
+                              distance_km: r.distance_km ?? targetKm,
+                            })
+                            if (r.distance_km) setTargetKm(r.distance_km)
+                            if (r.date) {
+                              setRaceDate(r.date)
+                              const start = new Date(
+                                draft.start_date ||
+                                  new Date().toISOString().split("T")[0],
+                              )
+                              const target = new Date(r.date)
+                              const weeks = Math.max(
+                                4,
+                                Math.min(
+                                  24,
+                                  Math.round(
+                                    (target.getTime() - start.getTime()) /
+                                      (7 * 24 * 60 * 60 * 1000),
+                                  ),
+                                ),
+                              )
+                              if (weeks >= 4) setNumWeeks(weeks)
+                            }
+                          }}
+                          className="text-[11px] px-2.5 py-1 rounded-lg bg-surface-container-high border border-border text-muted-foreground hover:text-white cursor-pointer"
+                        >
+                          {r.event_name}
+                        </button>
+                      ))}
+                    </div>
                   )}
-                </SelectContent>
-              </Select>
-            </div>
+                </div>
 
-            {/* Week start day selector */}
-            <div className="flex flex-col gap-3 border-t border-border pt-4">
-              <Label
-                htmlFor="week-start-day"
-                className="font-semibold text-muted-foreground"
-              >
-                Día de Inicio de Semana
-              </Label>
-              <Select
-                value={draft.week_start_day.toString()}
-                onValueChange={(val) =>
-                  setDraft({ ...draft, week_start_day: parseInt(val, 10) })
-                }
-              >
-                <SelectTrigger
-                  id="week-start-day"
-                  className="w-64 bg-surface-container-high/80 border-border text-white"
-                >
-                  <SelectValue placeholder="Elegí un día" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border text-white">
-                  {WEEK_START_DAY_OPTIONS.map((d) => (
-                    <SelectItem key={d.value} value={d.value.toString()}>
-                      {d.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Las semanas se alinean a este día: la semana 1 arranca en el
-                inicio de semana que contiene la fecha de inicio del plan.
-              </p>
-            </div>
+                {/* Fecha de la prueba */}
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground">
+                    Fecha de la prueba
+                  </Label>
+                  <Input
+                    type="date"
+                    value={raceDate}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setRaceDate(val)
+                      if (val) {
+                        const start = new Date(
+                          draft.start_date ||
+                            new Date().toISOString().split("T")[0],
+                        )
+                        const target = new Date(val)
+                        const weeks = Math.max(
+                          4,
+                          Math.min(
+                            24,
+                            Math.round(
+                              (target.getTime() - start.getTime()) /
+                                (7 * 24 * 60 * 60 * 1000),
+                            ),
+                          ),
+                        )
+                        if (weeks >= 4) setNumWeeks(weeks)
+                      }
+                    }}
+                    className="h-12 bg-card border-border text-white rounded-xl"
+                  />
+                  {raceDate && (
+                    <span className="text-xs text-muted-foreground mt-0.5">
+                      Duración estimada calculada: {numWeeks} semanas de ciclo.
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Solo correr: distancia a dominar y duración del ciclo */
+              <div className="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-surface-container-high/40 border border-border/80">
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground">
+                    Distancia que querés alcanzar o dominar
+                  </Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: "5K", km: 5 },
+                      { label: "10K", km: 10 },
+                      { label: "21K", km: 21.1 },
+                    ].map((d) => (
+                      <button
+                        key={d.km}
+                        type="button"
+                        onClick={() => {
+                          setTargetKm(d.km)
+                          setDraft({ ...draft, distance_km: d.km })
+                        }}
+                        className={cn(
+                          "h-11 rounded-xl border text-xs font-bold transition-all cursor-pointer",
+                          targetKm === d.km
+                            ? "bg-primary text-black border-primary shadow-xs"
+                            : "bg-card border-border text-muted-foreground hover:text-white",
+                        )}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            <div className="flex justify-between border-t border-border pt-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground">
+                    Duración del ciclo
+                  </Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[8, 12, 16].map((w) => (
+                      <button
+                        key={w}
+                        type="button"
+                        onClick={() => setNumWeeks(w)}
+                        className={cn(
+                          "h-11 rounded-xl border text-xs font-bold transition-all cursor-pointer",
+                          numWeeks === w
+                            ? "bg-primary text-black border-primary shadow-xs"
+                            : "bg-card border-border text-muted-foreground hover:text-white",
+                        )}
+                      >
+                        {w} Semanas
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Botones de acción */}
+            <div className="flex flex-col gap-2.5 mt-2">
               <Button
                 type="button"
-                variant="outline"
-                className="border-border text-muted-foreground"
                 onClick={() => setStep(3)}
+                className="w-full h-14 rounded-2xl bg-white text-black hover:bg-neutral-200 font-bold text-base cursor-pointer shadow-card"
               >
-                Atrás
+                Continuar
               </Button>
               <Button
                 type="button"
-                onClick={() => setStep(5)}
-                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+                variant="ghost"
+                onClick={() => setStep(1)}
+                className="text-xs text-muted-foreground hover:text-white cursor-pointer"
               >
-                <span>Siguiente: Resumen & Algoritmo</span>
-                <ChevronRight className="size-4" />
+                Atrás
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* STEP 5: Resumen & Motor Algorítmico */}
-      {step === 5 && (
-        <Card className="p-6 border-primary/40 bg-card/90 shadow-card text-white">
-          <CardHeader className="px-0 pt-0">
-            <CardTitle className="text-xl font-extrabold flex items-center gap-2 text-white">
-              <Sparkles className="size-6 text-primary animate-pulse" />
-              5. Generar Plan Completo con Algoritmo
-            </CardTitle>
+      {/* STEP 3: Disponibilidade (3-criar-treino-disponibilidade.png) */}
+      {step === 3 && (
+        <Card className="max-w-xl mx-auto w-full p-6 sm:p-8 bg-card border-border/80 shadow-card rounded-3xl">
+          <CardHeader className="px-0 pt-0 pb-6">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Disponibilidad
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Definí tu rutina de entrenamientos.
+            </p>
           </CardHeader>
+
           <CardContent className="px-0 flex flex-col gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 rounded-xl bg-surface-container-high/60 border border-border">
+            {/* Días en los que entrenarás */}
+            <div className="flex flex-col gap-2.5">
               <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground">
-                  Distancia & Bloque
+                <span className="font-bold text-sm text-white">
+                  ¿En qué días vas a entrenar?
                 </span>
-                <span className="font-extrabold text-white">
-                  {formatDistance(targetKm)} en {numWeeks} Semanas
+                <span className="text-xs text-muted-foreground mt-0.5">
+                  Recomendamos de 3 a 4 días por semana.
                 </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground">
-                  Puntaje VDOT & Ritmos
-                </span>
-                <span className="font-extrabold text-primary">
-                  VDOT {calculatedVdot} ({calculatedPaces.easyMin} -{" "}
-                  {calculatedPaces.threshold}/km)
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground">
-                  Días Semanales
-                </span>
-                <span className="font-extrabold text-white">
-                  {selectedDays.length} días/sem (Fondo:{" "}
-                  {DAYS_OF_WEEK.find((d) => d.id === longRunDay)?.label})
-                </span>
+
+              {/* Grid 4 + 3 idéntica a Paccer imagen 3 */}
+              <div className="flex flex-col gap-2.5">
+                <div className="grid grid-cols-4 gap-2.5">
+                  {[
+                    { id: 1, label: "Lun" },
+                    { id: 2, label: "Mar" },
+                    { id: 3, label: "Mié" },
+                    { id: 4, label: "Jue" },
+                  ].map((d) => {
+                    const isSelected = selectedDays.includes(d.id)
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => toggleDay(d.id)}
+                        className={cn(
+                          "h-14 rounded-2xl border font-bold text-base transition-all duration-200 cursor-pointer flex items-center justify-center",
+                          isSelected
+                            ? "bg-primary text-black border-primary shadow-xs"
+                            : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white hover:bg-surface-container-high",
+                        )}
+                      >
+                        {d.label}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div className="grid grid-cols-4 gap-2.5">
+                  {[
+                    { id: 5, label: "Vie" },
+                    { id: 6, label: "Sáb" },
+                    { id: 0, label: "Dom" },
+                  ].map((d) => {
+                    const isSelected = selectedDays.includes(d.id)
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => toggleDay(d.id)}
+                        className={cn(
+                          "h-14 rounded-2xl border font-bold text-base transition-all duration-200 cursor-pointer flex items-center justify-center",
+                          isSelected
+                            ? "bg-primary text-black border-primary shadow-xs"
+                            : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white hover:bg-surface-container-high",
+                        )}
+                      >
+                        {d.label}
+                      </button>
+                    )
+                  })}
+                  {/* Cuarto espacio libre para mantener alineación Paccer */}
+                  <div className="hidden sm:block" />
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col items-center gap-3 py-6 text-center">
+            {/* Día de entrenamiento largo (reactivo a selectedDays) */}
+            <div className="flex flex-col gap-2.5 pt-2">
+              <span className="font-bold text-sm text-white">
+                ¿Cuál es el día de tu entrenamiento largo?
+              </span>
+              <div className="flex flex-wrap gap-2.5">
+                {selectedDays.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    Seleccioná al menos un día arriba primero.
+                  </p>
+                ) : (
+                  [...selectedDays]
+                    .sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b))
+                    .map((dayId) => {
+                      const dayObj = DAYS_OF_WEEK.find((d) => d.id === dayId)
+                      const isLong = longRunDay === dayId
+                      return (
+                        <button
+                          key={dayId}
+                          type="button"
+                          onClick={() => setLongRunDay(dayId)}
+                          className={cn(
+                            "px-5 h-12 rounded-xl border font-bold text-sm transition-all duration-200 cursor-pointer",
+                            isLong
+                              ? "bg-primary text-black border-primary shadow-xs"
+                              : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white",
+                          )}
+                        >
+                          {dayObj?.short || ""}
+                        </button>
+                      )
+                    })
+                )}
+              </div>
+            </div>
+
+            {/* Cuándo comenzás */}
+            <div className="flex flex-col gap-1.5 pt-2">
+              <Label className="text-xs font-semibold text-muted-foreground">
+                ¿Cuándo comenzás?
+              </Label>
+              <Input
+                type="date"
+                value={draft.start_date}
+                onChange={(e) =>
+                  setDraft({ ...draft, start_date: e.target.value })
+                }
+                className="h-12 bg-card border-border text-white rounded-xl"
+              />
+            </div>
+
+            {/* Nota legal / descriptiva */}
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              Al crear tu plan de entrenamiento, nuestro motor algorítmico
+              calculará tus fases, ritmos exactos y cargas de forma equilibrada.
+            </p>
+
+            {/* Botones de acción */}
+            <div className="flex flex-col gap-2.5 mt-2">
               <Button
                 type="button"
                 onClick={handleGeneratePlan}
-                className="w-full max-w-md bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-sm sm:text-base px-4 py-5 rounded-2xl shadow-card transition-all gap-3 cursor-pointer"
+                disabled={generateDraftMutation.isPending}
+                className="w-full h-14 rounded-2xl bg-white text-black hover:bg-neutral-200 font-bold text-base cursor-pointer shadow-card gap-2"
               >
-                <Wand2 className="size-6 shrink-0" />
-                <span className="whitespace-normal text-center">
-                  ⚡ Ejecutar Algoritmo & Generar Plan Estructurado
-                </span>
+                {generateDraftMutation.isPending ? (
+                  <>
+                    <Loader2 className="size-5 animate-spin" />
+                    <span>Creando tu plan estructurado...</span>
+                  </>
+                ) : (
+                  <span>Crear mi plan de entrenamiento</span>
+                )}
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Cada sesión del plan se creará con sus bloques exactos de
-                calentamiento, ritmos objetivo, repeticiones y enfriamiento.
-              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setStep(2)}
+                className="text-xs text-muted-foreground hover:text-white cursor-pointer"
+              >
+                Atrás
+              </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* STEP 6: Editor Unificado & Vista Previa */}
-      {step === 6 && (
+      {/* STEP 4: Plan Generado & Activación / Editor */}
+      {step === 4 && (
         <div className="flex flex-col gap-6">
           {/* Validation Warnings / Algorithmic Feedback (Hito 2) */}
           {warnings.length > 0 && (
@@ -2052,6 +2113,83 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
             </div>
           )}
 
+          {/* Plan Summary Hero Card */}
+          <Card className="p-6 bg-card border-border/80 shadow-card rounded-3xl text-white">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
+              <div className="flex flex-col gap-1 flex-1">
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                  Plan generado exitosamente
+                </span>
+                <Input
+                  value={draft.name}
+                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                  placeholder="Nombre de tu plan"
+                  className="text-lg sm:text-xl font-extrabold bg-surface-container-high/60 border-border text-white h-11 rounded-xl px-3"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isPending}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-card gap-2 h-12 px-6 rounded-2xl cursor-pointer"
+                >
+                  {isPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Check className="size-4 stroke-[3]" />
+                  )}
+                  <span>{editId ? "Guardar Cambios" : "Guardar y Activar Plan"}</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4">
+              <div className="flex flex-col p-3 rounded-xl bg-surface-container-high/50 border border-border/60">
+                <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                  Distancia Objetivo
+                </span>
+                <span className="text-base font-extrabold text-white">
+                  {formatDistance(targetKm)}
+                </span>
+              </div>
+              <div className="flex flex-col p-3 rounded-xl bg-surface-container-high/50 border border-border/60">
+                <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                  Duración
+                </span>
+                <span className="text-base font-extrabold text-white">
+                  {draft.phases.reduce((acc, p) => acc + p.weeks.length, 0) || numWeeks} Semanas
+                </span>
+              </div>
+              <div className="flex flex-col p-3 rounded-xl bg-surface-container-high/50 border border-border/60">
+                <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                  Frecuencia
+                </span>
+                <span className="text-base font-extrabold text-white">
+                  {selectedDays.length} días/sem
+                </span>
+              </div>
+              <div className="flex flex-col p-3 rounded-xl bg-surface-container-high/50 border border-border/60">
+                <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                  Ritmo Rodaje
+                </span>
+                <span className="text-base font-extrabold text-primary font-mono">
+                  {calculatedPaces.easyMin}/km
+                </span>
+              </div>
+              <div className="flex flex-col p-3 rounded-xl bg-surface-container-high/50 border border-border/60">
+                <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                  Meta Estimada
+                </span>
+                <span className="text-base font-extrabold text-primary font-mono">
+                  ~{formatTime(projectedTargetSec)}
+                </span>
+              </div>
+            </div>
+          </Card>
+
           {/* Weekly Volume Chart */}
           <Card className="p-4 bg-card/90 border-border shadow-card text-white">
             <CardHeader className="p-0 pb-3 flex flex-row items-center justify-between">
@@ -2063,7 +2201,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                 variant="outline"
                 className="text-xs font-bold border-primary/30 text-primary"
               >
-                VDOT {calculatedVdot} ·{" "}
+                VDOT {calculatedVdot || 35} ·{" "}
                 {draft.phases.reduce((acc, p) => acc + p.weeks.length, 0)}{" "}
                 Semanas
               </Badge>
@@ -2096,8 +2234,31 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
             </CardContent>
           </Card>
 
+          {/* Toggle Button for Detailed Blocks Editor */}
+          <div className="flex items-center justify-between border-t border-border pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowFullEditor(!showFullEditor)}
+              className="gap-2 border-border text-white hover:bg-surface-container-high rounded-xl cursor-pointer"
+            >
+              <SlidersHorizontal className="size-4" />
+              <span>
+                {showFullEditor
+                  ? "Ocultar editor detallado de sesiones"
+                  : "Personalizar fases, sesiones y bloques en detalle"}
+              </span>
+              {showFullEditor ? (
+                <ChevronUp className="size-4" />
+              ) : (
+                <ChevronDown className="size-4" />
+              )}
+            </Button>
+          </div>
+
           {/* Phases & Weeks Unified Editor */}
-          <div className="flex flex-col gap-4">
+          {showFullEditor && (
+            <div className="flex flex-col gap-4">
             {draft.phases.map((phase, pIdx) => {
               const phaseColor =
                 PHASE_COLORS[phase.color as PhaseColor] ?? PHASE_COLORS.emerald
@@ -2287,16 +2448,17 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                 </div>
               )
             })}
-          </div>
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row justify-between gap-2 pt-4">
             <Button
               type="button"
               variant="outline"
               className="w-full sm:w-auto border-border text-muted-foreground"
-              onClick={() => setStep(5)}
+              onClick={() => setStep(3)}
             >
-              Volver al Cuestionario
+              Volver al Asistente
             </Button>
             <Button
               type="button"
