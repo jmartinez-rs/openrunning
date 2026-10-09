@@ -1,0 +1,639 @@
+{
+  "name": "Test Draft",
+  "goal": "Completar 5 km en 0:00 (--:--/km)",
+  "distance_km": 5,
+  "distance_unit": "km",
+  "target_time_seconds": 0,
+  "target_pace_seconds_per_km": 0,
+  "start_date": "2026-01-01",
+  "end_date": "2026-02-08",
+  "week_start_day": 1,
+  "status": "active",
+  "race_id": null,
+  "notes": "",
+  "phases": [
+    {
+      "position": 1,
+      "name": "Fase Base Aeróbica",
+      "color": "emerald",
+      "start_week": 1,
+      "end_week": 2,
+      "objective": "Rodajes suaves a ritmo --:-----:-- min/km y adaptación neuromuscular",
+      "description": "",
+      "weeks": [
+        {
+          "number": 1,
+          "start_date": "2025-12-29",
+          "end_date": "2026-01-04",
+          "name": "",
+          "objective": "Volumen semana: ~0 km",
+          "notes": "",
+          "workouts": []
+        },
+        {
+          "number": 2,
+          "start_date": "2026-01-05",
+          "end_date": "2026-01-11",
+          "name": "",
+          "objective": "Volumen semana: ~10 km",
+          "notes": "",
+          "workouts": [
+            {
+              "date": "2026-01-05",
+              "type": "easy_run",
+              "name": "Rodaje Suave Corto",
+              "objective": "Rodaje Suave Corto (5 km @ 5:30/km)",
+              "distance_km": 5,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 330,
+              "intensity": "easy",
+              "description": "",
+              "notes": "",
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 340,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Trote inicial"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 3000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 330,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Ritmo Z2 aeróbico conversacional"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 340,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Soltura"
+                }
+              ]
+            },
+            {
+              "date": "2026-01-07",
+              "type": "long_run",
+              "name": "Tirada Larga de Fondo (5 km)",
+              "objective": "Tirada Larga de Fondo (5 km) (5 km @ 5:45/km)",
+              "distance_km": 5,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 345,
+              "intensity": "moderate",
+              "description": "",
+              "notes": "",
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": 2000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 345,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Entrada en calor suave"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 2000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 345,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Ritmo cómodo conversacional"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 350,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Afloje final"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "position": 2,
+      "name": "Fase Construcción & Tempo",
+      "color": "amber",
+      "start_week": 3,
+      "end_week": 4,
+      "objective": "Series a ritmo umbral (--:-- min/km) e incremento controlado de carga",
+      "description": "",
+      "weeks": [
+        {
+          "number": 3,
+          "start_date": "2026-01-12",
+          "end_date": "2026-01-18",
+          "name": "",
+          "objective": "Volumen semana: ~10,1 km",
+          "notes": "",
+          "workouts": [
+            {
+              "date": "2026-01-12",
+              "type": "easy_run",
+              "name": "Rodaje Suave Corto",
+              "objective": "Rodaje Suave Corto (5,1 km @ 5:30/km)",
+              "distance_km": 5.1,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 330,
+              "intensity": "easy",
+              "description": "",
+              "notes": "",
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 340,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Trote inicial"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 3099.9999999999995,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 330,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Ritmo Z2 aeróbico conversacional"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 340,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Soltura"
+                }
+              ]
+            },
+            {
+              "date": "2026-01-14",
+              "type": "long_run",
+              "name": "Tirada Larga de Fondo (5 km)",
+              "objective": "Tirada Larga de Fondo (5 km) (5 km @ 5:45/km)",
+              "distance_km": 5,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 345,
+              "intensity": "moderate",
+              "description": "",
+              "notes": "",
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": 2000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 345,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Entrada en calor suave"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 2000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 345,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Ritmo cómodo conversacional"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 350,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Afloje final"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "start_date": "2026-01-19",
+          "end_date": "2026-01-25",
+          "name": "",
+          "objective": "Volumen semana: ~10,3 km",
+          "notes": "",
+          "workouts": [
+            {
+              "date": "2026-01-19",
+              "type": "easy_run",
+              "name": "Rodaje Suave Corto",
+              "objective": "Rodaje Suave Corto (5,3 km @ 5:30/km)",
+              "distance_km": 5.3,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 330,
+              "intensity": "easy",
+              "description": "",
+              "notes": "",
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 340,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Trote inicial"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 3300,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 330,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Ritmo Z2 aeróbico conversacional"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 340,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Soltura"
+                }
+              ]
+            },
+            {
+              "date": "2026-01-21",
+              "type": "long_run",
+              "name": "Tirada Larga de Fondo (5 km)",
+              "objective": "Tirada Larga de Fondo (5 km) (5 km @ 5:45/km)",
+              "distance_km": 5,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 345,
+              "intensity": "moderate",
+              "description": "",
+              "notes": "",
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": 2000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 345,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Entrada en calor suave"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 2000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 345,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Ritmo cómodo conversacional"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 350,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Afloje final"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "position": 3,
+      "name": "Fase Pico & Intervalos VO2",
+      "color": "violet",
+      "start_week": 5,
+      "end_week": 5,
+      "objective": "Intervalos de velocidad (--:-- min/km) y fondos largos máximos",
+      "description": "",
+      "weeks": [
+        {
+          "number": 5,
+          "start_date": "2026-01-26",
+          "end_date": "2026-02-01",
+          "name": "",
+          "objective": "Volumen semana: ~10,5 km",
+          "notes": "",
+          "workouts": [
+            {
+              "date": "2026-01-26",
+              "type": "easy_run",
+              "name": "Rodaje Suave Corto",
+              "objective": "Rodaje Suave Corto (5,5 km @ 5:30/km)",
+              "distance_km": 5.5,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 330,
+              "intensity": "easy",
+              "description": "",
+              "notes": "",
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 340,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Trote inicial"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 3500,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 330,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Ritmo Z2 aeróbico conversacional"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 340,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Soltura"
+                }
+              ]
+            },
+            {
+              "date": "2026-01-28",
+              "type": "long_run",
+              "name": "Tirada Larga de Fondo (5 km)",
+              "objective": "Tirada Larga de Fondo (5 km) (5 km @ 5:45/km)",
+              "distance_km": 5,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 345,
+              "intensity": "moderate",
+              "description": "",
+              "notes": "",
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": 2000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 345,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Entrada en calor suave"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 2000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 345,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Ritmo cómodo conversacional"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 350,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Afloje final"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "position": 4,
+      "name": "Fase Tapering & Carrera",
+      "color": "sky",
+      "start_week": 6,
+      "end_week": 6,
+      "objective": "Descarga de volumen (-40%), afinamiento de ritmo y día del objetivo",
+      "description": "",
+      "weeks": [
+        {
+          "number": 6,
+          "start_date": "2026-02-02",
+          "end_date": "2026-02-08",
+          "name": "",
+          "objective": "Volumen semana: ~10,7 km",
+          "notes": "",
+          "workouts": [
+            {
+              "date": "2026-02-02",
+              "type": "easy_run",
+              "name": "Rodaje Suave Corto",
+              "objective": "Rodaje Suave Corto (5,7 km @ 5:30/km)",
+              "distance_km": 5.7,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 330,
+              "intensity": "easy",
+              "description": "",
+              "notes": "",
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 340,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Trote inicial"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 3700,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 330,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Ritmo Z2 aeróbico conversacional"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 340,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Soltura"
+                }
+              ]
+            },
+            {
+              "date": "2026-02-04",
+              "type": "race",
+              "name": "Día de Carrera Objetivo (5 km)",
+              "objective": "Día de Carrera Objetivo (5 km) (5 km @ --:--/km)",
+              "distance_km": 5,
+              "duration_seconds": null,
+              "pace_seconds_per_km": 0,
+              "intensity": "hard",
+              "description": "",
+              "notes": "",
+              "cancelled": false,
+              "status_override": null,
+              "blocks": [
+                {
+                  "position": 1,
+                  "block_type": "warmup",
+                  "repeats": 1,
+                  "distance_m": 2000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 345,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Entrada en calor suave"
+                },
+                {
+                  "position": 2,
+                  "block_type": "main",
+                  "repeats": 1,
+                  "distance_m": 2000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 345,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Ritmo cómodo conversacional"
+                },
+                {
+                  "position": 3,
+                  "block_type": "cooldown",
+                  "repeats": 1,
+                  "distance_m": 1000,
+                  "duration_seconds": null,
+                  "pace_seconds_per_km": 350,
+                  "pace_range_end_seconds_per_km": null,
+                  "recovery_seconds": null,
+                  "recovery_type": "jog",
+                  "notes": "Afloje final"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

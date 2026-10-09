@@ -709,6 +709,43 @@ export const ActivityUpdateSchema = {
     title: 'ActivityUpdate'
 } as const;
 
+export const AthleteBaselineSchema = {
+    properties: {
+        weekly_km: {
+            '$ref': '#/components/schemas/BaselineData'
+        },
+        longest_run_km: {
+            '$ref': '#/components/schemas/BaselineData'
+        },
+        vdot: {
+            '$ref': '#/components/schemas/BaselineData'
+        },
+        runs_per_week: {
+            '$ref': '#/components/schemas/BaselineData'
+        }
+    },
+    type: 'object',
+    required: ['weekly_km', 'longest_run_km', 'vdot', 'runs_per_week'],
+    title: 'AthleteBaseline'
+} as const;
+
+export const BaselineDataSchema = {
+    properties: {
+        value: {
+            type: 'number',
+            title: 'Value'
+        },
+        confidence: {
+            type: 'string',
+            enum: ['measured', 'declared', 'estimated'],
+            title: 'Confidence'
+        }
+    },
+    type: 'object',
+    required: ['value', 'confidence'],
+    title: 'BaselineData'
+} as const;
+
 export const Body_activities_upload_activity_fileSchema = {
     properties: {
         file: {
@@ -1252,6 +1289,72 @@ export const PhaseInSchema = {
     type: 'object',
     required: ['name', 'start_week', 'end_week'],
     title: 'PhaseIn'
+} as const;
+
+export const PlanGeneratorConfigSchema = {
+    properties: {
+        plan_type: {
+            type: 'string',
+            title: 'Plan Type',
+            description: "Tipo de plan, ej: 'race', 'fitness'",
+            default: 'race'
+        },
+        target_km: {
+            type: 'number',
+            minimum: 0,
+            title: 'Target Km'
+        },
+        num_weeks: {
+            type: 'integer',
+            maximum: 24,
+            minimum: 4,
+            title: 'Num Weeks'
+        },
+        start_date: {
+            type: 'string',
+            format: 'date',
+            title: 'Start Date'
+        },
+        week_start_day: {
+            type: 'integer',
+            maximum: 7,
+            minimum: 1,
+            title: 'Week Start Day',
+            default: 1
+        },
+        selected_days: {
+            items: {
+                type: 'integer'
+            },
+            type: 'array',
+            title: 'Selected Days'
+        },
+        long_run_day: {
+            type: 'integer',
+            maximum: 6,
+            minimum: 0,
+            title: 'Long Run Day',
+            default: 0
+        },
+        race_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Race Id'
+        },
+        baseline: {
+            '$ref': '#/components/schemas/AthleteBaseline'
+        }
+    },
+    type: 'object',
+    required: ['target_km', 'num_weeks', 'start_date', 'baseline'],
+    title: 'PlanGeneratorConfig'
 } as const;
 
 export const PrivateUserCreateSchema = {

@@ -843,6 +843,10 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
 
   // Questionnaire / Onboarding state (wizard style)
   const [planType, setPlanType] = useState<string>("race")
+  const [goalType, setGoalType] = useState<"finish" | "time" | "performance">("finish")
+  const [confidence, setConfidence] = useState<"measured" | "declared" | "estimated">("measured")
+  const [conservativeMode, setConservativeMode] = useState<boolean>(false)
+  const [warnings, setWarnings] = useState<Array<{ code: string; severity: string; message: string }>>([])
   const [targetKm, setTargetKm] = useState<number>(21.1)
   const [numWeeks, setNumWeeks] = useState<number>(12)
   const [userLevel, setUserLevel] = useState<string>("intermediate")
@@ -956,6 +960,14 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
     [refDistanceKm, refTimeSeconds, targetKm],
   )
 
+  // Projected finish time after completing the training block (~2% to 5% gain)
+  const projectedTargetSec = useMemo(() => {
+    if (!predictedRaceSec) return 0
+    const factor =
+      goalType === "performance" ? 0.94 : goalType === "time" ? 0.96 : 0.98
+    return Math.round(predictedRaceSec * factor)
+  }, [predictedRaceSec, goalType])
+
   // Fetch plan if in edit mode
   const editQuery = useQuery({
     queryKey: ["running-plan", editId ?? ""],
@@ -1029,29 +1041,78 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
     }
   }
 
+  const generateDraftMutation = useMutation({
+    mutationFn: async () => {
+      const todayIso = new Date().toISOString().split("T")[0]
+      const payload = {
+        plan_type: planType,
+        goal_type: goalType,
+        target_km: targetKm,
+        target_time_seconds: refTimeSeconds > 0 ? refTimeSeconds : null,
+        num_weeks: numWeeks,
+        start_date: todayIso,
+        week_start_day: 1,
+        selected_days: selectedDays.map((d) => (d === 0 ? 7 : d)),
+        long_run_day: longRunDay === 0 ? 7 : longRunDay,
+        baseline: {
+          weekly_km: {
+            value: currentWeeklyKm === "" ? 20.0 : Number(currentWeeklyKm),
+            confidence: confidence,
+          },
+          longest_run_km: {
+            value: longestRunKm === "" ? 8.0 : Number(longestRunKm),
+            confidence: confidence,
+          },
+          vdot: {
+            value: calculatedVdot || 35.0,
+            confidence: confidence,
+          },
+          runs_per_week: {
+            value: selectedDays.length || 4,
+            confidence: confidence,
+          },
+        },
+        confidence: confidence,
+        conservative_mode: conservativeMode,
+      }
+      return RunningPlansService.generateDraft({ requestBody: payload as any })
+    },
+    onSuccess: (res: any) => {
+      if (res?.draft) {
+        setDraft(publicToDraft(res.draft as any))
+        setWarnings(res.warnings || [])
+      } else {
+        setDraft(publicToDraft(res as any))
+      }
+      showSuccessToast("¡Motor V2 ejecutado! Plan generado con periodización y descargas.")
+      setStep(6)
+    },
+    onError: () => {
+      const generated = generatePlanStructure({
+        draft,
+        planType,
+        targetKm,
+        numWeeks,
+        userLevel,
+        refDistanceKm,
+        refTimeSeconds,
+        currentWeeklyKm: currentWeeklyKm === "" ? 0 : currentWeeklyKm,
+        longestRunKm: longestRunKm === "" ? 0 : longestRunKm,
+        selectedDays,
+        longRunDay,
+      })
+      setDraft(generated)
+      showSuccessToast("Plan generado localmente.")
+      setStep(6)
+    },
+  })
+
   const handleGeneratePlan = () => {
     if (selectedDays.length === 0) {
       showErrorToast("Seleccioná al menos 1 día de entrenamiento")
       return
     }
-
-    const generated = generatePlanStructure({
-      draft,
-      planType,
-      targetKm,
-      numWeeks,
-      userLevel,
-      refDistanceKm,
-      refTimeSeconds,
-      currentWeeklyKm: currentWeeklyKm === "" ? 0 : currentWeeklyKm,
-      longestRunKm: longestRunKm === "" ? 0 : longestRunKm,
-      selectedDays,
-      longRunDay,
-    })
-
-    setDraft(generated)
-    showSuccessToast("¡Algoritmo ejecutado! Plan generado con bloques exactos.")
-    setStep(6) // Jump to Unified Editor & Preview
+    generateDraftMutation.mutate()
   }
 
   // Weekly Km chart stats for Unified Editor
@@ -1234,6 +1295,47 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               </div>
             </div>
 
+            {/* Goal Type selection (Hito 2) */}
+            <div className="flex flex-col gap-3 border-t border-border pt-4">
+              <Label className="font-semibold text-xs text-muted-foreground">
+                Enfoque del Objetivo (Goal Type)
+              </Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  {
+                    id: "finish",
+                    title: "Completar Distancia",
+                    desc: "Cruzar la meta con solidez y buenas sensaciones",
+                  },
+                  {
+                    id: "time",
+                    title: "Buscar Tiempo",
+                    desc: "Alcanzar una marca personal o ritmo objetivo",
+                  },
+                  {
+                    id: "performance",
+                    title: "Alto Rendimiento",
+                    desc: "Exprimir potencial con bloques de máxima exigencia",
+                  },
+                ].map((g) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setGoalType(g.id as any)}
+                    className={cn(
+                      "flex flex-col gap-1 p-3 rounded-xl border text-left transition-all cursor-pointer",
+                      goalType === g.id
+                        ? "border-primary/60 bg-primary/15 text-primary ring-1 ring-primary/40 font-bold"
+                        : "border-border bg-surface-container-high/40 text-muted-foreground hover:bg-surface-container-high",
+                    )}
+                  >
+                    <span className="font-bold text-xs text-white">{g.title}</span>
+                    <span className="text-[11px] text-muted-foreground">{g.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Distance Target Selection */}
             <div className="flex flex-col gap-3 border-t border-border pt-4">
               <Label className="font-semibold text-xs text-muted-foreground">
@@ -1253,6 +1355,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                     type="button"
                     onClick={() => {
                       setTargetKm(d.km)
+                      setRefDistanceKm(d.km)
                       setDraft({ ...draft, distance_km: d.km })
                     }}
                     className={cn(
@@ -1507,7 +1610,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                   variant="outline"
                   className="text-xs border-primary/40 text-primary"
                 >
-                  {refDistanceKm}K en {formatTime(refTimeSeconds)}
+                  Ref: {refDistanceKm}K en {formatTime(refTimeSeconds)} → Obj: {targetKm}K
                 </Badge>
               </div>
 
@@ -1541,10 +1644,19 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
 
                 <div className="flex flex-col p-2.5 rounded-lg border border-border bg-card/80">
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                    Objetivo {targetKm}K (Riegel)
+                    Marca Base {targetKm}K (Actual)
+                  </span>
+                  <span className="text-sm font-extrabold text-muted-foreground">
+                    {formatTime(predictedRaceSec)}
+                  </span>
+                </div>
+
+                <div className="flex flex-col p-2.5 rounded-lg border border-primary/40 bg-primary/10">
+                  <span className="text-[10px] uppercase font-bold text-primary">
+                    Meta Estimada ({numWeeks} sem)
                   </span>
                   <span className="text-sm font-extrabold text-primary">
-                    {formatTime(predictedRaceSec)}
+                    ~{formatTime(projectedTargetSec)}
                   </span>
                 </div>
               </div>
@@ -1637,6 +1749,66 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                   Permite escalar la distancia de la tirada larga del fin de
                   semana progresivamente.
                 </p>
+              </div>
+            </div>
+
+            {/* Confidence & Conservative Mode (Hito 2) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border pt-4">
+              <div className="flex flex-col gap-2">
+                <Label className="font-semibold text-xs text-muted-foreground">
+                  Confianza de los Datos de Entrenamiento (Confidence)
+                </Label>
+                <Select
+                  value={confidence}
+                  onValueChange={(val) => setConfidence(val as any)}
+                >
+                  <SelectTrigger className="bg-surface-container-high/80 border-border text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border text-white">
+                    <SelectItem value="measured">
+                      Medido (GPS / Strava verificado - Carga completa)
+                    </SelectItem>
+                    <SelectItem value="declared">
+                      Declarado (Tengo certeza razonable - Margen 5%)
+                    </SelectItem>
+                    <SelectItem value="estimated">
+                      Estimado (Aproximado / Recuperando hábito - Margen 10%)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setConservativeMode(!conservativeMode)}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer",
+                    conservativeMode
+                      ? "border-amber-500/60 bg-amber-500/15 text-amber-200"
+                      : "border-border bg-surface-container-high/40 text-muted-foreground hover:bg-surface-container-high",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "size-4 rounded border flex items-center justify-center transition-colors",
+                      conservativeMode
+                        ? "bg-amber-500 border-amber-500 text-black"
+                        : "border-border bg-card",
+                    )}
+                  >
+                    {conservativeMode && <Check className="size-3 stroke-[3]" />}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-xs text-white">
+                      Modo Conservador (Prevención de lesiones)
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Inicia con 10% menos de volumen y progresión más pausada
+                    </span>
+                  </div>
+                </button>
               </div>
             </div>
 
@@ -1860,6 +2032,26 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
       {/* STEP 6: Editor Unificado & Vista Previa */}
       {step === 6 && (
         <div className="flex flex-col gap-6">
+          {/* Validation Warnings / Algorithmic Feedback (Hito 2) */}
+          {warnings.length > 0 && (
+            <div className="flex flex-col gap-2 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-200 shadow-card">
+              <div className="flex items-center gap-2 font-bold text-sm text-amber-300">
+                <Sparkles className="size-4" />
+                Observaciones del Validador Algorítmico ({warnings.length})
+              </div>
+              <ul className="flex flex-col gap-1.5 pl-4 list-disc text-xs text-amber-100/90">
+                {warnings.map((w, idx) => (
+                  <li key={idx}>
+                    <span className="font-semibold uppercase text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30 mr-1.5">
+                      {w.severity}
+                    </span>
+                    {w.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Weekly Volume Chart */}
           <Card className="p-4 bg-card/90 border-border shadow-card text-white">
             <CardHeader className="p-0 pb-3 flex flex-row items-center justify-between">
