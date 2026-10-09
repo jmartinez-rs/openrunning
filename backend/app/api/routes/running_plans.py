@@ -14,6 +14,8 @@ from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     Activity,
     ActivityCardio,
+    PlanDraftResponse,
+    PlanGeneratorConfig,
     Race,
     RunningPhase,
     RunningPlan,
@@ -30,9 +32,11 @@ from app.models import (
     WorkoutBlockPublic,
     WorkoutDuplicateIn,
 )
+from app.services.plan_generator import generate_plan_draft_v2
 from app.services.running import build_plan_summary, resolve_workout_status
 
 router = APIRouter(prefix="/running-plans", tags=["running-plans"])
+
 
 
 def _get_owned_plan(
@@ -325,6 +329,14 @@ def read_plans(
         ],
         count=count,
     )
+
+
+@router.post("/generate-draft", response_model=PlanDraftResponse)
+def generate_draft(
+    session: SessionDep, current_user: CurrentUser, config: PlanGeneratorConfig
+) -> PlanDraftResponse:
+    """Genera un borrador del plan en base a la configuración y el baseline del atleta."""
+    return generate_plan_draft_v2(config)
 
 
 @router.post("/", response_model=RunningPlanPublic, status_code=status.HTTP_201_CREATED)

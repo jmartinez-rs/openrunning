@@ -584,6 +584,45 @@ WorkoutStatus = Literal["planned", "completed", "missed", "cancelled"]
 PlanStatus = Literal["planned", "active", "completed"]
 Intensity = Literal["easy", "moderate", "hard"]
 BlockType = Literal["warmup", "main", "interval", "recovery", "cooldown", "strides"]
+Confidence = Literal["measured", "declared", "estimated"]
+GoalType = Literal["finish", "time", "performance"]
+ValidationSeverity = Literal["error", "warning", "info"]
+
+
+class BaselineData(SQLModel):
+    value: float
+    confidence: Confidence
+
+
+class AthleteBaseline(SQLModel):
+    weekly_km: BaselineData
+    longest_run_km: BaselineData
+    vdot: BaselineData
+    runs_per_week: BaselineData
+
+
+class PlanValidationIssue(SQLModel):
+    code: str
+    severity: ValidationSeverity
+    message: str
+    details: dict | None = None
+
+
+class PlanGeneratorConfig(SQLModel):
+    plan_type: str = Field(default="race", description="Tipo de plan, ej: 'race', 'fitness'")
+    goal_type: GoalType = Field(default="finish", description="Objetivo principal: completar, tiempo o rendimiento")
+    target_km: float = Field(ge=0)
+    target_time_seconds: int | None = Field(default=None, ge=0)
+    num_weeks: int = Field(ge=4, le=24)
+    start_date: dt.date
+    week_start_day: int = Field(default=1, ge=1, le=7)
+    selected_days: list[int] = Field(default_factory=list)
+    long_run_day: int = Field(default=7, ge=1, le=7)
+    race_id: uuid.UUID | None = None
+    baseline: AthleteBaseline
+    confidence: Confidence | None = Field(default=None, description="Confianza global o override")
+    conservative_mode: bool = Field(default=False, description="Modo conservador por prevención/inactividad")
+    engine_version: str = Field(default="v2", description="Versión del motor algorítmico")
 
 
 class RunningPlanBase(SQLModel):
@@ -598,6 +637,9 @@ class RunningPlanBase(SQLModel):
     # ISO weekday convention: 1=Monday ... 7=Sunday
     week_start_day: int = Field(default=1, ge=1, le=7)
     notes: str | None = Field(default=None, max_length=4000)
+    engine_version: str = Field(default="v1", max_length=16)
+    baseline: dict | None = Field(default=None, sa_column=Column(JSON))
+    generation_params: dict | None = Field(default=None, sa_column=Column(JSON))
 
 
 class RunningPlan(RunningPlanBase, table=True):
@@ -796,6 +838,12 @@ class RunningPlanCreate(RunningPlanBase):
 
 class RunningPlanUpdate(RunningPlanCreate):
     """Reemplazo completo del plan: usa los mismos campos que la creación."""
+
+
+class PlanDraftResponse(SQLModel):
+    draft: RunningPlanCreate
+    warnings: list[PlanValidationIssue] = Field(default_factory=list)
+    meta: dict[str, object] = Field(default_factory=dict)
 
 
 class RunningWorkoutUpdate(SQLModel):

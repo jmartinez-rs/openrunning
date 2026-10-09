@@ -118,6 +118,20 @@ export type ActivityUpdate = {
     name?: (string | null);
 };
 
+export type AthleteBaseline = {
+    weekly_km: BaselineData;
+    longest_run_km: BaselineData;
+    vdot: BaselineData;
+    runs_per_week: BaselineData;
+};
+
+export type BaselineData = {
+    value: number;
+    confidence: 'measured' | 'declared' | 'estimated';
+};
+
+export type confidence = 'measured' | 'declared' | 'estimated';
+
 export type Body_activities_upload_activity_file = {
     file: string;
 };
@@ -232,6 +246,21 @@ export type PhaseIn = {
     objective?: (string | null);
     description?: (string | null);
     weeks?: Array<WeekIn>;
+};
+
+export type PlanGeneratorConfig = {
+    /**
+     * Tipo de plan, ej: 'race', 'fitness'
+     */
+    plan_type?: string;
+    target_km: number;
+    num_weeks: number;
+    start_date: string;
+    week_start_day?: number;
+    selected_days?: Array<(number)>;
+    long_run_day?: number;
+    race_id?: (string | null);
+    baseline: AthleteBaseline;
 };
 
 export type PrivateUserCreate = {
@@ -929,6 +958,12 @@ export type RunningPlansCreatePlanData = {
 };
 
 export type RunningPlansCreatePlanResponse = (RunningPlanPublic);
+
+export type RunningPlansGenerateDraftData = {
+    requestBody: PlanGeneratorConfig;
+};
+
+export type RunningPlansGenerateDraftResponse = (RunningPlanCreate);
 
 export type RunningPlansReadPlanData = {
     planId: string;
