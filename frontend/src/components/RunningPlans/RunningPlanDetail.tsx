@@ -114,9 +114,11 @@ function StatChip({
 export function RunningPlanDetail({
   planId,
   initialWeek,
+  initialTab,
 }: {
   planId: string
   initialWeek?: number
+  initialTab?: string
 }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -124,7 +126,9 @@ export function RunningPlanDetail({
   const [, copyToClipboard] = useCopyToClipboard()
   const [selected, setSelected] = useState<SelectedWorkout | null>(null)
   const [paccerSheetOpen, setPaccerSheetOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<"paccer" | "expanded" | "evolution">("paccer")
+  const [viewMode, setViewMode] = useState<"paccer" | "expanded" | "evolution">(
+    initialTab === "evolution" ? "evolution" : "paccer",
+  )
   const [selectedWeekNumber, setSelectedWeekNumber] = useState<number>(initialWeek ?? 1)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [collapseInitialized, setCollapseInitialized] = useState(false)
@@ -689,47 +693,47 @@ export function RunningPlanDetail({
         </div>
       </div>
 
-      {/* Mode switcher: Vista Semanal (Paccer) vs Evolução (Paccer) vs Vista Completa */}
+      {/* Selector de vistas: Entrenamientos vs Evolución vs Vista Completa */}
       <div className="flex items-center justify-between border-b border-white/5 pb-2">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="inline-flex rounded-2xl bg-[#141416] p-1.5 border border-border/80 gap-1.5">
           <Button
             type="button"
             size="sm"
-            variant={viewMode === "paccer" ? "default" : "outline"}
+            variant={viewMode === "paccer" ? "default" : "ghost"}
             onClick={() => setViewMode("paccer")}
-            className={`rounded-xl text-xs font-bold ${
+            className={`rounded-xl text-xs font-bold transition-all ${
               viewMode === "paccer"
                 ? "bg-primary text-black font-extrabold shadow-sm"
-                : "text-zinc-400"
+                : "text-zinc-400 hover:text-white hover:bg-white/5"
             }`}
           >
-            Treinos (Semanal)
+            Entrenamientos
           </Button>
           <Button
             type="button"
             size="sm"
-            variant={viewMode === "evolution" ? "default" : "outline"}
+            variant={viewMode === "evolution" ? "default" : "ghost"}
             onClick={() => setViewMode("evolution")}
-            className={`rounded-xl text-xs font-bold ${
+            className={`rounded-xl text-xs font-bold transition-all ${
               viewMode === "evolution"
                 ? "bg-primary text-black font-extrabold shadow-sm"
-                : "text-zinc-400"
+                : "text-zinc-400 hover:text-white hover:bg-white/5"
             }`}
           >
-            Evolução
+            Evolución
           </Button>
           <Button
             type="button"
             size="sm"
-            variant={viewMode === "expanded" ? "default" : "outline"}
+            variant={viewMode === "expanded" ? "default" : "ghost"}
             onClick={() => setViewMode("expanded")}
-            className={`rounded-xl text-xs font-bold ${
+            className={`rounded-xl text-xs font-bold transition-all ${
               viewMode === "expanded"
                 ? "bg-primary text-black font-extrabold shadow-sm"
-                : "text-zinc-400"
+                : "text-zinc-400 hover:text-white hover:bg-white/5"
             }`}
           >
-            Vista Completa
+            Todas las fases
           </Button>
         </div>
       </div>

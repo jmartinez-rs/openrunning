@@ -60,13 +60,13 @@ export function PlanEvolutionTab({ plan }: PlanEvolutionTabProps) {
     () => weekData.reduce((acc, w) => acc + w.completedKm, 0),
     [weekData],
   )
-  const aproveitamento = totalPlanned > 0
+  const aprovechamiento = totalPlanned > 0
     ? Math.round((totalCompleted / totalPlanned) * 100)
     : 0
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* 1. Top 3 Metric Cards (Realizado, Planejado, Aproveitamento) */}
+      {/* 1. Top 3 Metric Cards (Realizado, Planificado, Cumplimiento) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         {/* Realizado */}
         <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-[#121214] p-4 shadow-sm">
@@ -82,10 +82,10 @@ export function PlanEvolutionTab({ plan }: PlanEvolutionTabProps) {
           </div>
         </div>
 
-        {/* Planejado */}
+        {/* Planificado */}
         <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-[#121214] p-4 shadow-sm">
           <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
-            <span>Planejado</span>
+            <span>Planificado</span>
             <span className="text-[10px] text-zinc-500 font-bold">TOTAL</span>
           </div>
           <div className="mt-3 flex items-baseline gap-1.5">
@@ -96,30 +96,30 @@ export function PlanEvolutionTab({ plan }: PlanEvolutionTabProps) {
           </div>
         </div>
 
-        {/* Aproveitamento */}
+        {/* Cumplimiento / Aprovechamiento */}
         <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-[#121214] p-4 shadow-sm">
           <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
-            <span>Aproveitamento</span>
-            <span className="text-[10px] text-primary font-bold">TAXA</span>
+            <span>Cumplimiento</span>
+            <span className="text-[10px] text-primary font-bold">TASA</span>
           </div>
           <div className="mt-3 flex items-baseline gap-1.5">
             <span className="font-mono text-2xl sm:text-3xl font-black text-primary">
-              {aproveitamento}%
+              {aprovechamiento}%
             </span>
-            <span className="text-xs font-medium text-zinc-400">do planejado</span>
+            <span className="text-xs font-medium text-zinc-400">de lo planificado</span>
           </div>
         </div>
       </div>
 
-      {/* 2. Dual-line Volume Chart: Realizado (Yellow) vs Planejado (Dashed Gray) */}
+      {/* 2. Dual-line Volume Chart: Realizado (Amarillo) vs Planificado (Gris punteado) */}
       <div className="rounded-2xl border border-border/80 bg-[#121214] p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-white tracking-tight">
-              Evolução de Volume Semanal
+              Evolución de Volumen Semanal
             </h3>
             <p className="text-xs text-muted-foreground">
-              Comparativo de quilometragem planejada vs executada
+              Comparativo de kilometraje planificado vs ejecutado
             </p>
           </div>
           <div className="flex items-center gap-4 text-xs font-medium">
@@ -129,7 +129,7 @@ export function PlanEvolutionTab({ plan }: PlanEvolutionTabProps) {
             </div>
             <div className="flex items-center gap-1.5">
               <span className="size-2.5 rounded-full bg-zinc-600" />
-              <span className="text-muted-foreground">Planejado</span>
+              <span className="text-muted-foreground">Planificado</span>
             </div>
           </div>
         </div>
@@ -162,11 +162,11 @@ export function PlanEvolutionTab({ plan }: PlanEvolutionTabProps) {
                   }}
                   formatter={(value: any, name: any) => [
                     `${value} km`,
-                    name === "completedKm" ? "Realizado" : "Planejado",
+                    name === "completedKm" ? "Realizado" : "Planificado",
                   ]}
                   labelFormatter={(lbl) => `Semana ${lbl}`}
                 />
-                {/* Planejado: dashed line */}
+                {/* Planificado: dashed line */}
                 <Line
                   type="monotone"
                   dataKey="plannedKm"
@@ -189,13 +189,13 @@ export function PlanEvolutionTab({ plan }: PlanEvolutionTabProps) {
             </ResponsiveContainer>
           ) : (
             <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
-              Sem dados suficientes para o gráfico
+              Sin datos suficientes para graficar
             </div>
           )}
         </div>
       </div>
 
-      {/* 3. Aerodynamic Efficiency / Evolution Trend Card (Mockup 13-treinos-evolucao.png) */}
+      {/* 3. Aerodynamic Efficiency / Evolution Trend Card */}
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
@@ -205,14 +205,14 @@ export function PlanEvolutionTab({ plan }: PlanEvolutionTabProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-bold text-white">
-                  Índice de Eficiência Cardíaca
+                  Índice de Eficiencia Cardíaca
                 </h4>
                 <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-black uppercase text-primary">
-                  Evoluindo
+                  Evolucionando
                 </span>
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Você está mantendo o ritmo com menor esforço cardíaco nas últimas sessões.
+                Estás manteniendo el ritmo con menor esfuerzo cardíaco en las últimas sesiones.
               </p>
             </div>
           </div>
@@ -230,7 +230,7 @@ export function PlanEvolutionTab({ plan }: PlanEvolutionTabProps) {
             </div>
             <div>
               <div className="text-[10px] font-bold uppercase text-muted-foreground">
-                Status
+                Estado
               </div>
               <div className="text-sm font-bold text-primary">
                 Excelente

@@ -20,7 +20,7 @@ export function ActivityRow({ activity }: ActivityRowProps) {
 
   // Select icon based on activity type
   let Icon = Footprints
-  let sportName = "Corrida"
+  let sportName = "Carrera"
 
   if (
     sportType.includes("ride") ||
@@ -35,10 +35,10 @@ export function ActivityRow({ activity }: ActivityRowProps) {
     sportType.includes("caminata")
   ) {
     Icon = PersonStanding
-    sportName = "Caminhada"
+    sportName = "Caminata"
   } else if (sportType.includes("swim") || sportType.includes("natacion")) {
     Icon = Waves
-    sportName = "Natação"
+    sportName = "Natación"
   }
 
   const distanceKm = cardio?.distance_meters
@@ -83,12 +83,12 @@ export function ActivityRow({ activity }: ActivityRowProps) {
         </div>
       </div>
 
-      {/* Right Column: 3 Paccer Metrics (Distância, Pace, Duração) + Chevron */}
+      {/* Right Column: 3 Metrics (Distancia, Ritmo, Duración) + Chevron */}
       <div className="flex items-center gap-4 sm:gap-7 shrink-0">
-        {/* Distância */}
+        {/* Distancia */}
         <div className="text-right">
           <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Distância
+            Distancia
           </div>
           <div className="font-mono text-xs sm:text-sm font-black text-white">
             {distanceKm}{" "}
@@ -96,20 +96,20 @@ export function ActivityRow({ activity }: ActivityRowProps) {
           </div>
         </div>
 
-        {/* Pace */}
+        {/* Ritmo / Pace */}
         <div className="hidden sm:block text-right">
           <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Pace
+            Ritmo
           </div>
           <div className="font-mono text-xs sm:text-sm font-black text-primary">
             {paceStr}
           </div>
         </div>
 
-        {/* Duração */}
+        {/* Duración */}
         <div className="text-right">
           <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Duração
+            Duración
           </div>
           <div className="font-mono text-xs sm:text-sm font-black text-white">
             {durationStr}

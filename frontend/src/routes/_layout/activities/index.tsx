@@ -136,7 +136,7 @@ function ActivitiesHistory() {
         </label>
       </div>
 
-      {/* Top Filter Tabs — Paccer Style: Treinos do Plano vs Outros treinos */}
+      {/* Top Filter Tabs: Entrenamientos del Plan vs Otras actividades */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="inline-flex rounded-xl bg-[#141416] p-1 border border-border/80">
           <button
@@ -148,7 +148,7 @@ function ActivitiesHistory() {
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            Treinos do Plano ({planActivities.length})
+            Entrenamientos del Plan ({planActivities.length})
           </button>
           <button
             type="button"
@@ -159,7 +159,7 @@ function ActivitiesHistory() {
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            Outros treinos ({otherActivities.length})
+            Otras actividades ({otherActivities.length})
           </button>
         </div>
 
@@ -168,7 +168,7 @@ function ActivitiesHistory() {
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="w-full rounded-xl border border-border/80 bg-[#121214] pl-9 pr-8 py-1.5 text-xs placeholder:text-muted-foreground text-foreground focus:border-primary/50"
-            placeholder="Buscar atividade..."
+            placeholder="Buscar actividad..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

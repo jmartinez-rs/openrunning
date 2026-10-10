@@ -12,6 +12,7 @@ import { TodayWorkoutCard } from "@/components/Dashboard/TodayWorkoutCard"
 import { VolumeCard } from "@/components/Dashboard/VolumeCard"
 import { type DayStatus, WeekStrip } from "@/components/Dashboard/WeekStrip"
 import { ManualRunSheet } from "@/components/Sheets/ManualRunSheet"
+import { Button } from "@/components/ui/button"
 import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/")({
@@ -348,6 +349,24 @@ function OpenRunningDashboard() {
               plannedSessions={4}
               onOpenCalendar={() => navigate({ to: "/analytics" as any })}
             />
+
+            {activePlan?.id && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  navigate({
+                    to: "/routines/run/$planId",
+                    params: { planId: activePlan.id },
+                    search: { tab: "evolution" },
+                  })
+                }
+                className="w-full rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 text-xs font-bold"
+              >
+                Ver gráfica completa de evolución del plan
+              </Button>
+            )}
           </div>
         )}
       </div>
