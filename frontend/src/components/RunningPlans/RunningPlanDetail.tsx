@@ -48,6 +48,7 @@ import { PhaseTimeline } from "./PhaseTimeline"
 import { WeekCarouselStrip } from "./WeekCarouselStrip"
 import { PaccerSessionCard } from "./PaccerSessionCard"
 import { PaccerWorkoutSheet } from "./PaccerWorkoutSheet"
+import { PlanEvolutionTab } from "./PlanEvolutionTab"
 import {
   buildPlanMarkdown,
   downloadPlanFile,
@@ -123,7 +124,7 @@ export function RunningPlanDetail({
   const [, copyToClipboard] = useCopyToClipboard()
   const [selected, setSelected] = useState<SelectedWorkout | null>(null)
   const [paccerSheetOpen, setPaccerSheetOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<"paccer" | "expanded">("paccer")
+  const [viewMode, setViewMode] = useState<"paccer" | "expanded" | "evolution">("paccer")
   const [selectedWeekNumber, setSelectedWeekNumber] = useState<number>(initialWeek ?? 1)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [collapseInitialized, setCollapseInitialized] = useState(false)
@@ -688,9 +689,9 @@ export function RunningPlanDetail({
         </div>
       </div>
 
-      {/* Mode switcher: Vista Limpia (Paccer) vs Vista Completa */}
+      {/* Mode switcher: Vista Semanal (Paccer) vs Evolução (Paccer) vs Vista Completa */}
       <div className="flex items-center justify-between border-b border-white/5 pb-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             type="button"
             size="sm"
@@ -702,7 +703,20 @@ export function RunningPlanDetail({
                 : "text-zinc-400"
             }`}
           >
-            Vista Semanal
+            Treinos (Semanal)
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={viewMode === "evolution" ? "default" : "outline"}
+            onClick={() => setViewMode("evolution")}
+            className={`rounded-xl text-xs font-bold ${
+              viewMode === "evolution"
+                ? "bg-primary text-black font-extrabold shadow-sm"
+                : "text-zinc-400"
+            }`}
+          >
+            Evolução
           </Button>
           <Button
             type="button"
@@ -715,12 +729,15 @@ export function RunningPlanDetail({
                 : "text-zinc-400"
             }`}
           >
-            Vista Completa (Todas las fases)
+            Vista Completa
           </Button>
         </div>
       </div>
 
-      {viewMode === "paccer" ? (
+      {viewMode === "evolution" ? (
+        /* PACCER EVOLUÇÃO VIEW (Image 13) */
+        <PlanEvolutionTab plan={plan} />
+      ) : viewMode === "paccer" ? (
         /* PACCER VIEW (Imágenes 8, 9, 10) */
         <div className="space-y-6">
           {/* 1. Selector Horizontal de Semanas (Image 8) */}

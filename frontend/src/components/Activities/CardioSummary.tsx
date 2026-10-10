@@ -53,55 +53,59 @@ export function CardioSummary({ cardio }: { cardio: ActivityCardioBase }) {
         </h2>
       </div>
 
-      {/* Splits Table */}
+      {/* Splits: Paccer Visual Pill Bars & Split Table (Mockup 15-atividades-parciais.png) */}
       {splits.length > 0 ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
             <span className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-on-surface-variant" />{" "}
-              Parciales (Km)
+              <Layers className="w-3.5 h-3.5 text-primary" /> Parciais por Km
             </span>
-            <span className="text-[11px] text-on-surface-variant font-normal">
-              Total {splits.length} km
+            <span className="text-[11px] text-zinc-400 font-semibold">
+              {splits.length} km total
             </span>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-border/80 bg-surface-container-lowest/60">
-            <table className="w-full text-xs">
-              <thead className="bg-card/90 text-left border-b border-border/80">
-                <tr>
-                  <th className="px-3.5 py-2 font-bold text-muted-foreground uppercase tracking-wider">
-                    Km
-                  </th>
-                  <th className="px-3.5 py-2 font-bold text-muted-foreground uppercase tracking-wider">
-                    Ritmo
-                  </th>
-                  <th className="px-3.5 py-2 font-bold text-muted-foreground uppercase tracking-wider text-right">
-                    Tiempo
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40">
-                {splits.map((split, index) => (
-                  <tr
-                    key={index}
-                    className="hover:bg-surface-container-high/30 transition-colors"
-                  >
-                    <td className="px-3.5 py-2 font-bold text-white font-display">
-                      {split.split ?? index + 1}
-                    </td>
-                    <td className="px-3.5 py-2 font-bold text-primary font-display">
+          <div className="space-y-2 rounded-xl border border-border/80 bg-[#121214] p-3">
+            {splits.map((split, index) => {
+              const movingTime = Number(split.moving_time) || 0
+              const dist = Number(split.distance) || 1000
+              const paceSec = dist > 0 ? movingTime / (dist / 1000) : 0
+              // Calculate percentage bar width relative to pace range (e.g. 3:00 to 7:00 /km)
+              // Faster pace = higher bar fill
+              const minPace = 180 // 3:00
+              const maxPace = 420 // 7:00
+              const clampedPace = Math.min(Math.max(paceSec, minPace), maxPace)
+              const pacePercent = Math.round(100 - ((clampedPace - minPace) / (maxPace - minPace)) * 80)
+
+              return (
+                <div key={index} className="flex items-center justify-between gap-3 text-xs">
+                  {/* Km Number */}
+                  <div className="w-6 font-mono font-bold text-zinc-400 shrink-0">
+                    {split.split ?? index + 1}
+                  </div>
+
+                  {/* Horizontal Visual Pill Bar */}
+                  <div className="flex-1 h-3 rounded-full bg-zinc-800/80 overflow-hidden relative">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-300"
+                      style={{ width: `${Math.max(15, Math.min(100, pacePercent))}%` }}
+                    />
+                  </div>
+
+                  {/* Pace and Time */}
+                  <div className="flex items-center gap-2 font-mono shrink-0">
+                    <span className="font-bold text-primary">
                       {splitPace(split)}
-                    </td>
-                    <td className="px-3.5 py-2 text-muted-foreground font-display text-right">
-                      {Number(split.moving_time)
-                        ? `${Math.floor(Number(split.moving_time) / 60)}:${String(Math.round(Number(split.moving_time) % 60)).padStart(2, "0")}`
+                    </span>
+                    <span className="text-[11px] text-zinc-400">
+                      {movingTime
+                        ? `${Math.floor(movingTime / 60)}:${String(Math.round(movingTime % 60)).padStart(2, "0")}`
                         : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       ) : null}
