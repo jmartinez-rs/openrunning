@@ -6,8 +6,10 @@ import {
   Check,
   Clock,
   Footprints,
+  MessageSquarePlus,
   Trophy,
 } from "lucide-react"
+import { useState } from "react"
 
 import { ActivitiesService, ShoesService } from "@/client"
 import {
@@ -15,8 +17,12 @@ import {
   formatDuration,
   formatTime,
 } from "@/components/Activities/activity-utils"
+import { AIWorkoutAnalysisCard } from "@/components/Activities/AIWorkoutAnalysisCard"
 import { CardioDetail } from "@/components/Activities/CardioDetail"
 import { CardioSummary } from "@/components/Activities/CardioSummary"
+import {
+  WorkoutFeedbackModal,
+} from "@/components/Activities/WorkoutFeedbackModal"
 import { Skeleton } from "@/components/ui/skeleton"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
@@ -143,6 +149,7 @@ function hasCardioAside(cardio: {
 
 function ActivityDetail() {
   const { activityId } = Route.useParams()
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   const query = useQuery({
     queryKey: ["activity", activityId],
@@ -195,6 +202,10 @@ function ActivityDetail() {
   const hasCardioSummary =
     isStrava && Boolean(activity.cardio) && hasCardioAside(activity.cardio!)
 
+  const cardio = activity.cardio
+  const distanceKm = cardio?.distance_meters ? cardio.distance_meters / 1000 : undefined
+  const paceSeconds = cardio?.avg_pace_seconds_per_km ?? undefined
+
   return (
     <div className="col-span-12 flex flex-col gap-6 pb-20">
       {/* Header */}
@@ -235,15 +246,25 @@ function ActivityDetail() {
           </div>
         </div>
 
-        {isStrava && (
-          <Link
-            to="/races/new"
-            search={{ activityId }}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-white hover:bg-surface-container-high transition-colors text-xs font-bold w-full sm:w-auto"
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setFeedbackOpen(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary text-black font-extrabold hover:bg-primary/90 transition-all text-xs cursor-pointer shadow-sm"
           >
-            <Trophy className="w-4 h-4 text-primary" /> Marcar como carrera
-          </Link>
-        )}
+            <MessageSquarePlus className="w-4 h-4" /> ¿Cómo te sentiste?
+          </button>
+
+          {isStrava && (
+            <Link
+              to="/races/new"
+              search={{ activityId }}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-white hover:bg-surface-container-high transition-colors text-xs font-bold"
+            >
+              <Trophy className="w-4 h-4 text-primary" /> Marcar como carrera
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Main Grid Content */}
@@ -255,6 +276,13 @@ function ActivityDetail() {
         }
       >
         <div className="flex flex-col gap-5">
+          {/* AI Workout Analysis Card (Mockup 12-treinos-analise.png) */}
+          <AIWorkoutAnalysisCard
+            workoutType={activity.sport_type || "Corrida"}
+            completedKm={distanceKm}
+            avgPace={cardio?.avg_pace_seconds_per_km ? `${Math.floor(cardio.avg_pace_seconds_per_km / 60)}:${Math.floor(cardio.avg_pace_seconds_per_km % 60).toString().padStart(2, "0")}/km` : undefined}
+          />
+
           {activity.cardio ? (
             <div className="flex flex-col gap-5">
               {isStrava ? (
@@ -278,6 +306,22 @@ function ActivityDetail() {
           </aside>
         ) : null}
       </div>
+
+      {/* Workout Feedback Modal (11-treinos-como-foi.png) */}
+      <WorkoutFeedbackModal
+        open={feedbackOpen}
+        onOpenChange={setFeedbackOpen}
+        initialData={{
+          distanceKm: distanceKm,
+          paceSecondsPerKm: paceSeconds,
+          durationSeconds: activity.duration_seconds,
+          avgBpm: cardio?.avg_hr,
+        }}
+        onSubmitFeedback={async () => {
+          // Feedback registrado
+        }}
+      />
     </div>
   )
 }
+

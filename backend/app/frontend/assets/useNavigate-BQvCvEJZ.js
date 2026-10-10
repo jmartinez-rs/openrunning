@@ -1,0 +1,1 @@
+import{d as e,m as t}from"./utils-DeJ_HS1c.js";import{_ as n}from"./button-CBk4D1R3.js";var r=t(e(),1);function i(e){let t=n();return r.useCallback(n=>t.navigate({...n,from:n.from??e?.from}),[e?.from,t])}export{i as t};

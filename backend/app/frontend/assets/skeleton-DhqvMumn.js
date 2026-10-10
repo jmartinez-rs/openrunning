@@ -1,0 +1,1 @@
+import{t as e,u as t}from"./utils-DeJ_HS1c.js";var n=t();function r({className:t,...r}){return(0,n.jsx)(`div`,{"data-slot":`skeleton`,className:e(`bg-surface-container-high animate-pulse rounded-xl`,t),...r})}export{r as t};
