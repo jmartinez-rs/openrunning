@@ -45,6 +45,9 @@ import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
 import { PhaseTimeline } from "./PhaseTimeline"
+import { WeekCarouselStrip } from "./WeekCarouselStrip"
+import { PaccerSessionCard } from "./PaccerSessionCard"
+import { PaccerWorkoutSheet } from "./PaccerWorkoutSheet"
 import {
   buildPlanMarkdown,
   downloadPlanFile,
@@ -119,6 +122,9 @@ export function RunningPlanDetail({
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const [, copyToClipboard] = useCopyToClipboard()
   const [selected, setSelected] = useState<SelectedWorkout | null>(null)
+  const [paccerSheetOpen, setPaccerSheetOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<"paccer" | "expanded">("paccer")
+  const [selectedWeekNumber, setSelectedWeekNumber] = useState<number>(initialWeek ?? 1)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [collapseInitialized, setCollapseInitialized] = useState(false)
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null)
@@ -191,6 +197,11 @@ export function RunningPlanDetail({
   useEffect(() => {
     if (!plan || collapseInitialized) return
     setCollapseInitialized(true)
+    if (initialWeek) {
+      setSelectedWeekNumber(initialWeek)
+    } else if (currentWeek?.weekNumber) {
+      setSelectedWeekNumber(currentWeek.weekNumber)
+    }
     const weekIds =
       plan.phases?.flatMap((phase) => phase.weeks?.map((w) => w.id) ?? []) ?? []
 
@@ -677,158 +688,282 @@ export function RunningPlanDetail({
         </div>
       </div>
 
-      {/* Phase Timeline & Filter Navigator */}
-      <PhaseTimeline
-        phases={phases}
-        selectedPhaseId={selectedPhaseId}
-        onSelectPhase={setSelectedPhaseId}
-        currentWeekNumber={currentWeek?.weekNumber}
-      />
-
-      {/* Plan Phases & Weeks Container */}
-      <div className="flex flex-col gap-5">
-        {filteredPhases.map((phase) => {
-          const phaseColor =
-            PHASE_COLORS[phase.color as PhaseColor] ?? PHASE_COLORS.slate
-          return (
-            <section key={phase.id} className="flex flex-col gap-3">
-              {/* Phase Header — identidad tipográfica + tonalidad, sin card anidada */}
-              <div className="flex items-start gap-3 px-0.5">
-                <div
-                  className={cn(
-                    "w-1.5 self-stretch rounded-full",
-                    phaseColor.bar,
-                  )}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-display font-bold text-base text-white">
-                      {phase.name}
-                    </h3>
-                    <Badge
-                      variant="secondary"
-                      className={cn(
-                        "shrink-0 text-[11px] font-semibold",
-                        phaseColor.badge,
-                      )}
-                    >
-                      Semanas {phase.start_week}–{phase.end_week}
-                    </Badge>
-                  </div>
-                  {phase.objective && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {formatObjectiveText(phase.objective)}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Weeks List */}
-              <div className="flex flex-col gap-3">
-                {(phase.weeks ?? []).map((week) => {
-                  const isCollapsed = collapsed.has(week.id)
-                  const workouts = week.workouts ?? []
-                  const isCurrentWeek = currentWeek?.weekId === week.id
-
-                  return (
-                    <div
-                      key={week.id}
-                      ref={(el) => {
-                        if (el) weekRefs.current.set(week.id, el)
-                        else weekRefs.current.delete(week.id)
-                      }}
-                      className={cn(
-                        "rounded-xl border border-border bg-card/80 transition-colors duration-200 overflow-hidden shadow-md scroll-mt-24",
-                        isCurrentWeek &&
-                          "ring-2 ring-primary border-primary/50 shadow-card",
-                      )}
-                    >
-                      {/* Week Accordion Header */}
-                      <button
-                        type="button"
-                        onClick={() => toggleWeek(week.id)}
-                        aria-expanded={!isCollapsed}
-                        aria-controls={`week-panel-${week.id}`}
-                        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-container-high/60"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {isCollapsed ? (
-                            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                          ) : (
-                            <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-                          )}
-                          <div className="flex flex-wrap items-center gap-2 min-w-0">
-                            <span className="font-display font-bold text-sm text-white">
-                              Semana {week.number}
-                            </span>
-                            {week.name &&
-                              week.name !== `Semana ${week.number}` && (
-                                <span className="truncate text-xs text-muted-foreground font-medium">
-                                  · {week.name}
-                                </span>
-                              )}
-                            {isCurrentWeek && (
-                              <Badge className="bg-primary text-primary-foreground text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md">
-                                Semana Actual
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-
-                        <span className="shrink-0 text-xs font-semibold text-muted-foreground">
-                          {formatDateRange(week.start_date, week.end_date)}
-                          {workouts.length > 0 &&
-                            ` · ${workouts.length} sesiones`}
-                        </span>
-                      </button>
-
-                      {/* Accordion Content */}
-                      {!isCollapsed && (
-                        <section
-                          id={`week-panel-${week.id}`}
-                          aria-label={`Semana ${week.number}`}
-                          className="flex flex-col gap-3 border-t border-border p-4 bg-surface-container-lowest/40"
-                        >
-                          {week.objective && (
-                            <p className="text-xs text-muted-foreground font-medium italic">
-                              Objetivo: {formatObjectiveText(week.objective)}
-                            </p>
-                          )}
-
-                          {workouts.length === 0 ? (
-                            <p className="text-xs text-muted-foreground py-2">
-                              Sin sesiones en esta semana.
-                            </p>
-                          ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {workouts.map((workout) => (
-                                <WeekSessionCard
-                                  key={workout.id}
-                                  workout={workout}
-                                  onClick={() =>
-                                    setSelected({
-                                      workout,
-                                      phaseName: phase.name,
-                                      weekNumber: week.number,
-                                    })
-                                  }
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </section>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-          )
-        })}
+      {/* Mode switcher: Vista Limpia (Paccer) vs Vista Completa */}
+      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={viewMode === "paccer" ? "default" : "outline"}
+            onClick={() => setViewMode("paccer")}
+            className={`rounded-xl text-xs font-bold ${
+              viewMode === "paccer"
+                ? "bg-primary text-black font-extrabold shadow-sm"
+                : "text-zinc-400"
+            }`}
+          >
+            Vista Semanal
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={viewMode === "expanded" ? "default" : "outline"}
+            onClick={() => setViewMode("expanded")}
+            className={`rounded-xl text-xs font-bold ${
+              viewMode === "expanded"
+                ? "bg-primary text-black font-extrabold shadow-sm"
+                : "text-zinc-400"
+            }`}
+          >
+            Vista Completa (Todas las fases)
+          </Button>
+        </div>
       </div>
 
-      {/* Slide-out Session Detail Drawer */}
-      {selected && (
+      {viewMode === "paccer" ? (
+        /* PACCER VIEW (Imágenes 8, 9, 10) */
+        <div className="space-y-6">
+          {/* 1. Selector Horizontal de Semanas (Image 8) */}
+          <WeekCarouselStrip
+            weeks={Array.from({ length: summary.weeks || 12 }).map((_, idx) => {
+              const num = idx + 1
+              return {
+                number: num,
+                isCurrent: currentWeek?.weekNumber === num,
+                isCompleted: currentWeek?.weekNumber ? num < currentWeek.weekNumber : false,
+              }
+            })}
+            selectedWeek={selectedWeekNumber}
+            onSelectWeek={setSelectedWeekNumber}
+          />
+
+          {/* 2. Lista de Sesiones de la Semana Seleccionada */}
+          {(() => {
+            // Encontrar la semana y sus sesiones
+            let activeWeekData: any = null
+            let activePhaseData: any = null
+            for (const p of phases) {
+              const w = (p.weeks ?? []).find((wk) => wk.number === selectedWeekNumber)
+              if (w) {
+                activeWeekData = w
+                activePhaseData = p
+                break
+              }
+            }
+
+            const workouts = activeWeekData?.workouts ?? []
+
+            return (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-display font-black text-white">
+                      Semana {selectedWeekNumber}
+                    </h3>
+                    {activePhaseData && (
+                      <span className="text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
+                        {activePhaseData.name}
+                      </span>
+                    )}
+                  </div>
+                  {activeWeekData?.target_volume_km && (
+                    <span className="text-xs font-semibold text-zinc-400">
+                      Volumen: {activeWeekData.target_volume_km} km
+                    </span>
+                  )}
+                </div>
+
+                {workouts.length === 0 ? (
+                  <div className="p-8 rounded-3xl bg-[#121214] border border-white/5 text-center">
+                    <p className="text-sm font-bold text-zinc-400">
+                      No hay entrenamientos programados para esta semana.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {workouts.map((workout: RunningWorkoutPublic) => (
+                      <PaccerSessionCard
+                        key={workout.id}
+                        workout={workout}
+                        onClick={() => {
+                          setSelected({
+                            workout,
+                            phaseName: activePhaseData?.name || "Fase",
+                            weekNumber: selectedWeekNumber,
+                          })
+                          setPaccerSheetOpen(true)
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+        </div>
+      ) : (
+        /* EXPANDED VIEW */
+        <>
+          {/* Phase Timeline & Filter Navigator */}
+          <PhaseTimeline
+            phases={phases}
+            selectedPhaseId={selectedPhaseId}
+            onSelectPhase={setSelectedPhaseId}
+            currentWeekNumber={currentWeek?.weekNumber}
+          />
+
+          {/* Plan Phases & Weeks Container */}
+          <div className="flex flex-col gap-5">
+            {filteredPhases.map((phase) => {
+              const phaseColor =
+                PHASE_COLORS[phase.color as PhaseColor] ?? PHASE_COLORS.slate
+              return (
+                <section key={phase.id} className="flex flex-col gap-3">
+                  <div className="flex items-start gap-3 px-0.5">
+                    <div
+                      className={cn(
+                        "w-1.5 self-stretch rounded-full",
+                        phaseColor.bar,
+                      )}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display font-bold text-base text-white">
+                          {phase.name}
+                        </h3>
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "shrink-0 text-[11px] font-semibold",
+                            phaseColor.badge,
+                          )}
+                        >
+                          Semanas {phase.start_week}–{phase.end_week}
+                        </Badge>
+                      </div>
+                      {phase.objective && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatObjectiveText(phase.objective)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Weeks List */}
+                  <div className="flex flex-col gap-3">
+                    {(phase.weeks ?? []).map((week) => {
+                      const isCollapsed = collapsed.has(week.id)
+                      const workouts = week.workouts ?? []
+                      const isCurrentWeek = currentWeek?.weekId === week.id
+
+                      return (
+                        <div
+                          key={week.id}
+                          ref={(el) => {
+                            if (el) weekRefs.current.set(week.id, el)
+                            else weekRefs.current.delete(week.id)
+                          }}
+                          className={cn(
+                            "rounded-xl border border-border bg-card/80 transition-colors duration-200 overflow-hidden shadow-md scroll-mt-24",
+                            isCurrentWeek &&
+                              "ring-2 ring-primary border-primary/50 shadow-card",
+                          )}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => toggleWeek(week.id)}
+                            aria-expanded={!isCollapsed}
+                            aria-controls={`week-panel-${week.id}`}
+                            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-container-high/60"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              {isCollapsed ? (
+                                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                              ) : (
+                                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                              )}
+                              <div className="flex flex-wrap items-center gap-2 min-w-0">
+                                <span className="font-display font-bold text-sm text-white">
+                                  Semana {week.number}
+                                </span>
+                                {week.name &&
+                                  week.name !== `Semana ${week.number}` && (
+                                    <span className="truncate text-xs text-muted-foreground font-medium">
+                                      · {week.name}
+                                    </span>
+                                  )}
+                                {isCurrentWeek && (
+                                  <Badge className="bg-primary text-primary-foreground text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md">
+                                    Semana Actual
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+
+                            <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+                              {formatDateRange(week.start_date, week.end_date)}
+                              {workouts.length > 0 &&
+                                ` · ${workouts.length} sesiones`}
+                            </span>
+                          </button>
+
+                          {!isCollapsed && (
+                            <section
+                              id={`week-panel-${week.id}`}
+                              aria-label={`Semana ${week.number}`}
+                              className="flex flex-col gap-3 border-t border-border p-4 bg-surface-container-lowest/40"
+                            >
+                              {week.objective && (
+                                <p className="text-xs text-muted-foreground font-medium italic">
+                                  Objetivo: {formatObjectiveText(week.objective)}
+                                </p>
+                              )}
+
+                              {workouts.length === 0 ? (
+                                <p className="text-xs text-muted-foreground py-2">
+                                  Sin sesiones en esta semana.
+                                </p>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                  {workouts.map((workout) => (
+                                    <WeekSessionCard
+                                      key={workout.id}
+                                      workout={workout}
+                                      onClick={() =>
+                                        setSelected({
+                                          workout,
+                                          phaseName: phase.name,
+                                          weekNumber: week.number,
+                                        })
+                                      }
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </section>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Paccer Bottom Sheet Drawer (Images 9, 10) */}
+      <PaccerWorkoutSheet
+        open={paccerSheetOpen}
+        onOpenChange={setPaccerSheetOpen}
+        workout={selected?.workout ?? null}
+        phaseName={selected?.phaseName}
+        weekNumber={selected?.weekNumber}
+      />
+
+      {/* Slide-out Session Detail Drawer para edición avanzada */}
+      {selected && !paccerSheetOpen && (
         <WorkoutBlocksDrawer
           open
           onOpenChange={(open) => {
