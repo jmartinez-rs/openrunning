@@ -100,9 +100,32 @@ function UserSettings() {
         </SettingsRow>
       </SettingsSection>
 
-      {/* Section 3: Integrations */}
+      {/* Section 3: Gerenciar Treinamento (Paccer Mockup 19-perfil-conexcoes.png) */}
+      <div className="space-y-3">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-1">
+          Gerenciar Treinamento
+        </h2>
+        <div className="rounded-2xl border border-border/80 bg-[#121214] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-white">
+              Trocar treino atual
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Redefina seus objetivos ou prova alvo, criando um novo ciclo de treinamento personalizado.
+            </p>
+          </div>
+          <a
+            href="/routines/run/new"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-extrabold text-black hover:bg-primary/90 transition-all shrink-0"
+          >
+            Novo Treino
+          </a>
+        </div>
+      </div>
+
+      {/* Section 4: Integrations */}
       <SettingsSection
-        title="Integraciones & Sincronización"
+        title="Conexões & Sincronização"
         footer="Conectá tu cuenta de Strava para importar automáticamente tus actividades."
       >
         <IntegrationsSettings />

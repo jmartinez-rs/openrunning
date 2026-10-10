@@ -41,11 +41,31 @@ function StatCard({
 export function CardioDetail({ cardio }: { cardio: ActivityCardioBase }) {
   return (
     <div className="flex flex-col gap-5 min-w-0">
-      {/* Metric Cards Grid - 2 cols on mobile/small screens, 4 cols on desktop */}
+      {/* Polyline Interactive Map on Top (Mockup 14-atividades-mapa.png) */}
+      {cardio.map_summary_polyline ? (
+        <div className="overflow-hidden rounded-2xl border border-border shadow-card bg-card/90 relative">
+          <ActivityMap encoded={cardio.map_summary_polyline} />
+        </div>
+      ) : null}
+
+      {/* Elevation Profile info strip */}
+      {cardio.elevation_gain_meters ? (
+        <div className="flex items-center justify-between px-4 py-2.5 bg-[#121214] border border-border/80 rounded-2xl text-xs font-semibold text-muted-foreground w-full">
+          <div className="flex items-center gap-2">
+            <Mountain className="w-4 h-4 text-primary shrink-0" />
+            <span>Ganho de elevação acumulado</span>
+          </div>
+          <span className="font-mono font-bold text-white text-sm">
+            +{Math.round(cardio.elevation_gain_meters)} m
+          </span>
+        </div>
+      ) : null}
+
+      {/* Metric Cards Grid - 2 cols on mobile, 4 cols on desktop */}
       <div className="grid gap-3 grid-cols-2 md:grid-cols-4 min-w-0">
         <StatCard
           icon={<MapPin className="w-4 h-4 sm:w-5 sm:h-5" />}
-          label="Distancia"
+          label="Distância"
           value={
             cardio.distance_meters
               ? `${(cardio.distance_meters / 1000).toFixed(2)} km`
@@ -56,45 +76,25 @@ export function CardioDetail({ cardio }: { cardio: ActivityCardioBase }) {
         />
         <StatCard
           icon={<Timer className="w-4 h-4 sm:w-5 sm:h-5" />}
-          label="Ritmo medio"
+          label="Pace médio"
           value={formatPace(cardio.avg_pace_seconds_per_km)}
           iconBgClass="bg-primary/15 text-primary"
           accentColorClass="text-primary"
         />
         <StatCard
           icon={<Gauge className="w-4 h-4 sm:w-5 sm:h-5" />}
-          label="Pulsaciones"
-          value={cardio.avg_hr ? `${cardio.avg_hr} bpm` : "—"}
+          label="FC Média"
+          value={cardio.avg_hr ? `${Math.round(cardio.avg_hr)} bpm` : "—"}
           iconBgClass="bg-destructive/15 text-destructive"
           accentColorClass="text-destructive"
         />
         <StatCard
           icon={<Flame className="w-4 h-4 sm:w-5 sm:h-5" />}
-          label="Calorías"
+          label="Calorias"
           value={cardio.calories ? `${cardio.calories} kcal` : "—"}
           iconBgClass="bg-primary/15 text-primary"
         />
       </div>
-
-      {/* Elevation Badge / Info if available */}
-      {cardio.elevation_gain_meters ? (
-        <div className="flex items-center gap-2 px-3.5 py-2 bg-card/80 border border-border rounded-xl text-xs font-semibold text-muted-foreground w-fit max-w-full truncate">
-          <Mountain className="w-4 h-4 text-cyan-400 shrink-0" />
-          <span className="truncate">
-            Desnivel acumulado:{" "}
-            <strong className="text-white">
-              {Math.round(cardio.elevation_gain_meters)} m
-            </strong>
-          </span>
-        </div>
-      ) : null}
-
-      {/* Polyline Interactive Map */}
-      {cardio.map_summary_polyline ? (
-        <div className="overflow-hidden rounded-2xl border border-border shadow-card bg-card/90 relative">
-          <ActivityMap encoded={cardio.map_summary_polyline} />
-        </div>
-      ) : null}
     </div>
   )
 }

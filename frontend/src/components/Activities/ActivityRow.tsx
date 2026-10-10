@@ -8,13 +8,7 @@ import {
 } from "lucide-react"
 
 import type { ActivityPublic } from "@/client"
-import { cn } from "@/lib/utils"
-import {
-  formatDate,
-  formatDistance,
-  formatDuration,
-  formatPace,
-} from "./activity-utils"
+import { formatDate, formatDuration, formatPace } from "./activity-utils"
 
 interface ActivityRowProps {
   activity: ActivityPublic
@@ -24,11 +18,9 @@ export function ActivityRow({ activity }: ActivityRowProps) {
   const cardio = activity.cardio
   const sportType = (activity.sport_type || "").toLowerCase()
 
-  // Select icon and badge colors based on activity type
+  // Select icon based on activity type
   let Icon = Footprints
-  let iconBgClass = "bg-primary/15 text-primary"
-  let badgeText = "Strava"
-  let badgeClass = "bg-primary/10 text-primary border-primary/20"
+  let sportName = "Corrida"
 
   if (
     sportType.includes("ride") ||
@@ -36,94 +28,96 @@ export function ActivityRow({ activity }: ActivityRowProps) {
     sportType.includes("ciclismo")
   ) {
     Icon = Bike
-    iconBgClass = "bg-cyan-500/15 text-cyan-400"
-    badgeText = "Ciclismo"
-    badgeClass = "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+    sportName = "Ciclismo"
   } else if (
     sportType.includes("walk") ||
     sportType.includes("hike") ||
     sportType.includes("caminata")
   ) {
     Icon = PersonStanding
-    iconBgClass = "bg-primary/15 text-primary"
-    badgeText = "Caminata"
-    badgeClass = "bg-primary/10 text-primary border-primary/20"
+    sportName = "Caminhada"
   } else if (sportType.includes("swim") || sportType.includes("natacion")) {
     Icon = Waves
-    iconBgClass = "bg-blue-500/15 text-blue-400"
-    badgeText = "Natación"
-    badgeClass = "bg-blue-500/10 text-blue-400 border-blue-500/20"
-  } else if (
-    activity.source_type === "gpx_upload" ||
-    activity.source_type === "fit_upload"
-  ) {
-    badgeText = "Archivo GPS"
-    badgeClass = "bg-primary/10 text-primary border-primary/20"
-  } else if (activity.source_type === "manual") {
-    badgeText = "Manual"
-    badgeClass = "bg-white/5 text-muted-foreground border-white/10"
+    sportName = "Natação"
   }
 
-  // Build metrics string joined by ' · '
-  const metricsParts: string[] = [formatDate(activity.timestamp)]
-
-  if (activity.duration_seconds) {
-    metricsParts.push(formatDuration(activity.duration_seconds))
-  }
-
-  if (cardio) {
-    if (cardio.distance_meters) {
-      metricsParts.push(formatDistance(cardio.distance_meters))
-    }
-    if (cardio.avg_pace_seconds_per_km) {
-      metricsParts.push(formatPace(cardio.avg_pace_seconds_per_km))
-    }
-    if (cardio.avg_hr) {
-      metricsParts.push(`${Math.round(cardio.avg_hr)} ppm`)
-    }
-  }
-
-  const subtitle = metricsParts.join(" · ")
+  const distanceKm = cardio?.distance_meters
+    ? (cardio.distance_meters / 1000).toFixed(2)
+    : "—"
+  const paceStr = cardio?.avg_pace_seconds_per_km
+    ? formatPace(cardio.avg_pace_seconds_per_km)
+    : "—"
+  const durationStr = activity.duration_seconds
+    ? formatDuration(activity.duration_seconds)
+    : "—"
 
   return (
     <Link
       to="/activities/$activityId"
       params={{ activityId: activity.id }}
-      className="group flex items-center gap-3.5 rounded-2xl border border-border/80 bg-card/60 px-4 py-3.5 transition-all duration-150 hover:border-border hover:bg-surface-container-high/60"
+      className="group flex items-center justify-between gap-4 rounded-2xl border border-border/70 bg-[#121214] p-4 transition-all duration-200 hover:border-primary/40 hover:bg-[#18181c] shadow-sm"
     >
-      {/* Icon Badge */}
-      <div
-        className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105",
-          iconBgClass,
-        )}
-      >
-        <Icon className="size-5" />
-      </div>
-
-      {/* Main Info */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="truncate text-base font-semibold text-foreground group-hover:text-primary transition-colors">
-            {activity.name || "Actividad sin nombre"}
-          </h3>
-        </div>
-        <div className="mt-0.5 truncate text-xs text-muted-foreground">
-          {subtitle}
-        </div>
-      </div>
-
-      {/* Badge & Chevron */}
-      <div className="flex items-center gap-3 shrink-0">
-        <span
-          className={cn(
-            "hidden sm:inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium",
-            badgeClass,
+      {/* Left Column: Map Thumbnail & Activity Title/Date */}
+      <div className="flex items-center gap-3.5 min-w-0">
+        {/* Map route preview or icon placeholder */}
+        <div className="relative flex size-14 shrink-0 items-center justify-center rounded-xl overflow-hidden border border-border/60 bg-[#0d0d0f]">
+          {cardio?.map_summary_polyline ? (
+            <div className="flex size-full items-center justify-center bg-zinc-900/90 text-primary">
+              <Icon className="size-6 text-primary group-hover:scale-110 transition-transform" />
+            </div>
+          ) : (
+            <Icon className="size-6 text-primary group-hover:scale-110 transition-transform" />
           )}
-        >
-          {badgeText}
-        </span>
-        <ChevronRight className="size-4 text-on-surface-variant transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
+        </div>
+
+        {/* Title, Sport and Date */}
+        <div className="min-w-0">
+          <h3 className="truncate text-sm sm:text-base font-bold text-white group-hover:text-primary transition-colors">
+            {activity.name || sportName}
+          </h3>
+          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span>{formatDate(activity.timestamp)}</span>
+            <span>·</span>
+            <span>{sportName}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column: 3 Paccer Metrics (Distância, Pace, Duração) + Chevron */}
+      <div className="flex items-center gap-4 sm:gap-7 shrink-0">
+        {/* Distância */}
+        <div className="text-right">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Distância
+          </div>
+          <div className="font-mono text-xs sm:text-sm font-black text-white">
+            {distanceKm}{" "}
+            <span className="text-[10px] font-semibold text-zinc-400">km</span>
+          </div>
+        </div>
+
+        {/* Pace */}
+        <div className="hidden sm:block text-right">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Pace
+          </div>
+          <div className="font-mono text-xs sm:text-sm font-black text-primary">
+            {paceStr}
+          </div>
+        </div>
+
+        {/* Duração */}
+        <div className="text-right">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Duração
+          </div>
+          <div className="font-mono text-xs sm:text-sm font-black text-white">
+            {durationStr}
+          </div>
+        </div>
+
+        {/* Chevron arrow */}
+        <ChevronRight className="size-4 text-muted-foreground transition-transform duration-150 group-hover:translate-x-1 group-hover:text-white" />
       </div>
     </Link>
   )
