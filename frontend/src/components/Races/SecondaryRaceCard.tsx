@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router"
-import { Calendar, Flag, MapPin, Pencil } from "lucide-react"
+import { Calendar, Flag, MapPin, Pencil, Trash2 } from "lucide-react"
 import { useState } from "react"
 
 import type { RacePublic } from "@/client"
@@ -8,7 +8,13 @@ import { RaceFinishDialog } from "./RaceFinishDialog"
 import { parseRaceNotes } from "./race-meta"
 import { formatRaceDate } from "./race-utils"
 
-export function SecondaryRaceCard({ race }: { race: RacePublic }) {
+export function SecondaryRaceCard({
+  race,
+  onDelete,
+}: {
+  race: RacePublic
+  onDelete?: (race: RacePublic) => void
+}) {
   const meta = parseRaceNotes(race.notes)
   const [finishOpen, setFinishOpen] = useState(false)
   const navigate = useNavigate()
@@ -72,26 +78,45 @@ export function SecondaryRaceCard({ race }: { race: RacePublic }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/80 mt-3">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="rounded-xl border-border bg-card text-foreground hover:text-white hover:bg-surface-container-high"
-          onClick={() =>
-            navigate({ to: "/races/new", search: { edit: race.id } })
-          }
-        >
-          <Pencil className="mr-2 size-3.5" /> Editar
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
-          onClick={() => setFinishOpen(true)}
-        >
-          <Flag className="mr-2 size-3.5" /> Finalizar
-        </Button>
+      <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/80 mt-3">
+        {onDelete ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:bg-destructive/10 text-xs font-semibold rounded-xl"
+            onClick={() => {
+              if (window.confirm(`¿Estás seguro de que deseas eliminar la carrera "${race.event_name}"?`)) {
+                onDelete(race)
+              }
+            }}
+          >
+            <Trash2 className="mr-1.5 size-3.5" /> Eliminar
+          </Button>
+        ) : (
+          <div />
+        )}
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-xl border-border bg-card text-foreground hover:text-white hover:bg-surface-container-high text-xs font-semibold"
+            onClick={() =>
+              navigate({ to: "/races/new", search: { edit: race.id } })
+            }
+          >
+            <Pencil className="mr-1.5 size-3.5" /> Editar
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs"
+            onClick={() => setFinishOpen(true)}
+          >
+            <Flag className="mr-1.5 size-3.5" /> Finalizar
+          </Button>
+        </div>
       </div>
 
       <RaceFinishDialog

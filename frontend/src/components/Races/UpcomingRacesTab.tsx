@@ -8,11 +8,13 @@ import { SecondaryRaceCard } from "./SecondaryRaceCard"
 interface UpcomingRacesTabProps {
   upcoming: RacePublic[]
   onOpenForm: () => void
+  onDelete?: (race: RacePublic) => void
 }
 
 export function UpcomingRacesTab({
   upcoming,
   onOpenForm,
+  onDelete,
 }: UpcomingRacesTabProps) {
   // Sort upcoming by priority A > B > C > None, then by date
   const sortedUpcoming = [...upcoming].sort((a, b) => {
@@ -43,7 +45,7 @@ export function UpcomingRacesTab({
         {priorityA.length > 0 ? (
           <div className="grid gap-6">
             {priorityA.map((race) => (
-              <PriorityRaceCard key={race.id} race={race} />
+              <PriorityRaceCard key={race.id} race={race} onDelete={onDelete} />
             ))}
           </div>
         ) : (
@@ -73,7 +75,7 @@ export function UpcomingRacesTab({
         {secondary.length > 0 ? (
           <div className="grid gap-4">
             {secondary.map((race) => (
-              <SecondaryRaceCard key={race.id} race={race} />
+              <SecondaryRaceCard key={race.id} race={race} onDelete={onDelete} />
             ))}
           </div>
         ) : (

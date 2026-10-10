@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ChevronDown, ChevronUp, Play } from "lucide-react"
+import { Play } from "lucide-react"
 import { useMemo, useState } from "react"
 import { AnalyticsService, RunningPlansService, SyncService } from "@/client"
 import { CoachCard } from "@/components/Dashboard/CoachCard"
@@ -48,7 +48,6 @@ function OpenRunningDashboard() {
 
   const [weekOffset, setWeekOffset] = useState(0)
   const [isManualSheetOpen, setIsManualSheetOpen] = useState(false)
-  const [isProgressExpanded, setIsProgressExpanded] = useState(false)
 
   const baseMonday = useMemo(() => {
     const today = new Date()
@@ -268,7 +267,62 @@ function OpenRunningDashboard() {
         onOpenManualRun={() => setIsManualSheetOpen(true)}
       />
 
-      {/* 1. Carrera Objetivo Principal (Mockups 4 & 7) */}
+      {/* 1. Sección Fija: Progreso del Entrenamiento */}
+      <div className="rounded-3xl border border-white/5 bg-[#121214] overflow-hidden shadow-card p-5 space-y-4">
+        <div className="flex items-center justify-between pb-1 border-b border-white/5">
+          <h2 className="text-base font-bold text-white tracking-tight">
+            Progreso del entrenamiento
+          </h2>
+          {activePlan?.id && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                navigate({
+                  to: "/routines/run/$planId",
+                  params: { planId: activePlan.id },
+                  search: { tab: "evolution" },
+                })
+              }
+              className="text-primary hover:text-primary hover:bg-primary/10 text-xs font-bold"
+            >
+              Ver evolución
+            </Button>
+          )}
+        </div>
+
+        <WeekStrip
+          days={days}
+          weekLabel={weekLabel}
+          onPrevWeek={() => setWeekOffset((w) => w - 1)}
+          onNextWeek={() => setWeekOffset((w) => w + 1)}
+          onSelectDay={(day) => {
+            if (day.activityId) {
+              navigate({
+                to: "/activities/$activityId",
+                params: { activityId: day.activityId },
+              })
+            }
+          }}
+        />
+
+        <VolumeCard
+          currentKm={currentKm}
+          targetKm={targetKm}
+          avgPaceText={avgPaceText}
+          onOpenCalendar={() => navigate({ to: "/analytics" as any })}
+        />
+
+        <StreakCard
+          streakWeeks={0}
+          completedSessions={kpis?.sessions || 0}
+          plannedSessions={4}
+          onOpenCalendar={() => navigate({ to: "/analytics" as any })}
+        />
+      </div>
+
+      {/* 2. Carrera Objetivo Principal (por debajo del progreso del entrenamiento) */}
       <TargetRaceHeroCard
         raceName={upcomingRace?.event_name || (activePlan ? activePlan.name : undefined)}
         daysRemaining={upcomingRace ? daysToRace : undefined}
@@ -303,73 +357,6 @@ function OpenRunningDashboard() {
           }
         }}
       />
-
-      {/* 2. Sección Plegable: Progreso del Entrenamiento (Mockup 4) */}
-      <div className="rounded-2xl border border-white/5 bg-[#121214] overflow-hidden shadow-card">
-        <button
-          type="button"
-          onClick={() => setIsProgressExpanded(!isProgressExpanded)}
-          className="w-full p-4 flex items-center justify-between text-left text-sm font-bold text-white hover:bg-white/5 transition-colors cursor-pointer"
-        >
-          <span>Progreso del entrenamiento</span>
-          {isProgressExpanded ? (
-            <ChevronUp className="size-5 text-primary" />
-          ) : (
-            <ChevronDown className="size-5 text-muted-foreground" />
-          )}
-        </button>
-
-        {isProgressExpanded && (
-          <div className="p-4 pt-1 border-t border-white/5 space-y-4">
-            <WeekStrip
-              days={days}
-              weekLabel={weekLabel}
-              onPrevWeek={() => setWeekOffset((w) => w - 1)}
-              onNextWeek={() => setWeekOffset((w) => w + 1)}
-              onSelectDay={(day) => {
-                if (day.activityId) {
-                  navigate({
-                    to: "/activities/$activityId",
-                    params: { activityId: day.activityId },
-                  })
-                }
-              }}
-            />
-
-            <VolumeCard
-              currentKm={currentKm}
-              targetKm={targetKm}
-              avgPaceText={avgPaceText}
-              onOpenCalendar={() => navigate({ to: "/analytics" as any })}
-            />
-
-            <StreakCard
-              streakWeeks={0}
-              completedSessions={kpis?.sessions || 0}
-              plannedSessions={4}
-              onOpenCalendar={() => navigate({ to: "/analytics" as any })}
-            />
-
-            {activePlan?.id && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  navigate({
-                    to: "/routines/run/$planId",
-                    params: { planId: activePlan.id },
-                    search: { tab: "evolution" },
-                  })
-                }
-                className="w-full rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 text-xs font-bold"
-              >
-                Ver gráfica completa de evolución del plan
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
 
       {/* 3. Entrenamiento de Hoy (Mockup 4) */}
       <TodayWorkoutCard
