@@ -53,7 +53,7 @@ export function CardioDetail({ cardio }: { cardio: ActivityCardioBase }) {
         <div className="flex items-center justify-between px-4 py-2.5 bg-[#121214] border border-border/80 rounded-2xl text-xs font-semibold text-muted-foreground w-full">
           <div className="flex items-center gap-2">
             <Mountain className="w-4 h-4 text-primary shrink-0" />
-            <span>Ganho de elevação acumulado</span>
+            <span>Ganancia de elevación acumulada</span>
           </div>
           <span className="font-mono font-bold text-white text-sm">
             +{Math.round(cardio.elevation_gain_meters)} m

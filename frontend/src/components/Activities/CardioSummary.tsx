@@ -53,12 +53,12 @@ export function CardioSummary({ cardio }: { cardio: ActivityCardioBase }) {
         </h2>
       </div>
 
-      {/* Splits: Paccer Visual Pill Bars & Split Table (Mockup 15-atividades-parciais.png) */}
+      {/* Splits: Visual Pill Bars & Split Table */}
       {splits.length > 0 ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
             <span className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-primary" /> Parciais por Km
+              <Layers className="w-3.5 h-3.5 text-primary" /> Parciales por Km
             </span>
             <span className="text-[11px] text-zinc-400 font-semibold">
               {splits.length} km total
