@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Play } from "lucide-react"
+import { ChevronDown, ChevronUp, Play } from "lucide-react"
 import { useMemo, useState } from "react"
 import { AnalyticsService, RunningPlansService, SyncService } from "@/client"
 import { CoachCard } from "@/components/Dashboard/CoachCard"
-import { NextSessionCard } from "@/components/Dashboard/NextSessionCard"
 import { StravaSyncBar } from "@/components/Dashboard/StravaSyncBar"
 import { StreakCard } from "@/components/Dashboard/StreakCard"
-import { TargetRaceCard } from "@/components/Dashboard/TargetRaceCard"
+import { TargetRaceHeroCard } from "@/components/Dashboard/TargetRaceHeroCard"
+import { TodayWorkoutCard } from "@/components/Dashboard/TodayWorkoutCard"
 
 import { VolumeCard } from "@/components/Dashboard/VolumeCard"
 import { type DayStatus, WeekStrip } from "@/components/Dashboard/WeekStrip"
@@ -47,6 +47,7 @@ function OpenRunningDashboard() {
 
   const [weekOffset, setWeekOffset] = useState(0)
   const [isManualSheetOpen, setIsManualSheetOpen] = useState(false)
+  const [isProgressExpanded, setIsProgressExpanded] = useState(false)
 
   const baseMonday = useMemo(() => {
     const today = new Date()
@@ -64,12 +65,19 @@ function OpenRunningDashboard() {
 
   const dashboard = dashboardQuery.data
 
-  // Plan actual (para que "Hoy" lleve al plan activo, no al registro manual)
+  // Plan actual y detalle de fases
   const plansQuery = useQuery({
     queryKey: ["running-plans"],
     queryFn: () => RunningPlansService.readPlans(),
   })
   const activePlan = plansQuery.data?.data.find((p) => p.status === "active")
+
+  const planDetailQuery = useQuery({
+    queryKey: ["running-plan", activePlan?.id],
+    queryFn: () => RunningPlansService.readPlan({ planId: activePlan!.id }),
+    enabled: Boolean(activePlan?.id),
+    staleTime: 5 * 60 * 1000,
+  })
 
   const syncMutation = useMutation({
     mutationFn: () => SyncService.triggerSync({ provider: "strava" }),
@@ -81,6 +89,52 @@ function OpenRunningDashboard() {
   })
 
   const todayIso = formatDateIso(new Date())
+
+  // Sesión de hoy y progreso de semanas del plan activo
+  const planStats = useMemo(() => {
+    if (!planDetailQuery.data) {
+      return {
+        todayWorkout: null,
+        currentWeekNumber: 1,
+        totalWeeks: 12,
+        totalPlanKm: undefined,
+      }
+    }
+    const plan = planDetailQuery.data
+    const phases = plan.phases ?? []
+    const allWorkouts: any[] = []
+    let totalKm = 0
+    let totalWeeksCount = 0
+
+    phases.forEach((p) => {
+      (p.weeks ?? []).forEach((w) => {
+        totalWeeksCount = Math.max(totalWeeksCount, w.number)
+        ;(w.workouts ?? []).forEach((wo) => {
+          totalKm += wo.distance_km || 0
+          allWorkouts.push({ ...wo, weekNumber: w.number })
+        })
+      })
+    })
+
+    // Buscar entrenamiento de hoy (o próximo)
+    const todayWo = allWorkouts.find((wo) => wo.date === todayIso && !wo.cancelled) || null
+    
+    // Calcular en qué semana del plan estamos según fecha de inicio
+    let currentWeekNumber = 1
+    if (plan.start_date) {
+      const start = new Date(plan.start_date).getTime()
+      const now = new Date(todayIso).getTime()
+      const diffWeeks = Math.floor((now - start) / (7 * 24 * 60 * 60 * 1000)) + 1
+      currentWeekNumber = Math.max(1, Math.min(diffWeeks, totalWeeksCount || 1))
+    }
+
+    return {
+      todayWorkout: todayWo,
+      currentWeekNumber,
+      totalWeeks: totalWeeksCount || 12,
+      totalPlanKm: totalKm > 0 ? totalKm : undefined,
+    }
+  }, [planDetailQuery.data, todayIso])
 
   // Generate 7 day statuses for WeekStrip
   const days: DayStatus[] = useMemo(() => {
@@ -148,9 +202,6 @@ function OpenRunningDashboard() {
       )
     : 0
 
-  const targetTimeText = undefined
-  const targetPaceText = undefined
-
   // 1. Strava Sync State
   const stravaSyncState = dashboard?.sync_state?.find(
     (s) => s.provider === "strava",
@@ -173,19 +224,14 @@ function OpenRunningDashboard() {
     }
   }
 
-  // 2. Today logic
-  const todayData = dashboard?.timeline?.find((d) => d.date === todayIso)
-  const hasCompletedActivity = (todayData?.activities?.length ?? 0) > 0
-
   const handleManualRunSubmit = async (_data: any) => {
-    // Refresh dashboard on submit
     queryClient.invalidateQueries({ queryKey: ["dashboard"] })
   }
 
   return (
-    <div className="col-span-12 flex flex-col gap-6 pb-20">
+    <div className="col-span-12 flex flex-col gap-6 pb-20 max-w-xl mx-auto w-full">
       {/* Header */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex items-center justify-between pt-2 px-1">
         <div>
           <h1 className="text-2xl font-display font-black text-white tracking-tight">
             ¡Hola, {user?.full_name?.split(" ")[0] || "Corredor"}!
@@ -221,44 +267,9 @@ function OpenRunningDashboard() {
         onOpenManualRun={() => setIsManualSheetOpen(true)}
       />
 
-      {/* Week Strip & Today Row Card */}
-      <div className="space-y-3">
-        <WeekStrip
-          days={days}
-          weekLabel={weekLabel}
-          onPrevWeek={() => setWeekOffset((w) => w - 1)}
-          onNextWeek={() => setWeekOffset((w) => w + 1)}
-          onSelectDay={(day) => {
-            // Si el día tiene una actividad cargada, abrirla. Si no, no hacer nada
-            // (no abrir el registro manual desde acá).
-            if (day.activityId) {
-              navigate({
-                to: "/activities/$activityId",
-                params: { activityId: day.activityId },
-              })
-            }
-          }}
-        />
-
-        {activePlan && (
-          <NextSessionCard
-            planId={activePlan.id}
-            hasCompletedActivityToday={hasCompletedActivity}
-            todayIso={todayIso}
-          />
-        )}
-      </div>
-
-      {/* Weekly Volume Card */}
-      <VolumeCard
-        currentKm={currentKm}
-        targetKm={targetKm}
-        avgPaceText={avgPaceText}
-        onOpenCalendar={() => navigate({ to: "/analytics" as any })}
-      />
-
-      <TargetRaceCard
-        raceName={upcomingRace?.event_name}
+      {/* 1. Carrera Objetivo Principal (Mockups 4 & 7) */}
+      <TargetRaceHeroCard
+        raceName={upcomingRace?.event_name || (activePlan ? activePlan.name : undefined)}
         daysRemaining={upcomingRace ? daysToRace : undefined}
         dateText={
           upcomingRace
@@ -267,20 +278,87 @@ function OpenRunningDashboard() {
                 month: "short",
                 year: "numeric",
               })
-            : undefined
+            : activePlan?.end_date
+              ? new Date(activePlan.end_date).toLocaleDateString("es-AR", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })
+              : undefined
         }
-        distanceKm={upcomingRace?.distance_km}
-        targetTimeText={targetTimeText}
-        targetPaceText={targetPaceText}
-        onClick={() => navigate({ to: "/races" as any })}
+        distanceKm={upcomingRace?.distance_km || activePlan?.distance_km || undefined}
+        currentWeek={planStats.currentWeekNumber}
+        totalWeeks={planStats.totalWeeks}
+        totalPlanKm={planStats.totalPlanKm}
+        goalText={activePlan?.goal || "Completar la distancia"}
+        onViewWorkouts={() => {
+          if (activePlan?.id) {
+            navigate({
+              to: "/routines/run/$planId",
+              params: { planId: activePlan.id },
+            })
+          } else {
+            navigate({ to: "/routines/run/new" as any })
+          }
+        }}
       />
 
-      {/* Weekly Streak Card */}
-      <StreakCard
-        streakWeeks={0}
-        completedSessions={kpis?.sessions || 0}
-        plannedSessions={4}
-        onOpenCalendar={() => navigate({ to: "/analytics" as any })}
+      {/* 2. Sección Plegable: Progreso del Entrenamiento (Mockup 4) */}
+      <div className="rounded-2xl border border-white/5 bg-[#121214] overflow-hidden shadow-card">
+        <button
+          type="button"
+          onClick={() => setIsProgressExpanded(!isProgressExpanded)}
+          className="w-full p-4 flex items-center justify-between text-left text-sm font-bold text-white hover:bg-white/5 transition-colors cursor-pointer"
+        >
+          <span>Progreso del entrenamiento</span>
+          {isProgressExpanded ? (
+            <ChevronUp className="size-5 text-primary" />
+          ) : (
+            <ChevronDown className="size-5 text-muted-foreground" />
+          )}
+        </button>
+
+        {isProgressExpanded && (
+          <div className="p-4 pt-1 border-t border-white/5 space-y-4">
+            <WeekStrip
+              days={days}
+              weekLabel={weekLabel}
+              onPrevWeek={() => setWeekOffset((w) => w - 1)}
+              onNextWeek={() => setWeekOffset((w) => w + 1)}
+              onSelectDay={(day) => {
+                if (day.activityId) {
+                  navigate({
+                    to: "/activities/$activityId",
+                    params: { activityId: day.activityId },
+                  })
+                }
+              }}
+            />
+
+            <VolumeCard
+              currentKm={currentKm}
+              targetKm={targetKm}
+              avgPaceText={avgPaceText}
+              onOpenCalendar={() => navigate({ to: "/analytics" as any })}
+            />
+
+            <StreakCard
+              streakWeeks={0}
+              completedSessions={kpis?.sessions || 0}
+              plannedSessions={4}
+              onOpenCalendar={() => navigate({ to: "/analytics" as any })}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 3. Entrenamiento de Hoy (Mockup 4) */}
+      <TodayWorkoutCard
+        workout={planStats.todayWorkout}
+        planId={activePlan?.id}
+        weekNumber={planStats.currentWeekNumber}
+        isLoading={planDetailQuery.isLoading}
+        onOpenManualRun={() => setIsManualSheetOpen(true)}
       />
 
       {/* AI Coach Proposal Card */}
