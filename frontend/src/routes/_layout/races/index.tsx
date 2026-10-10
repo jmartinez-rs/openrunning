@@ -130,6 +130,7 @@ function Races() {
             <UpcomingRacesTab
               upcoming={upcoming}
               onOpenForm={() => navigate({ to: "/races/new" })}
+              onDelete={(race) => deleteMutation.mutate(race.id)}
             />
           </TabsContent>
 

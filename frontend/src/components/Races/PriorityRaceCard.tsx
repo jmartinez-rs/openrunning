@@ -8,6 +8,7 @@ import {
   MapPin,
   Pencil,
   Target,
+  Trash2,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -25,7 +26,13 @@ function getCountdown(date: string) {
   }
 }
 
-export function PriorityRaceCard({ race }: { race: RacePublic }) {
+export function PriorityRaceCard({
+  race,
+  onDelete,
+}: {
+  race: RacePublic
+  onDelete?: (race: RacePublic) => void
+}) {
   const [countdown, setCountdown] = useState(() => getCountdown(race.date))
   const [expanded, setExpanded] = useState(false)
   const [finishOpen, setFinishOpen] = useState(false)
@@ -217,24 +224,41 @@ export function PriorityRaceCard({ race }: { race: RacePublic }) {
       )}
 
       {/* Acciones */}
-      <div className="flex items-center justify-end gap-2 p-4 border-t border-border bg-card">
-        <Button
-          type="button"
-          variant="outline"
-          className="rounded-xl border-border bg-card text-foreground hover:text-white hover:bg-surface-container-high"
-          onClick={() =>
-            navigate({ to: "/races/new", search: { edit: race.id } })
-          }
-        >
-          <Pencil className="mr-2 size-4" /> Editar
-        </Button>
-        <Button
-          type="button"
-          className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
-          onClick={() => setFinishOpen(true)}
-        >
-          <Flag className="mr-2 size-4" /> Finalizar
-        </Button>
+      <div className="flex items-center justify-between gap-2 p-4 border-t border-border bg-card">
+        {onDelete && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:bg-destructive/10 text-xs font-semibold rounded-xl"
+            onClick={() => {
+              if (window.confirm(`¿Estás seguro de que deseas eliminar la carrera "${race.event_name}"?`)) {
+                onDelete(race)
+              }
+            }}
+          >
+            <Trash2 className="mr-1.5 size-3.5" /> Eliminar
+          </Button>
+        )}
+        <div className="flex items-center gap-2 ml-auto">
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-xl border-border bg-card text-foreground hover:text-white hover:bg-surface-container-high text-xs font-semibold"
+            onClick={() =>
+              navigate({ to: "/races/new", search: { edit: race.id } })
+            }
+          >
+            <Pencil className="mr-1.5 size-3.5" /> Editar
+          </Button>
+          <Button
+            type="button"
+            className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs"
+            onClick={() => setFinishOpen(true)}
+          >
+            <Flag className="mr-1.5 size-3.5" /> Finalizar
+          </Button>
+        </div>
       </div>
 
       <RaceFinishDialog
