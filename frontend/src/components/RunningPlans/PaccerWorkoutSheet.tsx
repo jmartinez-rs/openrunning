@@ -35,7 +35,7 @@ interface PaccerWorkoutSheetProps {
   weekNumber?: number
 }
 
-type TabType = "resumo" | "passo_a_passo" | "clima"
+type TabType = "resumo" | "passo_a_passo" | "clima" | "analise"
 type UnitType = "pace" | "kmh"
 
 export const PaccerWorkoutSheet: React.FC<PaccerWorkoutSheetProps> = ({
@@ -134,12 +134,12 @@ export const PaccerWorkoutSheet: React.FC<PaccerWorkoutSheetProps> = ({
           </div>
         </SheetHeader>
 
-        {/* 3 Tabs: Resumo | Passo a passo | Clima */}
-        <div className="flex items-center border-b border-white/10 gap-6 text-sm font-bold mt-4 mb-5">
+        {/* 4 Tabs: Resumen | Paso a paso | Clima | Análisis */}
+        <div className="flex items-center border-b border-white/10 gap-5 text-sm font-bold mt-4 mb-5 overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab("resumo")}
-            className={`pb-3 transition-all relative cursor-pointer ${
+            className={`pb-3 transition-all relative shrink-0 cursor-pointer ${
               activeTab === "resumo"
                 ? "text-white font-extrabold"
                 : "text-zinc-400 hover:text-zinc-200"
@@ -154,7 +154,7 @@ export const PaccerWorkoutSheet: React.FC<PaccerWorkoutSheetProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab("passo_a_passo")}
-            className={`pb-3 transition-all relative cursor-pointer ${
+            className={`pb-3 transition-all relative shrink-0 cursor-pointer ${
               activeTab === "passo_a_passo"
                 ? "text-white font-extrabold"
                 : "text-zinc-400 hover:text-zinc-200"
@@ -169,7 +169,7 @@ export const PaccerWorkoutSheet: React.FC<PaccerWorkoutSheetProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab("clima")}
-            className={`pb-3 transition-all relative cursor-pointer ${
+            className={`pb-3 transition-all relative shrink-0 cursor-pointer ${
               activeTab === "clima"
                 ? "text-white font-extrabold"
                 : "text-zinc-400 hover:text-zinc-200"
@@ -177,6 +177,21 @@ export const PaccerWorkoutSheet: React.FC<PaccerWorkoutSheetProps> = ({
           >
             Clima
             {activeTab === "clima" && (
+              <div className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full shadow-[0_0_8px_rgba(234,252,95,0.6)]" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("analise")}
+            className={`pb-3 transition-all relative shrink-0 cursor-pointer ${
+              activeTab === "analise"
+                ? "text-white font-extrabold"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            Análisis
+            {activeTab === "analise" && (
               <div className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full shadow-[0_0_8px_rgba(234,252,95,0.6)]" />
             )}
           </button>
@@ -385,7 +400,34 @@ export const PaccerWorkoutSheet: React.FC<PaccerWorkoutSheetProps> = ({
             </div>
           </div>
         )}
+
+        {/* Tab 4: Análisis de IA (Image 12-treinos-analise.png) */}
+        {activeTab === "analise" && (
+          <div className="space-y-4">
+            <h4 className="text-lg font-display font-black text-white">
+              Análisis de la IA de tu sesión
+            </h4>
+
+            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 text-sm text-zinc-300 leading-relaxed">
+              <p>
+                {workout.status === "completed"
+                  ? "Completaste la distancia propuesta. El ritmo y la frecuencia cardíaca respondieron adecuadamente dentro de la zona de intensidad prescrita para este bloque."
+                  : "Sesión planificada. Cuando sincronices tu reloj o registres el entrenamiento, la IA comparará tus parciales, ritmo y frecuencia cardíaca real contra el objetivo previsto para brindarte recomendaciones de recuperación."}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20">
+              <span className="text-[11px] font-black uppercase tracking-wider text-primary block mb-1">
+                Estrategia recomendada
+              </span>
+              <p className="text-xs text-zinc-300 leading-snug">
+                Mantén el control de la intensidad en los primeros kilómetros para reservar energía hacia la segunda mitad.
+              </p>
+            </div>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   )
 }
+
