@@ -14,9 +14,13 @@ from app.models import (
     WorkoutBlockIn,
     WorkoutIn,
 )
+from app.services.plan_calendar import week_start_offset
 from app.services.plan_validator import validate_plan_invariants
 from app.services.running_math import calculate_vdot, get_training_paces_seconds
-from app.services.workout_library import build_daniels_blocks_with_ranges
+from app.services.workout_library import (
+    build_daniels_blocks_with_ranges,
+    resolve_block_paces,
+)
 
 
 def _add_days(d: date, days: int) -> date:
@@ -221,7 +225,7 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
 
     # Dates
     start_date = config.start_date
-    delta = (start_date.isoweekday() - config.week_start_day + 7) % 7
+    delta = week_start_offset(start_date.isoweekday(), config.week_start_day)
     first_week_start = _add_days(start_date, -delta)
     end_date = _add_days(first_week_start, config.num_weeks * 7 - 1)
 
@@ -267,7 +271,7 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
             )
 
             def get_workout_date(iso_weekday: int) -> date:
-                offset = (iso_weekday - config.week_start_day + 7) % 7
+                offset = week_start_offset(iso_weekday, config.week_start_day)
                 return _add_days(week_start, offset)
 
             workouts: List[WorkoutIn] = []
@@ -379,6 +383,9 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
                 lr_km = config.target_km
                 lr_pace = config.target_time_seconds / config.target_km if config.target_time_seconds else (paces["marathon"] if config.target_km >= 21.1 else paces["threshold"])
                 lr_intensity = "hard"
+                # Goal-pinned: the race pace comes from the target time, never from
+                # the shared pace table (`resolve_block_paces` returns no pace for
+                # `race`), so a recalibration must keep the stored race pace (D6).
                 lr_blocks = [
                     WorkoutBlockIn(
                         position=1,
@@ -396,13 +403,22 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
                 lr_km = tuneup_distance
                 lr_pace = paces["threshold"]
                 lr_intensity = "hard"
+                tuneup_warmup_pace, _ = resolve_block_paces(
+                    workout_type="test", block_type="warmup", paces=paces
+                )
+                tuneup_main_pace, tuneup_main_range = resolve_block_paces(
+                    workout_type="test", block_type="main", paces=paces
+                )
+                tuneup_cooldown_pace, _ = resolve_block_paces(
+                    workout_type="test", block_type="cooldown", paces=paces
+                )
                 lr_blocks = [
                     WorkoutBlockIn(
                         position=1,
                         block_type="warmup",
                         repeats=1,
                         distance_m=2000,
-                        pace_seconds_per_km=paces["easy_max"],
+                        pace_seconds_per_km=tuneup_warmup_pace,
                         notes="Entrada en calor pre-test",
                     ),
                     WorkoutBlockIn(
@@ -410,7 +426,8 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
                         block_type="main",
                         repeats=1,
                         distance_m=int(tuneup_distance * 1000),
-                        pace_seconds_per_km=lr_pace,
+                        pace_seconds_per_km=tuneup_main_pace,
+                        pace_range_end_seconds_per_km=tuneup_main_range,
                         notes=f"Test firme de {tuneup_distance}K",
                     ),
                     WorkoutBlockIn(
@@ -418,7 +435,7 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
                         block_type="cooldown",
                         repeats=1,
                         distance_m=1500,
-                        pace_seconds_per_km=paces["easy_max"],
+                        pace_seconds_per_km=tuneup_cooldown_pace,
                         notes="Vuelta a la calma post-test",
                     ),
                 ]
@@ -431,10 +448,22 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
                 if pos == 3 and config.target_km >= 21.1 and lr_km >= 16.0:
                     lr_name = "Tirada Larga con Bloques a Ritmo Objetivo"
                     lr_obj = "Construcción de eficiencia neuromuscular a ritmo de carrera"
-                    mp_pace = paces["marathon"] if config.target_km >= 42.2 else paces["threshold"]
                     mp_dist_m = int(min(lr_km * 0.4, 10.0) * 1000)
                     warmup_lr_m = 4000
                     cooldown_lr_m = max(2000, int((lr_km * 1000) - warmup_lr_m - mp_dist_m))
+                    goal_pace, goal_range = resolve_block_paces(
+                        workout_type="long_run",
+                        block_type="main",
+                        paces=paces,
+                        target_km=config.target_km,
+                        block_count=3,
+                    )
+                    warmup_lr_pace, _ = resolve_block_paces(
+                        workout_type="long_run", block_type="warmup", paces=paces
+                    )
+                    cooldown_lr_pace, _ = resolve_block_paces(
+                        workout_type="long_run", block_type="cooldown", paces=paces
+                    )
 
                     lr_blocks = [
                         WorkoutBlockIn(
@@ -442,7 +471,7 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
                             block_type="warmup",
                             repeats=1,
                             distance_m=warmup_lr_m,
-                            pace_seconds_per_km=paces["easy_min"],
+                            pace_seconds_per_km=warmup_lr_pace,
                             notes="Trote inicial progresivo",
                         ),
                         WorkoutBlockIn(
@@ -450,7 +479,8 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
                             block_type="main",
                             repeats=1,
                             distance_m=mp_dist_m,
-                            pace_seconds_per_km=mp_pace,
+                            pace_seconds_per_km=goal_pace,
+                            pace_range_end_seconds_per_km=goal_range,
                             notes=f"Bloque continuo de {mp_dist_m // 1000} km a ritmo de carrera",
                         ),
                         WorkoutBlockIn(
@@ -458,20 +488,28 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
                             block_type="cooldown",
                             repeats=1,
                             distance_m=cooldown_lr_m,
-                            pace_seconds_per_km=paces["easy_max"],
+                            pace_seconds_per_km=cooldown_lr_pace,
                             notes="Finalización suave",
                         ),
                     ]
                 else:
                     lr_name = "Tirada Larga Progresiva" if week_num % 2 == 0 else "Tirada Larga Aeróbica"
                     lr_obj = "Desarrollar la eficiencia metabólica y resistencia aeróbica"
+                    easy_lr_pace, easy_lr_range = resolve_block_paces(
+                        workout_type="long_run",
+                        block_type="main",
+                        paces=paces,
+                        target_km=config.target_km,
+                        block_count=1,
+                    )
                     lr_blocks = [
                         WorkoutBlockIn(
                             position=1,
                             block_type="main",
                             repeats=1,
                             distance_m=int(lr_km * 1000),
-                            pace_seconds_per_km=lr_pace,
+                            pace_seconds_per_km=easy_lr_pace,
+                            pace_range_end_seconds_per_km=easy_lr_range,
                         )
                     ]
 

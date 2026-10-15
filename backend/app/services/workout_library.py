@@ -1,6 +1,4 @@
-from typing import Dict, List, Optional
-from app.models import WorkoutBlockIn, WorkoutIn
-from app.services.running_math import format_pace, get_training_paces_seconds
+from app.models import WorkoutBlockIn
 
 
 class WorkoutTemplate:
@@ -22,7 +20,7 @@ class WorkoutTemplate:
 
 
 # Catalog of Daniels-based structured workouts
-WORKOUT_CATALOG: Dict[str, List[WorkoutTemplate]] = {
+WORKOUT_CATALOG: dict[str, list[WorkoutTemplate]] = {
     "strides": [
         WorkoutTemplate(
             key="easy_strides",
@@ -88,67 +86,206 @@ WORKOUT_CATALOG: Dict[str, List[WorkoutTemplate]] = {
 }
 
 
+# --- Shared block-pace rules --------------------------------------------------
+# Single source of truth for how a pace-table value becomes a workout block.
+# `build_daniels_blocks_with_ranges`, the plan generator and the VDOT
+# recalibration (`app.services.fitness`) all resolve block paces through
+# `resolve_block_paces`, so a recalibration reproduces the generator's paces
+# exactly instead of maintaining a second, drifting copy of these offsets.
+
+# Daniels offsets, in seconds per km, subtracted/added around the table pace.
+TEMPO_CONTINUOUS_OFFSET_S_PER_KM = 4.0
+TEMPO_CRUISE_OFFSET_S_PER_KM = 3.0
+INTERVAL_OFFSET_S_PER_KM = 3.0
+REPETITION_OFFSET_S_PER_KM = 2.0
+
+# Tempo block geometry.
+TEMPO_WARMUP_M = 2000
+TEMPO_COOLDOWN_M = 1500
+# Cruise intervals need at least this much threshold volume.
+TEMPO_CRUISE_MIN_BLOCK_M = 4000
+
+# Interval block geometry.
+INTERVAL_WARMUP_M = 2000
+INTERVAL_COOLDOWN_M = 1500
+
+# A phase-1 quality session at or below this volume is repetition (R) work.
+REPETITION_PHASE_MAX_VOLUME_KM = 7.0
+
+# Long runs with at least this many blocks carry a goal-pace main block.
+LONG_RUN_BLOCK_COUNT_FOR_GOAL_PACE = 3
+# Goals at or beyond this distance run that block at marathon pace.
+MARATHON_TARGET_KM = 42.2
+
+_EASY_BLOCK_TYPES = ("warmup", "cooldown")
+
+
+def offset_pair(
+    paces: dict[str, float], key: str, offset: float
+) -> tuple[float | None, float | None]:
+    """`pace - offset` / `pace + offset` pair for one pace-table key."""
+    base = paces.get(key)
+    if base is None:
+        return (None, None)
+    return (round(base - offset, 1), round(base + offset, 1))
+
+
+def uses_repetition_paces(
+    *, workout_type: str, total_km: float, progression_level: int
+) -> bool:
+    """Daniels R rule: an explicit repetition session, or a short phase-1 session.
+
+    One rule for both the generator and the recalibration, so short reps never
+    drift into VO2max (I) paces (and vice versa).
+    """
+    return workout_type == "repetition" or (
+        progression_level == 1 and total_km <= REPETITION_PHASE_MAX_VOLUME_KM
+    )
+
+
+def tempo_main_is_cruise(*, total_km: float, progression_level: int) -> bool:
+    """Daniels tempo rule: cruise intervals from phase 2 with enough T volume."""
+    tempo_m = max(
+        TEMPO_WARMUP_M, int((total_km * 1000) - TEMPO_WARMUP_M - TEMPO_COOLDOWN_M)
+    )
+    return progression_level >= 2 and tempo_m >= TEMPO_CRUISE_MIN_BLOCK_M
+
+
+def resolve_block_paces(
+    *,
+    workout_type: str,
+    block_type: str,
+    paces: dict[str, float],
+    total_km: float = 0.0,
+    target_km: float = 0.0,
+    progression_level: int = 1,
+    block_count: int = 1,
+) -> tuple[float | None, float | None]:
+    """Pace pair `(pace, range end)` for one generated block.
+
+    Mirrors the generator for every block type it emits. Tune-up (`test`) races
+    and goal-pace long runs run their easy segments at a SINGLE pace with no
+    range; tempo/interval warmups keep the full easy range. `race` blocks are
+    goal-pinned (they come from the target time), so `(None, None)` tells the
+    caller to keep the stored pace.
+    """
+    easy_min = paces.get("easy_min")
+    easy_max = paces.get("easy_max")
+
+    if workout_type == "race":
+        return (None, None)
+
+    if workout_type == "test":
+        if block_type == "main":
+            return (paces.get("threshold"), None)
+        return (easy_max, None)
+
+    if workout_type == "long_run":
+        if block_type == "main":
+            if block_count >= LONG_RUN_BLOCK_COUNT_FOR_GOAL_PACE:
+                key = "marathon" if target_km >= MARATHON_TARGET_KM else "threshold"
+                return (paces.get(key), None)
+            return (easy_min, None)
+        if block_type == "cooldown":
+            return (easy_max, None)
+        return (easy_min, None)
+
+    if block_type == "strides":
+        return (paces.get("repetition"), None)
+
+    if block_type in _EASY_BLOCK_TYPES:
+        return (easy_min, easy_max)
+
+    if block_type == "interval":
+        if uses_repetition_paces(
+            workout_type=workout_type,
+            total_km=total_km,
+            progression_level=progression_level,
+        ):
+            return offset_pair(paces, "repetition", REPETITION_OFFSET_S_PER_KM)
+        return offset_pair(paces, "interval", INTERVAL_OFFSET_S_PER_KM)
+
+    if workout_type == "tempo":
+        if tempo_main_is_cruise(
+            total_km=total_km, progression_level=progression_level
+        ):
+            return offset_pair(paces, "threshold", TEMPO_CRUISE_OFFSET_S_PER_KM)
+        return offset_pair(paces, "threshold", TEMPO_CONTINUOUS_OFFSET_S_PER_KM)
+
+    if workout_type in ("intervals", "repetition"):
+        return offset_pair(paces, "interval", INTERVAL_OFFSET_S_PER_KM)
+
+    return (easy_min, easy_max)
+
+
 def build_daniels_blocks_with_ranges(
     workout_type: str,
     total_km: float,
     vdot: float,
-    paces: Dict[str, float],
+    paces: dict[str, float],
     progression_level: int = 1,
-) -> List[WorkoutBlockIn]:
+) -> list[WorkoutBlockIn]:
     """Generates structured workout blocks adhering strictly to Daniels rules for T/I/R volume caps and pace ranges."""
 
-    easy_min = paces.get("easy_min", 0.0)
-    easy_max = paces.get("easy_max", 0.0)
-    threshold = paces.get("threshold", 0.0)
-    interval = paces.get("interval", 0.0)
-    repetition = paces.get("repetition", 0.0)
+    blocks: list[WorkoutBlockIn] = []
 
-    blocks: List[WorkoutBlockIn] = []
+    def block(block_type: str, **fields: object) -> WorkoutBlockIn:
+        pace, pace_range = resolve_block_paces(
+            workout_type=workout_type,
+            block_type=block_type,
+            paces=paces,
+            total_km=total_km,
+            progression_level=progression_level,
+        )
+        return WorkoutBlockIn(
+            block_type=block_type,  # type: ignore[arg-type]
+            pace_seconds_per_km=pace,
+            pace_range_end_seconds_per_km=pace_range,
+            **fields,  # type: ignore[arg-type]
+        )
 
     if workout_type == "easy_run":
         # Easy run with pace range (easy_min to easy_max)
         blocks.append(
-            WorkoutBlockIn(
+            block(
+                "main",
                 position=1,
-                block_type="main",
                 repeats=1,
                 distance_m=int(total_km * 1000),
-                pace_seconds_per_km=easy_min,
-                pace_range_end_seconds_per_km=easy_max,
                 notes="Rodaje continuo en Zona 2 aeróbica",
             )
         )
 
     elif workout_type == "tempo":
         # Daniels Tempo rule: Tempo volume <= 10% weekly volume or max 20-30 min
-        warmup_m = 2000
-        cooldown_m = 1500
-        tempo_m = max(2000, int((total_km * 1000) - warmup_m - cooldown_m))
+        warmup_m = TEMPO_WARMUP_M
+        cooldown_m = TEMPO_COOLDOWN_M
+        tempo_m = max(
+            TEMPO_WARMUP_M, int((total_km * 1000) - warmup_m - cooldown_m)
+        )
 
         blocks.append(
-            WorkoutBlockIn(
+            block(
+                "warmup",
                 position=1,
-                block_type="warmup",
                 repeats=1,
                 distance_m=warmup_m,
-                pace_seconds_per_km=easy_min,
-                pace_range_end_seconds_per_km=easy_max,
                 notes="Entrada en calor suave y movilidad",
             )
         )
 
-        if progression_level >= 2 and tempo_m >= 4000:
+        if tempo_main_is_cruise(
+            total_km=total_km, progression_level=progression_level
+        ):
             # Cruise intervals (e.g., 2x2000m or 3x2000m @ T with 60s jog recovery)
             repeats = max(2, min(4, tempo_m // 2000))
             rep_dist = int(tempo_m // repeats)
             blocks.append(
-                WorkoutBlockIn(
+                block(
+                    "main",
                     position=2,
-                    block_type="main",
                     repeats=repeats,
                     distance_m=rep_dist,
-                    pace_seconds_per_km=round(threshold - 3, 1),
-                    pace_range_end_seconds_per_km=round(threshold + 3, 1),
                     recovery_seconds=60,
                     recovery_type="jog",
                     notes=f"{repeats}x{rep_dist}m al ritmo de umbral (T)",
@@ -157,59 +294,55 @@ def build_daniels_blocks_with_ranges(
         else:
             # Continuous Tempo
             blocks.append(
-                WorkoutBlockIn(
+                block(
+                    "main",
                     position=2,
-                    block_type="main",
                     repeats=1,
                     distance_m=tempo_m,
-                    pace_seconds_per_km=round(threshold - 4, 1),
-                    pace_range_end_seconds_per_km=round(threshold + 4, 1),
                     notes=f"Bloque continuo de {tempo_m // 1000} km a ritmo Tempo (T)",
                 )
             )
 
         blocks.append(
-            WorkoutBlockIn(
+            block(
+                "cooldown",
                 position=3,
-                block_type="cooldown",
                 repeats=1,
                 distance_m=cooldown_m,
-                pace_seconds_per_km=easy_min,
-                pace_range_end_seconds_per_km=easy_max,
                 notes="Vuelta a la calma y trote regenerativo",
             )
         )
 
     elif workout_type in ["intervals", "repetition"]:
         # Daniels Interval rule: I volume <= 8% weekly volume (max 10km); Reps 3-5 min
-        warmup_m = 2000
-        cooldown_m = 1500
+        warmup_m = INTERVAL_WARMUP_M
+        cooldown_m = INTERVAL_COOLDOWN_M
         main_m = max(1200, int((total_km * 1000) - warmup_m - cooldown_m))
 
         blocks.append(
-            WorkoutBlockIn(
+            block(
+                "warmup",
                 position=1,
-                block_type="warmup",
                 repeats=1,
                 distance_m=warmup_m,
-                pace_seconds_per_km=easy_min,
-                pace_range_end_seconds_per_km=easy_max,
                 notes="Entrada en calor progresiva",
             )
         )
 
-        if workout_type == "repetition" or (progression_level == 1 and total_km <= 7.0):
+        if uses_repetition_paces(
+            workout_type=workout_type,
+            total_km=total_km,
+            progression_level=progression_level,
+        ):
             # Repetition work (400m - 600m @ R pace)
             rep_dist = 400
             repeats = max(4, min(10, main_m // rep_dist))
             blocks.append(
-                WorkoutBlockIn(
+                block(
+                    "interval",
                     position=2,
-                    block_type="interval",
                     repeats=repeats,
                     distance_m=rep_dist,
-                    pace_seconds_per_km=round(repetition - 2, 1),
-                    pace_range_end_seconds_per_km=round(repetition + 2, 1),
                     recovery_seconds=90,
                     recovery_type="walk",
                     notes=f"{repeats}x{rep_dist}m a ritmo R con recuperación completa",
@@ -220,13 +353,11 @@ def build_daniels_blocks_with_ranges(
             rep_dist = 1000 if main_m >= 3000 else 800
             repeats = max(3, min(6, main_m // rep_dist))
             blocks.append(
-                WorkoutBlockIn(
+                block(
+                    "interval",
                     position=2,
-                    block_type="interval",
                     repeats=repeats,
                     distance_m=rep_dist,
-                    pace_seconds_per_km=round(interval - 3, 1),
-                    pace_range_end_seconds_per_km=round(interval + 3, 1),
                     recovery_seconds=90,
                     recovery_type="jog",
                     notes=f"{repeats}x{rep_dist}m a ritmo de VO2máx (I)",
@@ -234,13 +365,11 @@ def build_daniels_blocks_with_ranges(
             )
 
         blocks.append(
-            WorkoutBlockIn(
+            block(
+                "cooldown",
                 position=3,
-                block_type="cooldown",
                 repeats=1,
                 distance_m=cooldown_m,
-                pace_seconds_per_km=easy_min,
-                pace_range_end_seconds_per_km=easy_max,
                 notes="Vuelta a la calma y soltar piernas",
             )
         )
@@ -248,13 +377,11 @@ def build_daniels_blocks_with_ranges(
     else:
         # Fallback single block
         blocks.append(
-            WorkoutBlockIn(
+            block(
+                "main",
                 position=1,
-                block_type="main",
                 repeats=1,
                 distance_m=int(total_km * 1000),
-                pace_seconds_per_km=easy_min,
-                pace_range_end_seconds_per_km=easy_max,
             )
         )
 

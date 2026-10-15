@@ -3,7 +3,10 @@
 This module deliberately avoids importing ``app.core.config`` so its pure-core
 tests can run without environment configuration. Activity selection reuses the
 shared ``run_activity_query`` predicate from ``app.services.running`` instead of
-hardcoding a source filter (R30).
+hardcoding a source filter (R30), and block paces are resolved through
+``app.services.workout_library.resolve_block_paces`` — the same single source of
+truth the plan generator uses — so a recalibration reproduces the generator's
+paces for the new VDOT instead of duplicating its offsets (R11/R12).
 """
 
 import datetime as dt
@@ -32,8 +35,10 @@ from app.models import (
     WorkoutBlockIn,
     WorkoutIn,
 )
+from app.services.plan_calendar import week_start_offset
 from app.services.running import RUNNING_TIMEZONE, run_activity_query
 from app.services.running_math import calculate_vdot, get_training_paces_seconds
+from app.services.workout_library import resolve_block_paces
 
 # Recency window "W" and minimum qualifying distance "D" from the spec glossary.
 RECENCY_WINDOW_DAYS = 42
@@ -41,12 +46,6 @@ MIN_QUALIFYING_DISTANCE_M = 3000.0
 
 # A jump above this many VDOT points is flagged `suspicious` (R15).
 SUSPICIOUS_DELTA_THRESHOLD = 2.0
-
-# Repetition (R) work uses shorter reps than VO2max (I) work.
-REPETITION_MAX_DISTANCE_M = 600.0
-
-# Long-run workouts with this many blocks carry a race-pace main block (R12).
-LONG_RUN_BLOCK_COUNT_FOR_RACE_PACE = 3
 
 # Workout-level pace key per workout type; `race` keeps its stored pace (D6).
 _WORKOUT_PACE_KEY: dict[str, str] = {
@@ -58,8 +57,6 @@ _WORKOUT_PACE_KEY: dict[str, str] = {
     "intervals": "interval",
     "test": "threshold",
 }
-
-_EASY_BLOCK_TYPES = ("warmup", "cooldown", "strides", "recovery")
 
 
 @dataclass(frozen=True)
@@ -377,15 +374,6 @@ def classify_recalibration(
     )
 
 
-def _bounded(
-    paces: dict[str, float], key: str, offset: float
-) -> tuple[float | None, float | None]:
-    base = paces.get(key)
-    if base is None:
-        return (None, None)
-    return (round(base - offset, 1), round(base + offset, 1))
-
-
 def workout_pace_for(
     workout_type: str, paces: dict[str, float], current_pace: float | None
 ) -> float | None:
@@ -399,40 +387,44 @@ def block_paces_for(
     workout_type: str,
     *,
     block_type: str,
-    repeats: int,
-    distance_m: float | None,
     block_count: int,
     paces: dict[str, float],
     target_km: float,
+    progression_level: int,
+    total_km: float,
     current_pace: float | None,
     current_range: float | None,
 ) -> tuple[float | None, float | None]:
-    """Block pace + range, mirroring the workout-library offsets (R11/R12/R24).
+    """Block pace + range, delegated to the generator's own rules (R11/R12/R24).
 
-    Distances and repetition counts are never touched: only the pace pair moves.
+    `block_type`/`progression_level`/`total_km` are the same inputs the plan
+    generator uses, so a recalibration reproduces the generated paces exactly and
+    distances and repetition counts are never touched. `race` blocks are
+    goal-pinned (D6): their stored pace pair is returned unchanged.
     """
-    if block_type in _EASY_BLOCK_TYPES:
-        return (paces.get("easy_min"), paces.get("easy_max"))
-
-    if block_type == "interval":
-        if distance_m is not None and distance_m <= REPETITION_MAX_DISTANCE_M:
-            return _bounded(paces, "repetition", 2.0)
-        return _bounded(paces, "interval", 3.0)
-
-    # `main` (and any unexpected block type) follows the workout-level rule.
     if workout_type == "race":
         return (current_pace, current_range)
-    if workout_type == "tempo":
-        offset = 3.0 if repeats > 1 else 4.0
-        return _bounded(paces, "threshold", offset)
-    if workout_type in ("intervals", "repetition"):
-        return _bounded(paces, "interval", 3.0)
-    if workout_type == "test":
-        return (paces.get("threshold"), None)
-    if workout_type == "long_run" and block_count >= LONG_RUN_BLOCK_COUNT_FOR_RACE_PACE:
-        key = "marathon" if target_km >= 42.2 else "threshold"
-        return (paces.get(key), None)
-    return (paces.get("easy_min"), paces.get("easy_max"))
+    return resolve_block_paces(
+        workout_type=workout_type,
+        block_type=block_type,
+        paces=paces,
+        total_km=total_km,
+        target_km=target_km,
+        progression_level=progression_level,
+        block_count=block_count,
+    )
+
+
+def _phase_levels(snapshot: PlanSnapshot) -> dict[uuid.UUID, int]:
+    """Workout id → `progression_level` (its phase position), as generated (R12)."""
+    level_by_phase = {phase.id: phase.position for phase in snapshot.phases}
+    level_by_week = {
+        week.id: level_by_phase.get(week.phase_id, 1) for week in snapshot.weeks
+    }
+    return {
+        workout.id: level_by_week.get(workout.week_id, 1)
+        for workout in snapshot.workouts
+    }
 
 
 def resolve_effective_from_week(
@@ -448,7 +440,7 @@ def resolve_effective_from_week(
     plan's week-start day. Returns `None` when no future week remains.
     """
     first_week_start = plan_start_date - dt.timedelta(
-        days=(plan_start_date.isoweekday() - week_start_day) % 7
+        days=week_start_offset(plan_start_date.isoweekday(), week_start_day)
     )
     candidates: list[tuple[int, dt.date]] = []
     for week in weeks:
@@ -579,6 +571,7 @@ def recalibration_preview(
     classification = classify_recalibration(current_vdot, new_vdot)
     target_km = snapshot.plan.distance_km or 0.0
     weeks_by_id = {week.id: week for week in snapshot.weeks}
+    levels = _phase_levels(snapshot)
 
     changes: list[RecalibrationChange] = []
     affected_weeks: set[int] = set()
@@ -598,11 +591,11 @@ def recalibration_preview(
             block_pace, block_range = block_paces_for(
                 workout.type,
                 block_type=block.block_type,
-                repeats=block.repeats,
-                distance_m=block.distance_m,
                 block_count=len(blocks),
                 paces=new_paces,
                 target_km=target_km,
+                progression_level=levels.get(workout.id, 1),
+                total_km=workout.distance_km or 0.0,
                 current_pace=block.pace_seconds_per_km,
                 current_range=block.pace_range_end_seconds_per_km,
             )
@@ -736,6 +729,7 @@ def apply_recalibration(
     new_paces = get_training_paces_seconds(new_vdot)
     target_km = snapshot.plan.distance_km or 0.0
     weeks_by_id = {week.id: week for week in snapshot.weeks}
+    levels = _phase_levels(snapshot)
 
     affected_workouts = 0
     affected_blocks = 0
@@ -759,11 +753,11 @@ def apply_recalibration(
             pace, pace_range = block_paces_for(
                 workout.type,
                 block_type=block.block_type,
-                repeats=block.repeats,
-                distance_m=block.distance_m,
                 block_count=len(blocks),
                 paces=new_paces,
                 target_km=target_km,
+                progression_level=levels.get(workout.id, 1),
+                total_km=workout.distance_km or 0.0,
                 current_pace=block.pace_seconds_per_km,
                 current_range=block.pace_range_end_seconds_per_km,
             )

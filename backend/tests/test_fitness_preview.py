@@ -254,94 +254,63 @@ def test_workout_pace_rules():
 def test_block_pace_rules():
     paces = get_training_paces_seconds(45.0)
 
-    assert block_paces_for(
-        "tempo",
-        block_type="warmup",
-        repeats=1,
-        distance_m=2000,
-        block_count=3,
-        paces=paces,
-        target_km=21.1,
-        current_pace=1.0,
-        current_range=2.0,
-    ) == (paces["easy_min"], paces["easy_max"])
-    assert block_paces_for(
-        "tempo",
-        block_type="main",
-        repeats=1,
-        distance_m=8000,
-        block_count=3,
-        paces=paces,
-        target_km=21.1,
-        current_pace=1.0,
-        current_range=2.0,
-    ) == (round(paces["threshold"] - 4, 1), round(paces["threshold"] + 4, 1))
-    assert block_paces_for(
-        "tempo",
-        block_type="main",
-        repeats=3,
-        distance_m=2000,
-        block_count=3,
-        paces=paces,
-        target_km=21.1,
-        current_pace=1.0,
-        current_range=2.0,
-    ) == (round(paces["threshold"] - 3, 1), round(paces["threshold"] + 3, 1))
-    assert block_paces_for(
-        "intervals",
-        block_type="interval",
-        repeats=4,
-        distance_m=1000,
-        block_count=3,
-        paces=paces,
-        target_km=21.1,
-        current_pace=1.0,
-        current_range=2.0,
-    ) == (round(paces["interval"] - 3, 1), round(paces["interval"] + 3, 1))
-    assert block_paces_for(
-        "intervals",
-        block_type="interval",
-        repeats=8,
-        distance_m=400,
-        block_count=3,
-        paces=paces,
-        target_km=21.1,
-        current_pace=1.0,
-        current_range=2.0,
-    ) == (round(paces["repetition"] - 2, 1), round(paces["repetition"] + 2, 1))
-    assert block_paces_for(
-        "long_run",
-        block_type="main",
-        repeats=1,
-        distance_m=6000,
-        block_count=3,
-        paces=paces,
-        target_km=21.1,
-        current_pace=1.0,
-        current_range=2.0,
-    ) == (paces["threshold"], None)
-    assert block_paces_for(
-        "long_run",
-        block_type="main",
-        repeats=1,
-        distance_m=6000,
-        block_count=3,
-        paces=paces,
-        target_km=42.2,
-        current_pace=1.0,
-        current_range=2.0,
-    ) == (paces["marathon"], None)
-    assert block_paces_for(
-        "race",
-        block_type="main",
-        repeats=1,
-        distance_m=21100,
-        block_count=1,
-        paces=paces,
-        target_km=21.1,
-        current_pace=270.0,
-        current_range=None,
-    ) == (270.0, None)
+    def resolve(workout_type: str, block_type: str, **overrides):
+        options = {
+            "block_count": 3,
+            "paces": paces,
+            "target_km": 21.1,
+            "progression_level": 1,
+            "total_km": 12.0,
+            "current_pace": 1.0,
+            "current_range": 2.0,
+        }
+        options.update(overrides)
+        return block_paces_for(workout_type, block_type=block_type, **options)
+
+    # Easy segments of tempo/interval sessions keep the full easy range.
+    assert resolve("tempo", "warmup") == (paces["easy_min"], paces["easy_max"])
+    assert resolve("tempo", "cooldown") == (paces["easy_min"], paces["easy_max"])
+    # Continuous tempo (phase 1 or low volume) vs cruise intervals (phase 2+).
+    assert resolve("tempo", "main", progression_level=1) == (
+        round(paces["threshold"] - 4, 1),
+        round(paces["threshold"] + 4, 1),
+    )
+    assert resolve("tempo", "main", progression_level=2) == (
+        round(paces["threshold"] - 3, 1),
+        round(paces["threshold"] + 3, 1),
+    )
+    assert resolve("tempo", "main", progression_level=2, total_km=6.0) == (
+        round(paces["threshold"] - 4, 1),
+        round(paces["threshold"] + 4, 1),
+    )
+    # Interval vs repetition follows the generator rule, not the rep distance.
+    assert resolve("intervals", "interval", progression_level=3) == (
+        round(paces["interval"] - 3, 1),
+        round(paces["interval"] + 3, 1),
+    )
+    assert resolve("intervals", "interval", progression_level=1, total_km=6.0) == (
+        round(paces["repetition"] - 2, 1),
+        round(paces["repetition"] + 2, 1),
+    )
+    assert resolve("repetition", "interval", progression_level=2) == (
+        round(paces["repetition"] - 2, 1),
+        round(paces["repetition"] + 2, 1),
+    )
+    # Long-run goal-pace block: marathon for 42.2K, threshold otherwise.
+    assert resolve("long_run", "main") == (paces["threshold"], None)
+    assert resolve("long_run", "main", target_km=42.2) == (paces["marathon"], None)
+    # A single-block long run stays easy; its warmup/cooldown have no range.
+    assert resolve("long_run", "main", block_count=1) == (paces["easy_min"], None)
+    assert resolve("long_run", "warmup") == (paces["easy_min"], None)
+    assert resolve("long_run", "cooldown") == (paces["easy_max"], None)
+    # The tune-up runs its easy segments at a single pace, never a range.
+    assert resolve("test", "warmup") == (paces["easy_max"], None)
+    assert resolve("test", "cooldown") == (paces["easy_max"], None)
+    assert resolve("test", "main") == (paces["threshold"], None)
+    # Strides carry the repetition pace with no range.
+    assert resolve("easy_run", "strides") == (paces["repetition"], None)
+    # Race keeps its stored pace (D6).
+    assert resolve("race", "main", current_pace=270.0, current_range=None) == (270.0, None)
 
 
 def test_preview_reports_only_future_weeks_and_new_paces():
