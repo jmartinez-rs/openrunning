@@ -308,7 +308,7 @@ def test_latest_applied_recalibration_ignores_non_applied_rows():
         session.add(newest_applied)
         session.commit()
 
-        latest = latest_applied_recalibration(session, plan.id)
+        latest = latest_applied_recalibration(session, plan)
 
         assert latest is not None
         assert latest.id == newest_applied.id
@@ -319,8 +319,46 @@ def test_latest_applied_recalibration_is_none_without_history():
     with _session() as session:
         plan, _ = _persist_plan(session)
 
-        assert latest_applied_recalibration(session, plan.id) is None
+        assert latest_applied_recalibration(session, plan) is None
         assert derive_current_vdot(plan.baseline, None) == 45.0
+
+
+def test_latest_applied_recalibration_is_scoped_to_the_plan_owner():
+    """A foreign audit row must never feed the plan's derived current VDOT."""
+    with _session() as session:
+        plan, _ = _persist_plan(session)
+        intruder = User(email=f"{uuid.uuid4()}@example.com", hashed_password="x")
+        session.add(intruder)
+        session.flush()
+
+        def row(user_id: uuid.UUID, new_vdot: float, created_at: dt.datetime):
+            return PlanRecalibration(
+                plan_id=plan.id,
+                user_id=user_id,
+                source="manual",
+                old_vdot=45.0,
+                new_vdot=new_vdot,
+                delta_vdot=round(new_vdot - 45.0, 1),
+                old_paces={"threshold": 300.0},
+                new_paces={"threshold": 297.0},
+                kind="improve",
+                effective_from_week=2,
+                effective_from_date=EFFECTIVE_DATE,
+                created_at=created_at,
+            )
+
+        owned = row(plan.user_id, 47.0, dt.datetime(2026, 10, 11, 12, tzinfo=dt.UTC))
+        # Newer, pointing at the same plan but owned by another user.
+        foreign = row(intruder.id, 55.0, dt.datetime(2026, 10, 13, 12, tzinfo=dt.UTC))
+        session.add(owned)
+        session.add(foreign)
+        session.commit()
+
+        latest = latest_applied_recalibration(session, plan)
+
+        assert latest is not None
+        assert latest.id == owned.id
+        assert derive_current_vdot(plan.baseline, latest) == 47.0
 
 
 def test_second_apply_compares_against_the_advanced_current_vdot():

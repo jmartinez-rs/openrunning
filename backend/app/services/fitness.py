@@ -700,13 +700,19 @@ def derive_current_vdot(
 
 
 def latest_applied_recalibration(
-    session: Session, plan_id: uuid.UUID
+    session: Session, plan: RunningPlan
 ) -> PlanRecalibration | None:
-    """Most recent APPLIED recalibration for a plan (R29), or None."""
+    """Most recent APPLIED recalibration for a plan, or None (R29).
+
+    Takes the plan (not a raw `plan_id`) and filters by its owner as well, so no
+    caller — present or future — can read another user's recalibration history.
+    A row whose `plan_id` matches but whose `user_id` does not is ignored.
+    """
     return session.exec(
         select(PlanRecalibration)
         .where(
-            PlanRecalibration.plan_id == plan_id,
+            PlanRecalibration.plan_id == plan.id,
+            PlanRecalibration.user_id == plan.user_id,
             PlanRecalibration.applied.is_(True),
         )
         .order_by(
