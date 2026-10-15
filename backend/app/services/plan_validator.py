@@ -1,10 +1,13 @@
-from datetime import timedelta
+import json
 import math
-from typing import List, Dict, Any
+from datetime import timedelta
+from typing import Any, List
 
 from app.models import (
+    AthleteBaseline,
     PlanGeneratorConfig,
     PlanValidationIssue,
+    RunningPlan,
     RunningPlanCreate,
     ValidationSeverity,
 )
@@ -208,3 +211,68 @@ def validate_plan_invariants(
         )
 
     return issues
+
+
+def new_error_issues(
+    pre: list[PlanValidationIssue], post: list[PlanValidationIssue]
+) -> list[PlanValidationIssue]:
+    """Error issues present only in `post`, compared by issue identity (R17).
+
+    Identity is ``(code, canonical details)``: a new error in a different
+    week/date is detected even when the error-code set is unchanged. Messages
+    are not part of the identity and warning/info issues never block (S6).
+    """
+
+    def identity(issue: PlanValidationIssue) -> tuple[str, str]:
+        return (
+            issue.code,
+            json.dumps(issue.details or {}, sort_keys=True, default=str),
+        )
+
+    pre_errors = {identity(issue) for issue in pre if issue.severity == "error"}
+    return [
+        issue
+        for issue in post
+        if issue.severity == "error" and identity(issue) not in pre_errors
+    ]
+
+
+def _resolve_num_weeks(plan: RunningPlan, params: dict[str, Any]) -> int:
+    """Clamp the plan length to the generator's supported range (4..24)."""
+    raw = params.get("num_weeks")
+    if isinstance(raw, (int, float)) and raw:
+        return max(4, min(24, int(raw)))
+    if plan.end_date is not None and plan.start_date is not None:
+        weeks = ((plan.end_date - plan.start_date).days + 1) // 7
+        if weeks > 0:
+            return max(4, min(24, weeks))
+    return 4
+
+
+def reconstruct_generator_config(plan: RunningPlan) -> PlanGeneratorConfig:
+    """Rebuild the generator config a persisted plan was created with (R17, R24, R26).
+
+    Only ``app.models`` is used on purpose: ``plan_generator`` imports this
+    module, so importing the generator back would be circular. ``selected_days``
+    and ``plan_type`` are approximated (the validator ignores them).
+    """
+    if not plan.baseline:
+        raise ValueError("plan has no baseline to reconstruct the generator config")
+
+    params: dict[str, Any] = dict(plan.generation_params or {})
+
+    return PlanGeneratorConfig(
+        plan_type=str(params.get("plan_type", "race")),
+        goal_type=params.get("goal_type", "finish"),
+        target_km=float(params.get("target_km", plan.distance_km or 0.0)),
+        target_time_seconds=plan.target_time_seconds,
+        num_weeks=_resolve_num_weeks(plan, params),
+        start_date=plan.start_date,
+        week_start_day=plan.week_start_day,
+        selected_days=[int(day) for day in params.get("selected_days", [])],
+        race_id=plan.race_id,
+        baseline=AthleteBaseline.model_validate(plan.baseline),
+        confidence=params.get("confidence"),
+        conservative_mode=bool(params.get("conservative_mode", False)),
+        engine_version=plan.engine_version or "v2",
+    )

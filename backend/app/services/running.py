@@ -14,10 +14,12 @@ salvo `cancelled` y el override manual `status_override`. Precedencia:
 """
 
 import uuid
+from collections.abc import Sequence
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from sqlalchemy import Select
 from sqlmodel import Session, col, select
 
 from app.models import (
@@ -43,6 +45,38 @@ def _activity_window(
         workout_date + timedelta(days=1), time(_WINDOW_START_HOUR), tzinfo=UTC
     )
     return start, end
+
+
+# Single source of truth for "what counts as a run activity". Recalibration
+# (app/services/fitness.py) reuses this predicate instead of hardcoding its own
+# source filter, so evidence selection and status resolution agree (R30).
+RUN_ACTIVITY_SOURCE_TYPES: tuple[str, ...] = ("strava",)
+
+
+def run_activity_query(
+    user_id: uuid.UUID,
+    start: datetime,
+    end: datetime,
+    *,
+    exclude_ids: Sequence[uuid.UUID] | Select | None = None,
+) -> Select[tuple[Activity, ActivityCardio]]:
+    """Return the shared cardio-running activity query for a user and window.
+
+    Joins `Activity` with `ActivityCardio` (inner join: an activity only counts
+    if it has cardio data) and filters by owner, run source type and the local
+    timestamp window. `exclude_ids` accepts either explicit ids or a scalar
+    subquery, used to skip activities already linked to another session.
+    """
+    conditions = [
+        Activity.user_id == user_id,
+        Activity.source_type.in_(RUN_ACTIVITY_SOURCE_TYPES),
+        Activity.timestamp >= start,
+        Activity.timestamp < end,
+    ]
+    if exclude_ids is not None:
+        conditions.append(Activity.id.not_in(exclude_ids))
+
+    return select(Activity, ActivityCardio).join(ActivityCardio).where(*conditions)
 
 
 def resolve_workout_status(
@@ -91,15 +125,7 @@ def resolve_workout_status(
         )
     )
     matches = session.exec(
-        select(Activity, ActivityCardio)
-        .join(ActivityCardio)
-        .where(
-            Activity.user_id == user_id,
-            Activity.source_type == "strava",
-            Activity.timestamp >= start,
-            Activity.timestamp < end,
-            Activity.id.not_in(linked),
-        )
+        run_activity_query(user_id, start, end, exclude_ids=linked)
         .order_by(col(Activity.timestamp).asc())
         .limit(1)
     ).all()
