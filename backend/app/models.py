@@ -1042,3 +1042,83 @@ class ActivitySummaryPublic(SQLModel):
     by_type: list[ActivityTypeSummary]
     monthly: ActivitySummaryMonthly
     calendar: list[ActivitySummaryCalendarDay]
+
+
+# ---------------------------------------------------------------------------
+# Plan Recalibration (dynamic VDOT)
+# ---------------------------------------------------------------------------
+
+
+RecalibrationKind = Literal["improve", "decline"]
+RecalibrationSource = Literal["test", "activity", "manual"]
+
+
+class PlanRecalibration(SQLModel, table=True):
+    """Append-only audit row for one explicit VDOT recalibration (R22/R23).
+
+    Rows are never edited or deleted: two applies in the same week persist two
+    rows, and the latest applied row supplies the derived current VDOT (R29).
+    """
+
+    __tablename__ = "planrecalibration"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    plan_id: uuid.UUID = Field(
+        foreign_key="runningplan.id", nullable=False, ondelete="CASCADE", index=True
+    )
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE", index=True
+    )
+    source: RecalibrationSource = Field(
+        sa_column=Column("source", String(16), nullable=False)
+    )
+    source_ref: dict[str, object] | None = Field(default=None, sa_column=Column(JSON))
+    old_vdot: float
+    new_vdot: float
+    delta_vdot: float
+    old_paces: dict[str, float] = Field(sa_column=Column(JSON, nullable=False))
+    new_paces: dict[str, float] = Field(sa_column=Column(JSON, nullable=False))
+    kind: RecalibrationKind = Field(
+        sa_column=Column("kind", String(16), nullable=False)
+    )
+    suspicious: bool = False
+    effective_from_week: int
+    effective_from_date: dt.date
+    affected_workouts: int = 0
+    affected_blocks: int = 0
+    engine_version: str = Field(default="v3", max_length=16)
+    applied: bool = True
+    created_at: datetime = Field(  # type: ignore[call-overload]
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),
+    )
+
+
+class PlanRecalibrationPublic(SQLModel):
+    id: uuid.UUID
+    plan_id: uuid.UUID
+    user_id: uuid.UUID
+    source: RecalibrationSource
+    source_ref: dict[str, object] | None = None
+    old_vdot: float
+    new_vdot: float
+    delta_vdot: float
+    old_paces: dict[str, float]
+    new_paces: dict[str, float]
+    kind: RecalibrationKind
+    suspicious: bool
+    effective_from_week: int
+    effective_from_date: dt.date
+    affected_workouts: int
+    affected_blocks: int
+    engine_version: str
+    applied: bool
+    created_at: datetime | None = None
+
+
+class PlanRecalibrationsPublic(SQLModel):
+    data: list[PlanRecalibrationPublic]
+    count: int
+    current_vdot: float | None = None
+    current_vdot_source: str | None = None
+    current_vdot_date: dt.date | None = None
