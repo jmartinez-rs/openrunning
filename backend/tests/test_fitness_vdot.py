@@ -1,13 +1,12 @@
 """Unit tests for VDOT estimation from real evidence (R1-R6, R27, R30)."""
 
 import datetime as dt
-import inspect
 import uuid
 from datetime import UTC, datetime, time
 
 import pytest
 from sqlalchemy import create_engine
-from sqlmodel import Session, SQLModel
+from sqlmodel import Session, SQLModel, select
 
 from app.models import (
     Activity,
@@ -326,9 +325,62 @@ def test_best_test_effort_ignores_unmatched_test_workouts():
         assert best_test_effort(session, plan, as_of=TODAY) is None
 
 
-def test_fitness_module_reuses_the_shared_run_predicate():
+def test_fitness_selects_evidence_through_the_shared_run_predicate(monkeypatch):
     from app.services import fitness
 
-    source = inspect.getsource(fitness)
+    with _session() as session:
+        plan = _plan(session)
+        qualifying = _add_activity(
+            session,
+            plan.user_id,
+            day=TODAY - dt.timedelta(days=3),
+            distance_meters=10000.0,
+            time_seconds=2400,
+        )
+        session.commit()
 
-    assert "source_type" not in source
+        calls: list[tuple] = []
+        shared = fitness.run_activity_query
+
+        def spy(user_id, start, end, *, exclude_ids=None):
+            calls.append((user_id, start, end))
+            return shared(user_id, start, end, exclude_ids=exclude_ids)
+
+        monkeypatch.setattr(fitness, "run_activity_query", spy)
+
+        effort = best_recent_effort(session, plan.user_id, as_of=TODAY)
+
+        assert len(calls) == 1
+        assert calls[0][0] == plan.user_id
+        assert effort is not None
+        assert effort.activity_id == qualifying.id
+
+
+def test_fitness_evidence_comes_from_the_shared_predicate_not_a_local_filter(monkeypatch):
+    from app.services import fitness
+
+    with _session() as session:
+        plan = _plan(session)
+        # A perfectly qualifying strava + cardio activity is present in the DB…
+        _add_activity(
+            session,
+            plan.user_id,
+            day=TODAY - dt.timedelta(days=3),
+            distance_meters=10000.0,
+            time_seconds=2400,
+        )
+        session.commit()
+
+        # …but the shared predicate is patched to exclude every activity, so a
+        # result can only come from a filter that bypasses the predicate.
+        def excludes_everything(user_id, start, end, *, exclude_ids=None):
+            return (
+                select(Activity, ActivityCardio)
+                .join(ActivityCardio)
+                .where(Activity.id.is_(None))
+            )
+
+        monkeypatch.setattr(fitness, "run_activity_query", excludes_everything)
+
+        assert best_recent_effort(session, plan.user_id, as_of=TODAY) is None
+        assert estimate_vdot_for_plan(session, plan, as_of=TODAY) is None
