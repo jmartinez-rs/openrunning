@@ -4,11 +4,14 @@ El estado de cada sesión es derivado en cada lectura (ver
 `app/services/running.py`): la única edición manual es la cancelación.
 """
 
+import logging
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import col, func, select
+from pydantic import ValidationError
+from sqlalchemy import Select
+from sqlmodel import Field, SQLModel, col, func, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
@@ -16,7 +19,12 @@ from app.models import (
     ActivityCardio,
     PlanDraftResponse,
     PlanGeneratorConfig,
+    PlanRecalibration,
+    PlanRecalibrationPublic,
+    PlanRecalibrationsPublic,
     Race,
+    RecalibrationKind,
+    RecalibrationSource,
     RunningPhase,
     RunningPlan,
     RunningPlanCreate,
@@ -31,11 +39,35 @@ from app.models import (
     WorkoutBlock,
     WorkoutBlockPublic,
     WorkoutDuplicateIn,
+    WorkoutType,
+)
+from app.services.fitness import (
+    PlanSnapshot,
+    apply_recalibration,
+    classify_recalibration,
+    derive_current_vdot,
+    estimate_vdot_for_plan,
+    latest_applied_recalibration,
+    plan_to_create,
+    recalibration_preview,
+    resolve_effective_from_week,
+    snapshot_plan,
 )
 from app.services.plan_generator import generate_plan_draft_v2
-from app.services.running import build_plan_summary, resolve_workout_status
+from app.services.plan_validator import (
+    new_error_issues,
+    reconstruct_generator_config,
+    validate_plan_invariants,
+)
+from app.services.running import (
+    RUNNING_TIMEZONE,
+    build_plan_summary,
+    resolve_workout_status,
+)
 
 router = APIRouter(prefix="/running-plans", tags=["running-plans"])
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -549,3 +581,389 @@ def duplicate_workout(
     session.add(plan)
     session.commit()
     return _workout_public(session, current_user.id, new_workout)
+
+
+# ---------------------------------------------------------------------------
+# Dynamic VDOT recalibration (R18-R21, R28, D0)
+# ---------------------------------------------------------------------------
+
+
+class RecalibrationPreviewRequest(SQLModel):
+    """Optional body: an explicit `new_vdot` and a forward-compat `source`."""
+
+    new_vdot: float | None = Field(default=None, ge=20, le=85)
+    source: RecalibrationSource | None = None
+
+
+class RecalibrationApplyRequest(RecalibrationPreviewRequest):
+    """`confirm` is required on every apply; `acknowledge_risk` on risky ones."""
+
+    confirm: bool = False
+    acknowledge_risk: bool = False
+
+
+class RecalibrationChangePublic(SQLModel):
+    workout_id: uuid.UUID
+    date: date
+    type: WorkoutType
+    old_pace: float | None = None
+    new_pace: float | None = None
+
+
+class RecalibrationPreviewPublic(SQLModel):
+    vdot: float | None = None
+    recommend_fitness_test: bool = False
+    old_vdot: float | None = None
+    new_vdot: float | None = None
+    delta_vdot: float | None = None
+    kind: RecalibrationKind | None = None
+    suspicious: bool = False
+    source: RecalibrationSource | None = None
+    evidence: dict | None = None
+    old_paces: dict[str, float] | None = None
+    new_paces: dict[str, float] | None = None
+    effective_from_week: int | None = None
+    effective_from_date: date | None = None
+    affected_weeks: list[int] = Field(default_factory=list)
+    changes: list[RecalibrationChangePublic] = Field(default_factory=list)
+    current_vdot: float | None = None
+    current_vdot_source: str | None = None
+    current_vdot_date: date | None = None
+
+
+class RecalibrationApplyPublic(RecalibrationPreviewPublic):
+    recalibration: PlanRecalibrationPublic
+
+
+def _today_local() -> date:
+    return datetime.now(RUNNING_TIMEZONE).date()
+
+
+def plan_lock_statement(plan_id: uuid.UUID) -> Select[tuple[RunningPlan]]:
+    """Locking SELECT for one plan row (``FOR UPDATE`` on PostgreSQL)."""
+    return select(RunningPlan).where(RunningPlan.id == plan_id).with_for_update()
+
+
+def lock_plan_for_update(session: SessionDep, plan: RunningPlan) -> RunningPlan:
+    """Take a row lock on the plan for the duration of the apply transaction.
+
+    Two concurrent applies must not lose updates (R23): the locking SELECT
+    serializes them on the plan row. SQLite (used by unit tests) does not support
+    ``FOR UPDATE`` and its dialect ignores it, while production PostgreSQL emits
+    it. The lock is released on commit/rollback.
+    """
+    return session.exec(plan_lock_statement(plan.id)).one()
+
+
+def _snapshot_with_effective_week(
+    session: SessionDep, plan: RunningPlan, *, today_local: date
+) -> tuple[PlanSnapshot, tuple[int, date]]:
+    """Shared plan-state check: the earliest D0 check after ownership is 404.
+
+    Returns the live snapshot plus the first strictly-future week, or raises
+    `409 no_future_week` (R14/R20).
+    """
+    snapshot = snapshot_plan(session, plan)
+    effective_from = resolve_effective_from_week(
+        snapshot.weeks,
+        week_start_day=plan.week_start_day,
+        plan_start_date=plan.start_date,
+        today_local=today_local,
+    )
+    if effective_from is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="no_future_week"
+        )
+    return snapshot, effective_from
+
+
+def _current_vdot_metadata(
+    plan: RunningPlan, last_applied: PlanRecalibration | None
+) -> tuple[float | None, str | None, date | None]:
+    """Derived current VDOT plus its source and date (R21/R29)."""
+    current_vdot = derive_current_vdot(plan.baseline, last_applied)
+    if last_applied is not None:
+        created = last_applied.created_at
+        when = created.date() if created else last_applied.effective_from_date
+        return current_vdot, last_applied.source, when
+    if current_vdot is not None:
+        return current_vdot, "baseline", None
+    return None, None, None
+
+
+def _resolve_target(
+    session: SessionDep,
+    plan: RunningPlan,
+    body: RecalibrationPreviewRequest | None,
+    *,
+    today_local: date,
+) -> tuple[float | None, RecalibrationSource | None, dict | None]:
+    """Resolve the target VDOT, its `source` and its evidence (NEW-3).
+
+    An explicit `new_vdot` always resolves to `source="manual"` (never NULL);
+    otherwise the best recent evidence decides test / activity, or nothing.
+    """
+    if body is not None and body.new_vdot is not None:
+        return body.new_vdot, "manual", None
+    estimate = estimate_vdot_for_plan(session, plan, as_of=today_local)
+    if estimate is None:
+        return None, None, None
+    return estimate.vdot, estimate.source, estimate.evidence
+
+
+def _preview_public(
+    preview,
+    *,
+    new_vdot: float,
+    current_vdot: float,
+    current_vdot_source: str | None,
+    current_vdot_date: date | None,
+) -> RecalibrationPreviewPublic:
+    return RecalibrationPreviewPublic(
+        vdot=new_vdot,
+        recommend_fitness_test=False,
+        old_vdot=preview.old_vdot,
+        new_vdot=preview.new_vdot,
+        delta_vdot=preview.delta_vdot,
+        kind=preview.kind,
+        suspicious=preview.suspicious,
+        source=preview.source,
+        evidence=preview.evidence,
+        old_paces=preview.old_paces,
+        new_paces=preview.new_paces,
+        effective_from_week=preview.effective_from_week,
+        effective_from_date=preview.effective_from_date,
+        affected_weeks=preview.affected_weeks,
+        changes=[
+            RecalibrationChangePublic(
+                workout_id=change.workout_id,
+                date=change.date,
+                type=change.type,  # type: ignore[arg-type]
+                old_pace=change.old_pace,
+                new_pace=change.new_pace,
+            )
+            for change in preview.changes
+        ],
+        current_vdot=current_vdot,
+        current_vdot_source=current_vdot_source,
+        current_vdot_date=current_vdot_date,
+    )
+
+
+@router.post(
+    "/{plan_id}/recalibrate/preview", response_model=RecalibrationPreviewPublic
+)
+def preview_recalibration(
+    session: SessionDep,
+    current_user: CurrentUser,
+    plan_id: uuid.UUID,
+    body: RecalibrationPreviewRequest | None = None,
+) -> RecalibrationPreviewPublic:
+    """Read-only preview. D0 precedence: 404 -> 409 -> 409 -> 200 null -> 200."""
+    plan = _get_owned_plan(session, current_user.id, plan_id)
+    today_local = _today_local()
+    snapshot, effective_from = _snapshot_with_effective_week(
+        session, plan, today_local=today_local
+    )
+    last_applied = latest_applied_recalibration(session, plan)
+    current_vdot, current_source, current_date = _current_vdot_metadata(
+        plan, last_applied
+    )
+    if current_vdot is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="plan_has_no_baseline"
+        )
+    new_vdot, source, evidence = _resolve_target(
+        session, plan, body, today_local=today_local
+    )
+    if new_vdot is None or source is None:
+        return RecalibrationPreviewPublic(
+            vdot=None,
+            recommend_fitness_test=True,
+            current_vdot=current_vdot,
+            current_vdot_source=current_source,
+            current_vdot_date=current_date,
+        )
+    preview = recalibration_preview(
+        snapshot,
+        current_vdot=current_vdot,
+        new_vdot=new_vdot,
+        source=source,
+        evidence=evidence,
+        effective_from=effective_from,
+    )
+    return _preview_public(
+        preview,
+        new_vdot=new_vdot,
+        current_vdot=current_vdot,
+        current_vdot_source=current_source,
+        current_vdot_date=current_date,
+    )
+
+
+@router.post("/{plan_id}/recalibrate", response_model=RecalibrationApplyPublic)
+def apply_plan_recalibration(
+    session: SessionDep,
+    current_user: CurrentUser,
+    plan_id: uuid.UUID,
+    body: RecalibrationApplyRequest | None = None,
+) -> RecalibrationApplyPublic:
+    """Apply a recalibration. Normative gate order (R19/R28/R20/T13)."""
+    plan = _get_owned_plan(session, current_user.id, plan_id)
+    if body is None or not body.confirm:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="confirmation_required"
+        )
+
+    # Serialize concurrent applies on the plan row before the read-modify-write.
+    lock_plan_for_update(session, plan)
+
+    today_local = _today_local()
+    snapshot, effective_from = _snapshot_with_effective_week(
+        session, plan, today_local=today_local
+    )
+    last_applied = latest_applied_recalibration(session, plan)
+    current_vdot, current_source, current_date = _current_vdot_metadata(
+        plan, last_applied
+    )
+    if current_vdot is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="plan_has_no_baseline"
+        )
+    new_vdot, source, evidence = _resolve_target(
+        session, plan, body, today_local=today_local
+    )
+    if new_vdot is None or source is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="no_evidence"
+        )
+
+    classification = classify_recalibration(current_vdot, new_vdot)
+    needs_ack = classification.suspicious or classification.kind == "decline"
+    if needs_ack and not body.acknowledge_risk:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="risk_acknowledgement_required",
+        )
+
+    # A legacy/malformed baseline cannot rebuild the generator config: map the
+    # uncaught ValueError / pydantic ValidationError to 409, never 500.
+    try:
+        config = reconstruct_generator_config(plan)
+    except (ValueError, ValidationError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="plan_has_no_baseline"
+        ) from exc
+
+    preview = recalibration_preview(
+        snapshot,
+        current_vdot=current_vdot,
+        new_vdot=new_vdot,
+        source=source,
+        evidence=evidence,
+        effective_from=effective_from,
+    )
+    pre_issues = validate_plan_invariants(plan_to_create(snapshot), config)
+    result = apply_recalibration(
+        snapshot, new_vdot=new_vdot, effective_from_date=effective_from[1]
+    )
+    session.flush()
+    post_issues = validate_plan_invariants(plan_to_create(snapshot), config)
+
+    new_errors = new_error_issues(pre_issues, post_issues)
+    if new_errors:
+        session.rollback()
+        logger.warning(
+            "plan_invariant_violation plan_id=%s new_error_issues=%s",
+            plan.id,
+            [issue.code for issue in new_errors],
+            extra={
+                "event": "plan_invariant_violation",
+                "plan_id": str(plan.id),
+                "new_error_issues": [issue.code for issue in new_errors],
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="plan_invariant_violation"
+        )
+
+    row = PlanRecalibration(
+        plan_id=plan.id,
+        user_id=plan.user_id,
+        source=source,
+        source_ref=(
+            {
+                "source_id": evidence.get("source_id"),
+                "matched_workout_id": evidence.get("matched_workout_id"),
+            }
+            if evidence
+            else None
+        ),
+        old_vdot=current_vdot,
+        new_vdot=new_vdot,
+        delta_vdot=classification.delta_vdot,
+        old_paces=preview.old_paces,
+        new_paces=preview.new_paces,
+        kind=classification.kind,
+        suspicious=classification.suspicious,
+        effective_from_week=effective_from[0],
+        effective_from_date=effective_from[1],
+        affected_workouts=result.affected_workouts,
+        affected_blocks=result.affected_blocks,
+        engine_version=plan.engine_version,
+    )
+    session.add(row)
+    session.commit()
+    session.refresh(row)
+
+    public = _preview_public(
+        preview,
+        new_vdot=new_vdot,
+        current_vdot=current_vdot,
+        current_vdot_source=current_source,
+        current_vdot_date=current_date,
+    )
+    return RecalibrationApplyPublic(
+        **public.model_dump(),
+        recalibration=PlanRecalibrationPublic.model_validate(row),
+    )
+
+
+@router.get("/{plan_id}/recalibrations", response_model=PlanRecalibrationsPublic)
+def read_recalibrations(
+    session: SessionDep,
+    current_user: CurrentUser,
+    plan_id: uuid.UUID,
+    skip: int = 0,
+    limit: int = 20,
+) -> PlanRecalibrationsPublic:
+    """Paginated audit history plus the derived current VDOT (R21/R23)."""
+    plan = _get_owned_plan(session, current_user.id, plan_id)
+    scope = (
+        PlanRecalibration.plan_id == plan.id,
+        PlanRecalibration.user_id == plan.user_id,
+    )
+    count = session.exec(
+        select(func.count()).select_from(PlanRecalibration).where(*scope)
+    ).one()
+    rows = session.exec(
+        select(PlanRecalibration)
+        .where(*scope)
+        .order_by(
+            col(PlanRecalibration.created_at).desc(),
+            col(PlanRecalibration.id).desc(),
+        )
+        .offset(skip)
+        .limit(limit)
+    ).all()
+    last_applied = latest_applied_recalibration(session, plan)
+    current_vdot, current_source, current_date = _current_vdot_metadata(
+        plan, last_applied
+    )
+    return PlanRecalibrationsPublic(
+        data=[PlanRecalibrationPublic.model_validate(row) for row in rows],
+        count=count,
+        current_vdot=current_vdot,
+        current_vdot_source=current_source,
+        current_vdot_date=current_date,
+    )
