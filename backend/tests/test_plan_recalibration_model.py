@@ -3,10 +3,16 @@
 import datetime as dt
 import uuid
 
+import pytest
+from sqlalchemy import create_engine, event
+from sqlmodel import Session, SQLModel, select
+
 from app.models import (
     PlanRecalibration,
     PlanRecalibrationPublic,
     PlanRecalibrationsPublic,
+    RunningPlan,
+    User,
 )
 
 
@@ -111,3 +117,72 @@ def test_history_schema_reports_current_vdot_metadata():
     assert payload.current_vdot == 47.0
     assert payload.current_vdot_source == "manual"
     assert payload.current_vdot_date == dt.date(2026, 10, 12)
+
+
+# ---------------------------------------------------------------------------
+# F-f — CASCADE scope: deleting the plan (or user) removes its history
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def fk_engine():
+    """A SQLite engine with foreign-key enforcement enabled (ORM cascade)."""
+    engine = create_engine("sqlite://")
+
+    @event.listens_for(engine, "connect")
+    def _enable_foreign_keys(dbapi_connection, _record):
+        dbapi_connection.execute("PRAGMA foreign_keys=ON")
+
+    SQLModel.metadata.create_all(engine)
+    try:
+        yield engine
+    finally:
+        engine.dispose()
+
+
+def _seed_plan_with_row(session: Session) -> tuple[RunningPlan, PlanRecalibration]:
+    user = User(email=f"{uuid.uuid4()}@example.com", hashed_password="x")
+    session.add(user)
+    session.flush()
+    plan = RunningPlan(
+        name="p",
+        start_date=dt.date(2026, 10, 5),
+        week_start_day=1,
+        status="active",
+        user_id=user.id,
+        engine_version="v3",
+    )
+    session.add(plan)
+    session.flush()
+    row = _make_recalibration(plan_id=plan.id, user_id=user.id)
+    session.add(row)
+    session.commit()
+    return plan, row
+
+
+def test_deleting_the_plan_cascades_its_recalibration_history(fk_engine):
+    """Rows are append-only while the plan exists; deleting the plan removes them."""
+    with Session(fk_engine) as session:
+        plan, row = _seed_plan_with_row(session)
+        row_id = row.id
+
+        session.delete(plan)
+        session.commit()
+
+        assert session.get(PlanRecalibration, row_id) is None
+        assert session.exec(select(PlanRecalibration)).all() == []
+
+
+def test_deleting_the_user_cascades_plans_and_their_history(fk_engine):
+    with Session(fk_engine) as session:
+        plan, row = _seed_plan_with_row(session)
+        user_id = plan.user_id
+        plan_id = plan.id
+        row_id = row.id
+
+        session.delete(session.get(User, user_id))
+        session.commit()
+
+        assert session.get(RunningPlan, plan_id) is None
+        assert session.get(PlanRecalibration, row_id) is None
+

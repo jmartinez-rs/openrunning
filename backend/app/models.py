@@ -1054,15 +1054,22 @@ RecalibrationSource = Literal["test", "activity", "manual"]
 
 
 class PlanRecalibration(SQLModel, table=True):
-    """Append-only audit row for one explicit VDOT recalibration (R22/R23).
+    """Audit row for one explicit VDOT recalibration (R22/R23).
 
-    Rows are never edited or deleted: two applies in the same week persist two
-    rows, and the latest applied row supplies the derived current VDOT (R29).
+    Rows are append-only *while the owning plan/user exists*: recalibration flows
+    never edit or delete them, and two applies in the same week persist two rows
+    (the latest applied row supplies the derived current VDOT, R29).
+
+    CASCADE scope: ``plan_id``/``user_id`` are ``ON DELETE CASCADE``, so deleting
+    the owning plan (or user) intentionally deletes its recalibration history.
+    The table is self-cleaning with its plan; the "append-only" claim is about the
+    recalibration flows, not about surviving a parent deletion.
     """
 
     __tablename__ = "planrecalibration"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    # CASCADE is intentional: deleting the owning plan/user removes its history.
     plan_id: uuid.UUID = Field(
         foreign_key="runningplan.id", nullable=False, ondelete="CASCADE", index=True
     )
