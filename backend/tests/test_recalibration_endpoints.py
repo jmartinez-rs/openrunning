@@ -1168,39 +1168,37 @@ def test_recalibration_terminal_outcomes_emit_structured_observability(
 
 
 def test_recalibration_surface_exposes_exactly_three_routes(client, db_engine, user):
-    """R21: the contract is exactly three routes, pinned by path AND method.
+    """R21: the contract is EXACTLY three routes, pinned over the whole namespace.
 
-    The three expected ``(path, method)`` pairs are selected by EXACT path (not a
-    substring) and asserted together, so a renamed path, a wrong HTTP verb or a
-    4th recalibration route all fail the test.
+    The assertion covers every ``(path, method)`` declared under
+    ``/running-plans/{plan_id}/``: the three recalibration routes PLUS the plan
+    routes that existed before this feature. It is exact in both directions, so a
+    renamed path, a wrong HTTP verb or a recalibration sibling that does not even
+    contain the substring "recalibrat" — e.g. ``/{plan_id}/vdot`` — all fail it.
     """
     paths = client.get("/api/v1/openapi.json").json()["paths"]
-    prefix = f"{BASE}/{{plan_id}}"
-    expected = {
-        (f"{prefix}/recalibrate", "post"),
-        (f"{prefix}/recalibrate/preview", "post"),
-        (f"{prefix}/recalibrations", "get"),
+    namespace = f"{BASE}/{{plan_id}}/"
+
+    pre_existing_plan_routes = {
+        (f"{namespace}workouts/{{workout_id}}", "patch"),
+        (f"{namespace}workouts/{{workout_id}}/duplicate", "post"),
+    }
+    recalibration_routes = {
+        (f"{namespace}recalibrate", "post"),
+        (f"{namespace}recalibrate/preview", "post"),
+        (f"{namespace}recalibrations", "get"),
     }
 
     declared = {
         (path, method)
         for path, operations in paths.items()
-        if path.startswith(f"{prefix}/")
+        if path.startswith(namespace)
         for method in operations
-        if (path, method) in expected
     }
 
-    assert declared == expected
-    # No undeclared route may live under a recalibration-looking path.
-    expected_paths = {path for path, _method in expected}
-    assert (
-        [
-            path
-            for path in paths
-            if path.startswith(f"{prefix}/recalibrat") and path not in expected_paths
-        ]
-        == []
-    )
+    assert declared == pre_existing_plan_routes | recalibration_routes
+    # The feature adds these three and nothing else to the plan namespace.
+    assert declared - pre_existing_plan_routes == recalibration_routes
 
 
 def test_double_apply_advances_current_vdot_and_keeps_baseline_immutable(
