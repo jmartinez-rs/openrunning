@@ -30,6 +30,7 @@ from app.models import (
     RunningWeek,
     RunningWorkout,
     User,
+    WorkoutBlock,
 )
 from app.services.plan_calendar import week_start_offset
 from app.services.running import RUNNING_TIMEZONE
@@ -726,6 +727,171 @@ def test_history_validation_is_page_scoped_and_count_stays_the_total(
     # Requesting every row at once fails too: the corruption is never hidden.
     whole = client.get(url, params={"skip": 0, "limit": 20})
     assert whole.status_code == 409
+
+
+# ---------------------------------------------------------------------------
+# B4 — a plan without generation_params.target_km: pace resolution + validation
+# ---------------------------------------------------------------------------
+
+
+def _long_run_plan_body() -> dict:
+    """A 4-week plan whose only future session is a 3-block goal-pace long run.
+
+    ``generation_params`` deliberately omits ``target_km`` and the plan's editable
+    ``distance_km`` is a half marathon, so the two resolution paths disagree on
+    their inputs: pace resolution has no persisted goal, while
+    ``reconstruct_generator_config`` falls back to ``distance_km``.
+    """
+    week_starts = _current_week_then_future()
+    return {
+        "name": "Plan 21.1K sin objetivo persistido",
+        "distance_km": 21.1,
+        "start_date": week_starts[0].isoformat(),
+        "week_start_day": WEEK_START_DAY,
+        "status": "active",
+        "baseline": _baseline(45.0),
+        "generation_params": {"goal_type": "time", "num_weeks": len(week_starts)},
+        "phases": [
+            {
+                "position": 1,
+                "name": "Base",
+                "start_week": 1,
+                "end_week": len(week_starts),
+                "weeks": [
+                    {
+                        "number": 1,
+                        "start_date": week_starts[0].isoformat(),
+                        "end_date": (week_starts[0] + dt.timedelta(days=6)).isoformat(),
+                        "workouts": [
+                            {
+                                "date": (week_starts[0] + dt.timedelta(days=2)).isoformat(),
+                                "type": "easy_run",
+                                "intensity": "easy",
+                                "distance_km": 8.0,
+                                "pace_seconds_per_km": 330.0,
+                            }
+                        ],
+                    },
+                    {
+                        "number": 2,
+                        "start_date": week_starts[1].isoformat(),
+                        "end_date": (week_starts[1] + dt.timedelta(days=6)).isoformat(),
+                        "workouts": [
+                            {
+                                "date": (week_starts[1] + dt.timedelta(days=2)).isoformat(),
+                                "type": "long_run",
+                                "intensity": "moderate",
+                                "distance_km": 30.0,
+                                "pace_seconds_per_km": 330.0,
+                                "blocks": [
+                                    {
+                                        "position": 1,
+                                        "block_type": "warmup",
+                                        "distance_m": 2000.0,
+                                        "pace_seconds_per_km": 300.0,
+                                    },
+                                    {
+                                        "position": 2,
+                                        "block_type": "main",
+                                        "distance_m": 10000.0,
+                                        # Far from any pace table: if pace
+                                        # resolution guessed from distance_km
+                                        # this would be overwritten.
+                                        "pace_seconds_per_km": 999.0,
+                                    },
+                                    {
+                                        "position": 3,
+                                        "block_type": "cooldown",
+                                        "distance_m": 1500.0,
+                                        "pace_seconds_per_km": 310.0,
+                                    },
+                                ],
+                            }
+                        ],
+                    },
+                ],
+            }
+        ],
+    }
+
+
+def _validate_stored_plan(engine, plan_id: str) -> tuple[list, float]:
+    """Rebuild the generator config from the stored row and validate the plan."""
+    from app.services.fitness import plan_to_create, snapshot_plan
+    from app.services.plan_validator import (
+        reconstruct_generator_config,
+        validate_plan_invariants,
+    )
+
+    with Session(engine) as session:
+        stored = session.get(RunningPlan, uuid.UUID(plan_id))
+        config = reconstruct_generator_config(stored)
+        issues = validate_plan_invariants(
+            plan_to_create(snapshot_plan(session, stored)), config
+        )
+    return issues, config.target_km
+
+
+def _long_run_paces(engine, plan_id: str) -> tuple[float | None, dict[str, float | None]]:
+    """(workout-level pace, block pace by type) of the plan's long run."""
+    with Session(engine) as session:
+        workout = session.exec(
+            select(RunningWorkout).where(
+                RunningWorkout.plan_id == uuid.UUID(plan_id),
+                RunningWorkout.type == "long_run",
+            )
+        ).one()
+        blocks = session.exec(
+            select(WorkoutBlock).where(WorkoutBlock.workout_id == workout.id)
+        ).all()
+        return workout.pace_seconds_per_km, {
+            block.block_type: block.pace_seconds_per_km for block in blocks
+        }
+
+
+def test_plan_without_a_persisted_goal_resolves_paces_and_passes_validation(
+    client, db_engine, user
+):
+    """B4 — the two resolution paths must not disagree in a blocking way.
+
+    Without ``generation_params.target_km`` pace resolution keeps the stored
+    goal-pace pair (never guessing from the editable ``distance_km``), while
+    ``reconstruct_generator_config`` still falls back to ``distance_km``. The
+    fallback is exercised for real (it changes the long-run cap that produces
+    ``LONG_RUN_CAP_EXCEEDED``), but it is a WARNING, so the gate sees no NEW
+    error issue and the apply still succeeds.
+    """
+    from app.services.plan_validator import new_error_issues
+
+    created = client.post(f"{BASE}/", json=_long_run_plan_body())
+    assert created.status_code == 201, created.text
+    plan_id = created.json()["id"]
+
+    pre_issues, validator_target_km = _validate_stored_plan(db_engine, plan_id)
+    # The validator's fallback IS the editable distance: the disagreement is real.
+    assert validator_target_km == 21.1
+    caps = [issue for issue in pre_issues if issue.code == "LONG_RUN_CAP_EXCEEDED"]
+    assert caps and all(issue.severity == "warning" for issue in caps)
+
+    applied = client.post(
+        f"{BASE}/{plan_id}/recalibrate", json={"new_vdot": 46, "confirm": True}
+    )
+
+    assert applied.status_code == 200, applied.text
+    assert applied.json()["recalibration"]["affected_workouts"] == 1
+    assert applied.json()["recalibration"]["new_paces"] == get_training_paces_seconds(
+        46.0
+    )
+
+    post_issues, _ = _validate_stored_plan(db_engine, plan_id)
+    assert new_error_issues(pre_issues, post_issues) == []
+
+    workout_pace, block_paces = _long_run_paces(db_engine, plan_id)
+    # Pace resolution: no persisted goal -> the stored goal-pace pair is kept...
+    assert block_paces["main"] == 999.0
+    # ...while the rest of the workout is still recalibrated.
+    assert workout_pace == get_training_paces_seconds(46.0)["easy_min"]
+    assert block_paces["warmup"] != 300.0
 
 
 # ---------------------------------------------------------------------------
