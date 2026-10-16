@@ -116,18 +116,19 @@ class RecalibrationResult:
 
 @dataclass(frozen=True)
 class RecentEffort:
-    """A piece of real evidence: one activity and how it was matched."""
+    """A piece of real evidence: one activity and how it was matched.
+
+    ``matched_workout_id`` is recorded for ANY matched workout (E6); ``is_test_mark``
+    is set only when that workout is a fitness test, so a non-test match records its
+    id in evidence without ever being promoted to ``source="test"``.
+    """
 
     activity_id: uuid.UUID
     date: dt.date
     distance_meters: float
     time_seconds: float
     matched_workout_id: uuid.UUID | None = None
-
-    @property
-    def is_test_mark(self) -> bool:
-        """A fitness-test mark is an activity matched to a `test` workout."""
-        return self.matched_workout_id is not None
+    is_test_mark: bool = False
 
 
 @dataclass(frozen=True)
@@ -169,7 +170,11 @@ def _qualifies(
 
 
 def _effort_from_activity(
-    activity: Activity, cardio: ActivityCardio, *, matched_workout_id: uuid.UUID | None = None
+    activity: Activity,
+    cardio: ActivityCardio,
+    *,
+    matched_workout_id: uuid.UUID | None = None,
+    is_test_mark: bool = False,
 ) -> RecentEffort:
     return RecentEffort(
         activity_id=activity.id,
@@ -177,6 +182,7 @@ def _effort_from_activity(
         distance_meters=float(cardio.distance_meters),
         time_seconds=float(activity.duration_seconds),
         matched_workout_id=matched_workout_id,
+        is_test_mark=is_test_mark,
     )
 
 
@@ -238,7 +244,9 @@ def _qualifying_test_efforts(
         )
     ).all()
     efforts = [
-        _effort_from_activity(activity, cardio, matched_workout_id=workout.id)
+        _effort_from_activity(
+            activity, cardio, matched_workout_id=workout.id, is_test_mark=True
+        )
         for workout, activity, cardio in rows
     ]
     return [
@@ -253,6 +261,28 @@ def _qualifying_test_efforts(
     ]
 
 
+def _matched_workouts_by_activity(
+    session: Session, activity_ids: Sequence[uuid.UUID]
+) -> dict[uuid.UUID, uuid.UUID]:
+    """Map activity id → the workout it is matched to, for ANY matched workout (E6).
+
+    A non-test match still records its workout id in evidence; it is never promoted
+    to ``source="test"`` (that decision stays in ``_qualifying_test_efforts``).
+    """
+    if not activity_ids:
+        return {}
+    rows = session.exec(
+        select(RunningWorkout.id, RunningWorkout.matched_activity_id).where(
+            RunningWorkout.matched_activity_id.in_(activity_ids)
+        )
+    ).all()
+    return {
+        matched_activity_id: workout_id
+        for workout_id, matched_activity_id in rows
+        if matched_activity_id is not None
+    }
+
+
 def _qualifying_recent_efforts(
     session: Session,
     user_id: uuid.UUID,
@@ -263,7 +293,16 @@ def _qualifying_recent_efforts(
 ) -> list[RecentEffort]:
     start, end = _recency_window(as_of, window_days)
     rows = session.exec(run_activity_query(user_id, start, end)).all()
-    efforts = [_effort_from_activity(activity, cardio) for activity, cardio in rows]
+    matched = _matched_workouts_by_activity(session, [activity.id for activity, _ in rows])
+    efforts = [
+        _effort_from_activity(
+            activity,
+            cardio,
+            matched_workout_id=matched.get(activity.id),
+            is_test_mark=False,
+        )
+        for activity, cardio in rows
+    ]
     return [
         effort
         for effort in efforts

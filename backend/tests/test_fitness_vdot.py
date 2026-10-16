@@ -84,6 +84,25 @@ def _add_test_workout(
     day: dt.date,
     matched_activity_id: uuid.UUID | None,
 ) -> RunningWorkout:
+    return _add_workout(
+        session,
+        plan,
+        day=day,
+        matched_activity_id=matched_activity_id,
+        workout_type="test",
+        intensity="hard",
+    )
+
+
+def _add_workout(
+    session: Session,
+    plan: RunningPlan,
+    *,
+    day: dt.date,
+    matched_activity_id: uuid.UUID | None,
+    workout_type: str,
+    intensity: str = "moderate",
+) -> RunningWorkout:
     phase = RunningPhase(
         plan_id=plan.id, position=1, name="Base", start_week=1, end_week=8
     )
@@ -101,8 +120,8 @@ def _add_test_workout(
         week_id=week.id,
         plan_id=plan.id,
         date=day,
-        type="test",
-        intensity="hard",
+        type=workout_type,
+        intensity=intensity,
         matched_activity_id=matched_activity_id,
     )
     session.add(workout)
@@ -163,6 +182,7 @@ def test_source_and_confidence_depend_on_evidence_origin():
         distance_meters=10000.0,
         time_seconds=2400.0,
         matched_workout_id=uuid.uuid4(),
+        is_test_mark=True,
     )
 
     activity_estimate = estimate_vdot_from_activity(activity_effort)
@@ -323,6 +343,35 @@ def test_best_test_effort_ignores_unmatched_test_workouts():
         session.commit()
 
         assert best_test_effort(session, plan, as_of=TODAY) is None
+
+
+def test_matched_non_test_activity_records_its_workout_without_promotion():
+    """E6: a non-test match keeps source=activity and records the matched id."""
+    with _session() as session:
+        plan = _plan(session)
+        activity = _add_activity(
+            session,
+            plan.user_id,
+            day=TODAY - dt.timedelta(days=3),
+            distance_meters=10000.0,
+            time_seconds=2400,
+        )
+        matched = _add_workout(
+            session,
+            plan,
+            day=TODAY - dt.timedelta(days=3),
+            matched_activity_id=activity.id,
+            workout_type="easy_run",
+        )
+        session.commit()
+
+        estimate = estimate_vdot_for_plan(session, plan, as_of=TODAY)
+
+        assert estimate is not None
+        assert estimate.source == "activity"
+        assert estimate.confidence == "estimated"
+        assert estimate.evidence["source_id"] == str(activity.id)
+        assert estimate.evidence["matched_workout_id"] == str(matched.id)
 
 
 def test_fitness_selects_evidence_through_the_shared_run_predicate(monkeypatch):
