@@ -267,38 +267,59 @@ def _qualifying_test_efforts(
 
 
 def _matched_workouts_by_activity(
-    session: Session, activity_ids: Sequence[uuid.UUID]
+    session: Session, plan: RunningPlan, activity_ids: Sequence[uuid.UUID]
 ) -> dict[uuid.UUID, uuid.UUID]:
-    """Map activity id → the workout it is matched to, for ANY matched workout (E6).
+    """Map activity id → the workout it is matched to, scoped to one plan (E6/G4).
 
-    A non-test match still records its workout id in evidence; it is never promoted
-    to ``source="test"`` (that decision stays in ``_qualifying_test_efforts``).
+    The lookup is scoped to the plan AND its owner: an activity matched to a
+    workout in another plan — same user or not — must never be cited as this
+    plan's matched workout.
+
+    Tie-break: `(date, id)` ascending, so when one activity is matched to more
+    than one workout of the plan the EARLIEST workout date wins (and the id is a
+    stable secondary key). Within a plan `(plan_id, date)` is unique, so the date
+    alone already resolves every real duplicate; the id ordering keeps the result
+    independent of row/insertion order. A non-test match still records its workout
+    id in evidence; it is never promoted to ``source="test"`` (that decision stays
+    in ``_qualifying_test_efforts``).
     """
     if not activity_ids:
         return {}
     rows = session.exec(
-        select(RunningWorkout.id, RunningWorkout.matched_activity_id).where(
-            RunningWorkout.matched_activity_id.in_(activity_ids)
+        select(
+            RunningWorkout.id,
+            RunningWorkout.matched_activity_id,
+            RunningWorkout.date,
         )
+        .join(RunningPlan, RunningPlan.id == RunningWorkout.plan_id)
+        .where(
+            RunningWorkout.plan_id == plan.id,
+            RunningPlan.user_id == plan.user_id,
+            RunningWorkout.matched_activity_id.in_(activity_ids),
+        )
+        .order_by(col(RunningWorkout.date), col(RunningWorkout.id))
     ).all()
-    return {
-        matched_activity_id: workout_id
-        for workout_id, matched_activity_id in rows
-        if matched_activity_id is not None
-    }
+    matched: dict[uuid.UUID, uuid.UUID] = {}
+    for workout_id, matched_activity_id, _date in rows:
+        if matched_activity_id is None:
+            continue
+        matched.setdefault(matched_activity_id, workout_id)
+    return matched
 
 
 def _qualifying_recent_efforts(
     session: Session,
-    user_id: uuid.UUID,
+    plan: RunningPlan,
     *,
     as_of: dt.date,
     window_days: int = RECENCY_WINDOW_DAYS,
     min_distance_m: float = MIN_QUALIFYING_DISTANCE_M,
 ) -> list[RecentEffort]:
     start, end = _recency_window(as_of, window_days)
-    rows = session.exec(run_activity_query(user_id, start, end)).all()
-    matched = _matched_workouts_by_activity(session, [activity.id for activity, _ in rows])
+    rows = session.exec(run_activity_query(plan.user_id, start, end)).all()
+    matched = _matched_workouts_by_activity(
+        session, plan, [activity.id for activity, _ in rows]
+    )
     efforts = [
         _effort_from_activity(
             activity,
@@ -336,17 +357,21 @@ def best_test_effort(
 
 def best_recent_effort(
     session: Session,
-    user_id: uuid.UUID,
+    plan: RunningPlan,
     *,
     as_of: dt.date,
     window_days: int = RECENCY_WINDOW_DAYS,
     min_distance_m: float = MIN_QUALIFYING_DISTANCE_M,
 ) -> RecentEffort | None:
-    """Best synced-activity effort inside the window, if any (R2/R3)."""
+    """Best synced-activity effort inside the window, if any (R2/R3).
+
+    Takes the plan (not a raw ``user_id``) so the matched-workout lookup can be
+    scoped to that plan and its owner (G4); mirrors ``best_test_effort``.
+    """
     ranked = _rank_efforts(
         _qualifying_recent_efforts(
             session,
-            user_id,
+            plan,
             as_of=as_of,
             window_days=window_days,
             min_distance_m=min_distance_m,
@@ -386,7 +411,7 @@ def estimate_vdot_for_plan(
     """Best available estimate for a plan: test mark > activity > None (R4/R5)."""
     test_efforts = _rank_efforts(_qualifying_test_efforts(session, plan, as_of=as_of))
     activity_efforts = _rank_efforts(
-        _qualifying_recent_efforts(session, plan.user_id, as_of=as_of)
+        _qualifying_recent_efforts(session, plan, as_of=as_of)
     )
 
     if test_efforts:

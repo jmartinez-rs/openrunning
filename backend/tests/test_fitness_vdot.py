@@ -293,7 +293,7 @@ def test_window_and_minimum_distance_filters():
         )
         session.commit()
 
-        effort = best_recent_effort(session, plan.user_id, as_of=TODAY)
+        effort = best_recent_effort(session, plan, as_of=TODAY)
 
         assert effort is not None
         assert effort.activity_id == qualifying.id
@@ -319,7 +319,7 @@ def test_highest_implied_vdot_wins_among_activities():
         )
         session.commit()
 
-        effort = best_recent_effort(session, plan.user_id, as_of=TODAY)
+        effort = best_recent_effort(session, plan, as_of=TODAY)
         estimate = estimate_vdot_for_plan(session, plan, as_of=TODAY)
 
         assert effort is not None and effort.activity_id == faster.id
@@ -368,6 +368,113 @@ def test_matched_non_test_activity_records_its_workout_without_promotion():
         assert estimate.evidence["matched_workout_id"] == str(matched.id)
 
 
+def _other_plan(session: Session, owner_id: uuid.UUID, name: str) -> RunningPlan:
+    plan = RunningPlan(
+        name=name,
+        start_date=dt.date(2026, 9, 28),
+        week_start_day=1,
+        status="active",
+        user_id=owner_id,
+        engine_version="v3",
+    )
+    session.add(plan)
+    session.flush()
+    return plan
+
+
+def test_a_match_from_another_plan_of_the_same_user_is_not_cited():
+    """G4 — the matched-workout lookup must be scoped to the plan."""
+    with _session() as session:
+        plan = _plan(session)
+        other = _other_plan(session, plan.user_id, "other")
+        activity = _add_activity(
+            session,
+            plan.user_id,
+            day=TODAY - dt.timedelta(days=3),
+            distance_meters=10000.0,
+            time_seconds=2400,
+        )
+        _add_workout(
+            session,
+            other,
+            day=TODAY - dt.timedelta(days=3),
+            matched_activity_id=activity.id,
+            workout_type="easy_run",
+        )
+        session.commit()
+
+        estimate = estimate_vdot_for_plan(session, plan, as_of=TODAY)
+
+        assert estimate is not None
+        # Never promoted to a test mark, and the foreign workout is not cited.
+        assert estimate.source == "activity"
+        assert estimate.evidence["source_id"] == str(activity.id)
+        assert estimate.evidence["matched_workout_id"] is None
+
+
+def test_a_match_from_another_users_plan_is_not_cited():
+    with _session() as session:
+        plan = _plan(session)
+        intruder = _other_plan(session, uuid.uuid4(), "intruder")
+        activity = _add_activity(
+            session,
+            plan.user_id,
+            day=TODAY - dt.timedelta(days=3),
+            distance_meters=10000.0,
+            time_seconds=2400,
+        )
+        _add_workout(
+            session,
+            intruder,
+            day=TODAY - dt.timedelta(days=3),
+            matched_activity_id=activity.id,
+            workout_type="easy_run",
+        )
+        session.commit()
+
+        estimate = estimate_vdot_for_plan(session, plan, as_of=TODAY)
+
+        assert estimate is not None
+        assert estimate.evidence["matched_workout_id"] is None
+
+
+def test_duplicate_matches_resolve_to_the_earliest_workout_deterministically():
+    """G4 — one activity matched twice resolves by earliest date (stable tie-break)."""
+    with _session() as session:
+        plan = _plan(session)
+        activity = _add_activity(
+            session,
+            plan.user_id,
+            day=TODAY - dt.timedelta(days=3),
+            distance_meters=10000.0,
+            time_seconds=2400,
+        )
+        # Inserted in reverse date order on purpose: the resolution must not
+        # depend on row/insertion order.
+        _add_workout(
+            session,
+            plan,
+            day=TODAY - dt.timedelta(days=2),
+            matched_activity_id=activity.id,
+            workout_type="easy_run",
+        )
+        earliest = _add_workout(
+            session,
+            plan,
+            day=TODAY - dt.timedelta(days=5),
+            matched_activity_id=activity.id,
+            workout_type="easy_run",
+        )
+        session.commit()
+
+        estimates = [estimate_vdot_for_plan(session, plan, as_of=TODAY) for _ in range(3)]
+
+        assert {
+            estimate.evidence["matched_workout_id"] for estimate in estimates
+        } == {str(earliest.id)}
+
+
+
 def test_fitness_selects_evidence_through_the_shared_run_predicate(monkeypatch):
     from app.services import fitness
 
@@ -391,7 +498,7 @@ def test_fitness_selects_evidence_through_the_shared_run_predicate(monkeypatch):
 
         monkeypatch.setattr(fitness, "run_activity_query", spy)
 
-        effort = best_recent_effort(session, plan.user_id, as_of=TODAY)
+        effort = best_recent_effort(session, plan, as_of=TODAY)
 
         assert len(calls) == 1
         assert calls[0][0] == plan.user_id
@@ -425,5 +532,5 @@ def test_fitness_evidence_comes_from_the_shared_predicate_not_a_local_filter(mon
 
         monkeypatch.setattr(fitness, "run_activity_query", excludes_everything)
 
-        assert best_recent_effort(session, plan.user_id, as_of=TODAY) is None
+        assert best_recent_effort(session, plan, as_of=TODAY) is None
         assert estimate_vdot_for_plan(session, plan, as_of=TODAY) is None
