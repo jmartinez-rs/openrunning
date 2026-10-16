@@ -7,6 +7,7 @@ the gate is proven in `test_plan_invariant_gate.py` with injected issue lists.
 """
 
 import datetime as dt
+import logging
 import uuid
 
 from conftest import sqlite_session as _session
@@ -174,6 +175,86 @@ def test_snapshot_plan_returns_the_plans_live_objects():
         assert len(snapshot.weeks) == 4
         assert len(snapshot.phases) == 1
         assert snapshot.blocks[refs["future_tempo"].id][1].block_type == "main"
+
+
+def _add_unreachable_workout(session: Session, plan: RunningPlan) -> RunningWorkout:
+    """A workout the plan owns whose week belongs to ANOTHER plan.
+
+    The phase → week → workout traversal cannot reach it, so it is silently
+    skipped unless `snapshot_plan` reports it (G5.2).
+    """
+    other_user = User(email=f"{uuid.uuid4()}@example.com", hashed_password="x")
+    session.add(other_user)
+    session.flush()
+    other_plan = RunningPlan(
+        name="other",
+        start_date=WEEK_1_START,
+        week_start_day=1,
+        status="active",
+        user_id=other_user.id,
+        engine_version="v3",
+    )
+    session.add(other_plan)
+    session.flush()
+    other_phase = RunningPhase(
+        plan_id=other_plan.id, position=1, name="Base", start_week=1, end_week=1
+    )
+    session.add(other_phase)
+    session.flush()
+    other_week = RunningWeek(
+        phase_id=other_phase.id, number=1, start_date=WEEK_1_START
+    )
+    session.add(other_week)
+    session.flush()
+    orphan = RunningWorkout(
+        week_id=other_week.id,
+        plan_id=plan.id,
+        date=dt.date(2026, 11, 1),
+        type="easy_run",
+        intensity="easy",
+    )
+    session.add(orphan)
+    session.flush()
+    return orphan
+
+
+def test_snapshot_plan_logs_the_structure_it_skips(caplog):
+    with _session() as session:
+        plan, refs = _persist_plan(session)
+        orphan = _add_unreachable_workout(session, plan)
+        session.commit()
+
+        with caplog.at_level(logging.WARNING, logger="app.services.fitness"):
+            snapshot = snapshot_plan(session, plan)
+
+        # The unreachable workout is skipped from the snapshot…
+        assert orphan.id not in {workout.id for workout in snapshot.workouts}
+        assert len(snapshot.workouts) == len(refs)
+        # …and the skip is reported with counts instead of happening silently.
+        events = [
+            record
+            for record in caplog.records
+            if getattr(record, "event", None) == "plan_snapshot_skipped_structure"
+        ]
+        assert len(events) == 1
+        assert events[0].skipped_workouts == 1
+        assert events[0].skipped_weeks == 1
+        assert events[0].plan_id == str(plan.id)
+
+
+def test_snapshot_plan_is_silent_when_nothing_is_skipped(caplog):
+    with _session() as session:
+        plan, _refs = _persist_plan(session)
+
+        with caplog.at_level(logging.WARNING, logger="app.services.fitness"):
+            snapshot = snapshot_plan(session, plan)
+
+        assert len(snapshot.workouts) == 4
+        assert not [
+            record
+            for record in caplog.records
+            if getattr(record, "event", None) == "plan_snapshot_skipped_structure"
+        ]
 
 
 def test_apply_rewrites_only_future_pace_fields_and_persists_on_commit():

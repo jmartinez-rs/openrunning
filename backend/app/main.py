@@ -9,7 +9,12 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.core.logging_config import configure_logging
 from app.core.scheduler import start_scheduler, stop_scheduler
+
+# Explicit app-level logging so INFO observability records are never dropped by a
+# root configuration another module installed first (G5.4).
+configure_logging()
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 

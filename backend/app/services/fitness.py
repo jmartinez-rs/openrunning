@@ -924,6 +924,11 @@ def snapshot_plan(session: Session, plan: RunningPlan) -> PlanSnapshot:
 
     Returning the plan's own Session objects — never detached copies — is what
     makes `apply_recalibration` + `session.flush()` persist.
+
+    The traversal is rooted at ``plan.id`` (phase → week → workout), so structure
+    that hangs off it via a broken foreign key is skipped. Any skip is reported
+    through a structured ``plan_snapshot_skipped_structure`` record instead of
+    happening silently (G5.2).
     """
     phases = list(
         session.exec(
@@ -959,8 +964,50 @@ def snapshot_plan(session: Session, plan: RunningPlan) -> PlanSnapshot:
                     ).all()
                 )
 
+    _log_skipped_structure(session, plan, weeks=weeks, workouts=workouts)
+
     return PlanSnapshot(
         plan=plan, phases=phases, weeks=weeks, workouts=workouts, blocks=blocks
+    )
+
+
+def _log_skipped_structure(
+    session: Session,
+    plan: RunningPlan,
+    *,
+    weeks: Sequence[RunningWeek],
+    workouts: Sequence[RunningWorkout],
+) -> None:
+    """Report (with counts) any structure the phase → week → workout tree skipped.
+
+    A workout this plan owns (``plan_id``) whose ``week_id`` is not one of the
+    plan's weeks cannot be reached by the traversal and is dropped from the
+    snapshot; the distinct such weeks are counted as the orphaned weeks. Silent
+    omission would make a recalibration quietly ignore part of the plan.
+    """
+    reachable_week_ids = {week.id for week in weeks}
+    referenced_week_ids = session.exec(
+        select(RunningWorkout.week_id).where(RunningWorkout.plan_id == plan.id)
+    ).all()
+    orphan_week_ids = {
+        week_id for week_id in referenced_week_ids if week_id not in reachable_week_ids
+    }
+    skipped_workouts = sum(
+        1 for week_id in referenced_week_ids if week_id not in reachable_week_ids
+    )
+    if not orphan_week_ids:
+        return
+    logger.warning(
+        "plan_snapshot_skipped_structure plan_id=%s skipped_weeks=%s skipped_workouts=%s",
+        plan.id,
+        len(orphan_week_ids),
+        skipped_workouts,
+        extra={
+            "event": "plan_snapshot_skipped_structure",
+            "plan_id": str(plan.id),
+            "skipped_weeks": len(orphan_week_ids),
+            "skipped_workouts": skipped_workouts,
+        },
     )
 
 
