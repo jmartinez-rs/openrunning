@@ -257,6 +257,184 @@ def test_apply_leaves_baseline_and_engine_version_and_audit_rows_untouched():
         assert session.exec(select(PlanRecalibration)).all() == []
 
 
+def _persist_geometry_plan(
+    session: Session,
+) -> tuple[RunningPlan, dict[str, RunningWorkout]]:
+    """A plan whose stored block geometry disagrees with an edited `distance_km`.
+
+    `RunningWorkout.distance_km` is PATCH-editable without restructuring the
+    blocks, so trusting it would flip the cruise/continuous and R/VO2max rules
+    away from the geometry that actually exists.
+    """
+    user = User(email=f"{uuid.uuid4()}@example.com", hashed_password="x")
+    session.add(user)
+    session.flush()
+    plan = RunningPlan(
+        name="Plan 21.1K",
+        distance_km=21.1,
+        target_time_seconds=5700,
+        start_date=WEEK_1_START,
+        week_start_day=1,
+        status="active",
+        user_id=user.id,
+        engine_version="v3",
+        baseline=_baseline().model_dump(),
+        generation_params={
+            "goal_type": "time",
+            "confidence": "measured",
+            "conservative_mode": False,
+            "target_km": 21.1,
+            "num_weeks": 2,
+        },
+    )
+    session.add(plan)
+    session.flush()
+    # Phase position 2: a distance-based tempo rule would prefer cruise intervals.
+    phase = RunningPhase(
+        plan_id=plan.id, position=2, name="Build", start_week=1, end_week=2
+    )
+    session.add(phase)
+    session.flush()
+    week = RunningWeek(
+        phase_id=phase.id,
+        number=1,
+        start_date=WEEK_1_START,
+        end_date=WEEK_1_START + dt.timedelta(days=6),
+    )
+    session.add(week)
+    session.flush()
+
+    paces = get_training_paces_seconds(45.0)
+
+    def add_workout(
+        day: dt.date, workout_type: str, distance_km: float, block_specs
+    ) -> RunningWorkout:
+        workout = RunningWorkout(
+            week_id=week.id,
+            plan_id=plan.id,
+            date=day,
+            type=workout_type,
+            intensity="moderate",
+            distance_km=distance_km,
+            pace_seconds_per_km=paces[_WORKOUT_KEY[workout_type]],
+        )
+        session.add(workout)
+        session.flush()
+        for index, spec in enumerate(block_specs):
+            session.add(
+                WorkoutBlock(
+                    workout_id=workout.id,
+                    position=index + 1,
+                    block_type=spec["block_type"],
+                    repeats=spec.get("repeats", 1),
+                    distance_m=spec.get("distance_m"),
+                    pace_seconds_per_km=spec.get("pace"),
+                    pace_range_end_seconds_per_km=spec.get("pace_range"),
+                )
+            )
+        session.flush()
+        return workout
+
+    warmup = {
+        "block_type": "warmup",
+        "distance_m": 2000,
+        "pace": paces["easy_min"],
+        "pace_range": paces["easy_max"],
+    }
+    cooldown = {
+        "block_type": "cooldown",
+        "distance_m": 1500,
+        "pace": paces["easy_min"],
+        "pace_range": paces["easy_max"],
+    }
+    # Cruise tempo geometry (repeats > 1 => cruise, offsets +-3) with an edited
+    # distance_km=3.0 that a distance-based rule reads as continuous (+-4).
+    tempo = add_workout(
+        dt.date(2026, 10, 14),
+        "tempo",
+        3.0,
+        [
+            warmup,
+            {
+                "block_type": "main",
+                "repeats": 3,
+                "distance_m": 2000,
+                "pace": round(paces["threshold"] - 3, 1),
+                "pace_range": round(paces["threshold"] + 3, 1),
+            },
+            cooldown,
+        ],
+    )
+    # Repetition (R) geometry (400 m reps) with an edited distance_km=20.0 that a
+    # distance-based rule reads as VO2max intervals (I).
+    intervals = add_workout(
+        dt.date(2026, 10, 15),
+        "intervals",
+        20.0,
+        [
+            warmup,
+            {
+                "block_type": "interval",
+                "repeats": 8,
+                "distance_m": 400,
+                "pace": round(paces["repetition"] - 2, 1),
+                "pace_range": round(paces["repetition"] + 2, 1),
+            },
+            cooldown,
+        ],
+    )
+    session.commit()
+    return plan, {"tempo": tempo, "intervals": intervals}
+
+
+_WORKOUT_KEY = {"tempo": "threshold", "intervals": "interval"}
+
+
+def test_edited_distance_km_never_flips_the_stored_block_geometry():
+    """The stored block geometry is the source of truth for the cruise/continuous
+    and R/VO2max rules, not the PATCH-editable `workout.distance_km`."""
+    with _session() as session:
+        plan, refs = _persist_geometry_plan(session)
+        snapshot = snapshot_plan(session, plan)
+        new_paces = get_training_paces_seconds(47.0)
+
+        apply_recalibration(
+            snapshot, new_vdot=47.0, effective_from_date=WEEK_1_START
+        )
+        session.commit()
+        session.expire_all()
+
+        tempo_blocks = {
+            block.block_type: block
+            for block in session.exec(
+                select(WorkoutBlock).where(WorkoutBlock.workout_id == refs["tempo"].id)
+            ).all()
+        }
+        assert (
+            tempo_blocks["main"].pace_seconds_per_km,
+            tempo_blocks["main"].pace_range_end_seconds_per_km,
+        ) == (
+            round(new_paces["threshold"] - 3, 1),
+            round(new_paces["threshold"] + 3, 1),
+        )
+
+        interval_blocks = {
+            block.block_type: block
+            for block in session.exec(
+                select(WorkoutBlock).where(
+                    WorkoutBlock.workout_id == refs["intervals"].id
+                )
+            ).all()
+        }
+        assert (
+            interval_blocks["interval"].pace_seconds_per_km,
+            interval_blocks["interval"].pace_range_end_seconds_per_km,
+        ) == (
+            round(new_paces["repetition"] - 2, 1),
+            round(new_paces["repetition"] + 2, 1),
+        )
+
+
 def test_derive_current_vdot_falls_back_to_baseline_then_none():
     baseline = _baseline().model_dump()
     applied = PlanRecalibration(

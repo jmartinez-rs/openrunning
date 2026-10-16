@@ -38,7 +38,11 @@ from app.models import (
 from app.services.plan_calendar import week_start_offset
 from app.services.running import RUNNING_TIMEZONE, run_activity_query
 from app.services.running_math import calculate_vdot, get_training_paces_seconds
-from app.services.workout_library import resolve_block_paces
+from app.services.workout_library import (
+    interval_distance_is_repetition,
+    resolve_block_paces,
+    tempo_main_is_cruise_from_repeats,
+)
 
 # Recency window "W" and minimum qualifying distance "D" from the spec glossary.
 RECENCY_WINDOW_DAYS = 42
@@ -394,6 +398,8 @@ def block_paces_for(
     total_km: float,
     current_pace: float | None,
     current_range: float | None,
+    uses_repetition: bool | None = None,
+    tempo_is_cruise: bool | None = None,
 ) -> tuple[float | None, float | None]:
     """Block pace + range, delegated to the generator's own rules (R11/R12/R24).
 
@@ -401,6 +407,10 @@ def block_paces_for(
     generator uses, so a recalibration reproduces the generated paces exactly and
     distances and repetition counts are never touched. `race` blocks are
     goal-pinned (D6): their stored pace pair is returned unchanged.
+
+    When a recalibration passes the plan's stored geometry via `uses_repetition`
+    or `tempo_is_cruise`, those decisions override the volume/phase rule so an
+    edited `workout.distance_km` cannot flip a stored cruise or R block.
     """
     if workout_type == "race":
         return (current_pace, current_range)
@@ -412,7 +422,34 @@ def block_paces_for(
         target_km=target_km,
         progression_level=progression_level,
         block_count=block_count,
+        uses_repetition=uses_repetition,
+        tempo_is_cruise=tempo_is_cruise,
     )
+
+
+def _geometry_rules(
+    workout: RunningWorkout, blocks: Sequence[WorkoutBlock]
+) -> tuple[bool | None, bool | None]:
+    """(uses_repetition, tempo_is_cruise) from the STORED block geometry (R11/R12).
+
+    `workout.distance_km` is PATCH-editable without restructuring the blocks, so
+    re-deriving the R-vs-I or cruise-vs-continuous rule from it would disagree
+    with the blocks that actually exist. The stored geometry stays authoritative;
+    `None` means "unknown" and lets the volume/phase rule apply instead.
+    """
+    if workout.type == "intervals":
+        interval = next(
+            (block for block in blocks if block.block_type == "interval"), None
+        )
+        if interval is None:
+            return (None, None)
+        return (interval_distance_is_repetition(interval.distance_m), None)
+    if workout.type == "tempo":
+        main = next((block for block in blocks if block.block_type == "main"), None)
+        if main is None:
+            return (None, None)
+        return (None, tempo_main_is_cruise_from_repeats(main.repeats))
+    return (None, None)
 
 
 def _phase_levels(snapshot: PlanSnapshot) -> dict[uuid.UUID, int]:
@@ -583,6 +620,7 @@ def recalibration_preview(
             continue
 
         blocks = snapshot.blocks.get(workout.id, [])
+        uses_repetition, tempo_is_cruise = _geometry_rules(workout, blocks)
         new_workout_pace = workout_pace_for(
             workout.type, new_paces, workout.pace_seconds_per_km
         )
@@ -598,6 +636,8 @@ def recalibration_preview(
                 total_km=workout.distance_km or 0.0,
                 current_pace=block.pace_seconds_per_km,
                 current_range=block.pace_range_end_seconds_per_km,
+                uses_repetition=uses_repetition,
+                tempo_is_cruise=tempo_is_cruise,
             )
             if (
                 block_pace != block.pace_seconds_per_km
@@ -746,6 +786,7 @@ def apply_recalibration(
             continue
 
         blocks = snapshot.blocks.get(workout.id, [])
+        uses_repetition, tempo_is_cruise = _geometry_rules(workout, blocks)
         changed = False
 
         new_pace = workout_pace_for(
@@ -766,6 +807,8 @@ def apply_recalibration(
                 total_km=workout.distance_km or 0.0,
                 current_pace=block.pace_seconds_per_km,
                 current_range=block.pace_range_end_seconds_per_km,
+                uses_repetition=uses_repetition,
+                tempo_is_cruise=tempo_is_cruise,
             )
             block_changed = False
             if pace != block.pace_seconds_per_km:

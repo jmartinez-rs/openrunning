@@ -112,6 +112,13 @@ INTERVAL_COOLDOWN_M = 1500
 # A phase-1 quality session at or below this volume is repetition (R) work.
 REPETITION_PHASE_MAX_VOLUME_KM = 7.0
 
+# Stored-geometry fallbacks. Once a plan has been generated, its blocks are the
+# source of truth: `RunningWorkout.distance_km` is PATCH-editable without
+# restructuring the blocks, so re-deriving the tempo or repetition rule from it
+# can disagree with the geometry that actually exists. The library emits
+# `repeats > 1` for cruise intervals and <= 600 m reps for R work.
+REPETITION_MAIN_BLOCK_MAX_DISTANCE_M = 600
+
 # Long runs with at least this many blocks carry a goal-pace main block.
 LONG_RUN_BLOCK_COUNT_FOR_GOAL_PACE = 3
 # Goals at or beyond this distance run that block at marathon pace.
@@ -151,6 +158,22 @@ def tempo_main_is_cruise(*, total_km: float, progression_level: int) -> bool:
     return progression_level >= 2 and tempo_m >= TEMPO_CRUISE_MIN_BLOCK_M
 
 
+def tempo_main_is_cruise_from_repeats(repeats: int | None) -> bool:
+    """Stored-geometry cruise decision: the library emits `repeats > 1` for cruise."""
+    return (repeats or 1) > 1
+
+
+def interval_distance_is_repetition(distance_m: float | None) -> bool | None:
+    """Stored-geometry R decision: the library emits <= 600 m reps for R work.
+
+    Returns `None` when the geometry is unknown, so the caller can fall back to
+    the volume/phase rule instead of guessing.
+    """
+    if distance_m is None:
+        return None
+    return distance_m <= REPETITION_MAIN_BLOCK_MAX_DISTANCE_M
+
+
 def resolve_block_paces(
     *,
     workout_type: str,
@@ -160,6 +183,8 @@ def resolve_block_paces(
     target_km: float = 0.0,
     progression_level: int = 1,
     block_count: int = 1,
+    uses_repetition: bool | None = None,
+    tempo_is_cruise: bool | None = None,
 ) -> tuple[float | None, float | None]:
     """Pace pair `(pace, range end)` for one generated block.
 
@@ -168,6 +193,11 @@ def resolve_block_paces(
     range; tempo/interval warmups keep the full easy range. `race` blocks are
     goal-pinned (they come from the target time), so `(None, None)` tells the
     caller to keep the stored pace.
+
+    `uses_repetition` / `tempo_is_cruise` let a caller that holds a plan's STORED
+    block geometry pin the R-vs-I and cruise-vs-continuous decisions to that
+    geometry instead of re-deriving them from a possibly-edited `total_km`. The
+    generator passes neither and keeps the volume/phase rule.
     """
     easy_min = paces.get("easy_min")
     easy_max = paces.get("easy_max")
@@ -197,18 +227,28 @@ def resolve_block_paces(
         return (easy_min, easy_max)
 
     if block_type == "interval":
-        if uses_repetition_paces(
-            workout_type=workout_type,
-            total_km=total_km,
-            progression_level=progression_level,
-        ):
+        repetition = (
+            uses_repetition
+            if uses_repetition is not None
+            else uses_repetition_paces(
+                workout_type=workout_type,
+                total_km=total_km,
+                progression_level=progression_level,
+            )
+        )
+        if repetition:
             return offset_pair(paces, "repetition", REPETITION_OFFSET_S_PER_KM)
         return offset_pair(paces, "interval", INTERVAL_OFFSET_S_PER_KM)
 
     if workout_type == "tempo":
-        if tempo_main_is_cruise(
-            total_km=total_km, progression_level=progression_level
-        ):
+        cruise = (
+            tempo_is_cruise
+            if tempo_is_cruise is not None
+            else tempo_main_is_cruise(
+                total_km=total_km, progression_level=progression_level
+            )
+        )
+        if cruise:
             return offset_pair(paces, "threshold", TEMPO_CRUISE_OFFSET_S_PER_KM)
         return offset_pair(paces, "threshold", TEMPO_CONTINUOUS_OFFSET_S_PER_KM)
 
