@@ -727,10 +727,13 @@ def _current_vdot_metadata(
     A stored ``baseline.vdot.value`` the JSON column cannot hold as a number is
     client-fixable data corruption: it maps to 409 ``invalid_plan_data`` — never a
     500 — so preview, apply and history all fail the same, documented way (G1.1).
+    ``AttributeError`` is included so a future field read on the unconstrained
+    column cannot regress this guard back into a 500 (B2; ``derive_current_vdot``
+    already normalises a non-object container, so it is defense in depth).
     """
     try:
         current_vdot = derive_current_vdot(plan.baseline, last_applied)
-    except (TypeError, ValueError) as exc:
+    except (AttributeError, TypeError, ValueError) as exc:
         raise _invalid_plan_data(exc) from exc
     if last_applied is not None:
         created = last_applied.created_at

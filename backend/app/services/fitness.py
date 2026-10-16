@@ -1026,20 +1026,32 @@ def _stored_vdot_value(raw: object) -> float:
 
 
 def derive_current_vdot(
-    baseline: dict | None, last_applied: PlanRecalibration | None
+    baseline: object, last_applied: PlanRecalibration | None
 ) -> float | None:
     """Current VDOT: latest applied recalibration, else `baseline.vdot` (R29).
 
     `baseline.vdot` is never written back, so generation stays untouched. A stored
     value that cannot be read as a number raises ``ValueError`` (never an uncaught
     ``TypeError``); callers map that to a 409.
+
+    `baseline` is an unconstrained JSON column, so it is NOT guaranteed to be an
+    object. A non-object container (a list, string or number) is stored
+    corruption, not an absent snapshot: it raises ``TypeError`` so it maps to
+    ``409 invalid_plan_data`` instead of an uncaught ``AttributeError`` 500.
+    ``None``/``{}`` stay "no usable baseline" and keep the caller's
+    ``plan_has_no_baseline`` code (mirrors the `_persisted_target_km` guard).
     """
     if last_applied is not None:
         return last_applied.new_vdot
-    if baseline:
-        vdot = baseline.get("vdot")
-        if isinstance(vdot, dict) and vdot.get("value") is not None:
-            return _stored_vdot_value(vdot["value"])
+    if baseline is None:
+        return None
+    if not isinstance(baseline, dict):
+        raise TypeError(
+            f"stored baseline is not a JSON object: {type(baseline).__name__}"
+        )
+    vdot = baseline.get("vdot")
+    if isinstance(vdot, dict) and vdot.get("value") is not None:
+        return _stored_vdot_value(vdot["value"])
     return None
 
 

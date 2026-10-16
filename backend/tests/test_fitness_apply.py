@@ -10,6 +10,7 @@ import datetime as dt
 import logging
 import uuid
 
+import pytest
 from conftest import sqlite_session as _session
 from sqlmodel import Session, select
 
@@ -679,6 +680,18 @@ def test_derive_current_vdot_falls_back_to_baseline_then_none():
     assert derive_current_vdot(baseline, applied) == 47.0
     assert derive_current_vdot(None, None) is None
     assert derive_current_vdot({}, None) is None
+
+
+@pytest.mark.parametrize("bad_baseline", [["45"], "oops", 45.0])
+def test_derive_current_vdot_rejects_a_non_object_stored_baseline(bad_baseline):
+    """B2 — the JSON column can hold a list/str/number: corruption, not absence.
+
+    ``AttributeError`` from ``baseline.get`` used to escape as a 500 on preview,
+    apply and history; it is normalised to ``TypeError`` so callers map it to
+    ``409 invalid_plan_data``.
+    """
+    with pytest.raises(TypeError):
+        derive_current_vdot(bad_baseline, None)
 
 
 def test_latest_applied_recalibration_ignores_non_applied_rows():

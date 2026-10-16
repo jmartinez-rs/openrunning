@@ -603,6 +603,72 @@ def test_history_maps_an_out_of_domain_stored_audit_row_to_409(
 
 
 # ---------------------------------------------------------------------------
+# B2 — a stored `baseline` that is not a JSON object must 409, never 500
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("bad_baseline", [["45"], "oops", 45.0])
+def test_all_three_routes_map_a_non_dict_stored_baseline_to_409(
+    client, db_engine, user, bad_baseline
+):
+    """B2 — ``baseline.get("vdot")`` raises AttributeError on a list/str/number.
+
+    The column is unconstrained JSON, so a non-object value is stored corruption:
+    it must surface as ``409 invalid_plan_data`` on preview, apply AND history
+    (``derive_current_vdot`` is reached by all three), never as a 500.
+    """
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+    _set_baseline(db_engine, seed["plan_id"], bad_baseline)
+
+    responses = [
+        client.post(f"{BASE}/{seed['plan_id']}/recalibrate/preview", json={"new_vdot": 47}),
+        client.post(
+            f"{BASE}/{seed['plan_id']}/recalibrate",
+            json={"new_vdot": 47, "confirm": True},
+        ),
+        client.get(f"{BASE}/{seed['plan_id']}/recalibrations"),
+    ]
+
+    assert [response.status_code for response in responses] == [409, 409, 409]
+    assert {response.json()["detail"] for response in responses} == {"invalid_plan_data"}
+
+
+@pytest.mark.parametrize("empty_baseline", [{}, None])
+def test_all_three_routes_treat_an_absent_baseline_as_no_baseline(
+    client, db_engine, user, empty_baseline
+):
+    """B2 triangulation: a MISSING snapshot is not corruption.
+
+    ``None`` (legacy plan) and ``{}`` (snapshot without a ``vdot`` key) both mean
+    "no usable current VDOT". Preview/apply keep the documented
+    ``409 plan_has_no_baseline`` code (they need a target) while history is a read
+    of audit rows and answers 200 with a null current VDOT instead of 409.
+    """
+    seed = _seed_plan(
+        db_engine, user.id, week_starts=_current_week_then_future(), with_baseline=False
+    )
+    if empty_baseline is not None:
+        _set_baseline(db_engine, seed["plan_id"], empty_baseline)
+
+    preview = client.post(
+        f"{BASE}/{seed['plan_id']}/recalibrate/preview", json={"new_vdot": 47}
+    )
+    apply_resp = client.post(
+        f"{BASE}/{seed['plan_id']}/recalibrate",
+        json={"new_vdot": 47, "confirm": True},
+    )
+    history = client.get(f"{BASE}/{seed['plan_id']}/recalibrations")
+
+    assert (preview.status_code, apply_resp.status_code) == (409, 409)
+    assert {preview.json()["detail"], apply_resp.json()["detail"]} == {
+        "plan_has_no_baseline"
+    }
+    assert history.status_code == 200
+    assert history.json()["current_vdot"] is None
+    assert history.json()["data"] == []
+
+
+# ---------------------------------------------------------------------------
 # T12 — preview check precedence (D0 / S7 / E12)
 # ---------------------------------------------------------------------------
 
