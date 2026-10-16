@@ -15,6 +15,7 @@ from app.models import (
 )
 from app.services.fitness import (
     PlanSnapshot,
+    apply_recalibration,
     block_paces_for,
     plan_to_create,
     recalibration_preview,
@@ -240,7 +241,7 @@ def test_effective_week_is_none_when_no_future_week_remains():
     )
 
 
-def test_workout_pace_rules():
+def test_workout_level_pace_uses_the_training_pace_table():
     paces = get_training_paces_seconds(45.0)
 
     assert workout_pace_for("easy_run", paces, 999.0) == paces["easy_min"]
@@ -251,7 +252,7 @@ def test_workout_pace_rules():
     assert workout_pace_for("race", paces, 270.0) == 270.0
 
 
-def test_block_pace_rules():
+def test_block_paces_follow_the_generator_rule_table():
     paces = get_training_paces_seconds(45.0)
 
     def resolve(workout_type: str, block_type: str, **overrides):
@@ -403,6 +404,55 @@ def test_preview_is_read_only_and_idempotent():
         for blocks in snapshot.blocks.values()
         for block in blocks
     } == before_blocks
+
+
+def test_preview_changes_equal_what_apply_performs():
+    """F-d approval test: preview must describe exactly what apply performs.
+
+    Both paths resolve their paces through one shared kernel, so the preview can
+    never drift from the applied result.
+    """
+    snapshot, _ = _snapshot()
+    effective_from = (2, dt.date(2026, 10, 12))
+    preview = recalibration_preview(
+        snapshot,
+        current_vdot=45.0,
+        new_vdot=47.0,
+        source="activity",
+        evidence={},
+        effective_from=effective_from,
+    )
+    before_workouts = {w.id: w.pace_seconds_per_km for w in snapshot.workouts}
+    before_blocks = {
+        block.id: (block.pace_seconds_per_km, block.pace_range_end_seconds_per_km)
+        for blocks in snapshot.blocks.values()
+        for block in blocks
+    }
+
+    result = apply_recalibration(
+        snapshot, new_vdot=47.0, effective_from_date=effective_from[1]
+    )
+
+    moved: set[uuid.UUID] = set()
+    for workout in snapshot.workouts:
+        if workout.pace_seconds_per_km != before_workouts[workout.id]:
+            moved.add(workout.id)
+        for block in snapshot.blocks[workout.id]:
+            if (
+                block.pace_seconds_per_km,
+                block.pace_range_end_seconds_per_km,
+            ) != before_blocks[block.id]:
+                moved.add(workout.id)
+
+    described = {change.workout_id: change for change in preview.changes}
+    assert described, "the preview must describe at least one change"
+    assert set(described) == moved
+    assert result.affected_workouts == len(moved)
+    assert set(preview.affected_weeks) == set(result.affected_weeks)
+    for workout_id, change in described.items():
+        applied = next(w for w in snapshot.workouts if w.id == workout_id)
+        assert applied.pace_seconds_per_km == change.new_pace
+        assert change.old_pace == before_workouts[workout_id]
 
 
 def test_plan_to_create_rebuilds_the_stored_structure():

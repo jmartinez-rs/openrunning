@@ -627,6 +627,67 @@ def plan_to_create(snapshot: PlanSnapshot) -> RunningPlanCreate:
     )
 
 
+@dataclass(frozen=True)
+class _ResolvedWorkout:
+    """One future workout's resolved paces, produced by the shared kernel."""
+
+    workout: RunningWorkout
+    new_pace: float | None
+    block_paces: tuple[tuple[WorkoutBlock, float | None, float | None], ...]
+
+
+def _resolve_future_workout_paces(
+    snapshot: PlanSnapshot,
+    *,
+    new_paces: dict[str, float],
+    effective_from_date: dt.date,
+) -> list[_ResolvedWorkout]:
+    """Single pace-resolution kernel shared by preview AND apply (R11/R12/R24).
+
+    Both `recalibration_preview` and `apply_recalibration` consume this iterator,
+    so the preview can never describe a different rewrite than the apply performs.
+    Workouts are ordered canonically by `(date, id)` — the sort is owned here — and
+    only workouts whose date is on/after `effective_from_date` are resolved.
+    """
+    target_km = snapshot.plan.distance_km or 0.0
+    levels = _phase_levels(snapshot)
+    resolved: list[_ResolvedWorkout] = []
+    for workout in sorted(
+        snapshot.workouts, key=lambda item: (item.date, str(item.id))
+    ):
+        if workout.date < effective_from_date:
+            continue
+
+        blocks = tuple(snapshot.blocks.get(workout.id, []))
+        uses_repetition, tempo_is_cruise = _geometry_rules(workout, blocks)
+        new_pace = workout_pace_for(
+            workout.type, new_paces, workout.pace_seconds_per_km
+        )
+        block_paces = tuple(
+            (
+                block,
+                *block_paces_for(
+                    workout.type,
+                    block_type=block.block_type,
+                    block_count=len(blocks),
+                    paces=new_paces,
+                    target_km=target_km,
+                    progression_level=levels.get(workout.id, 1),
+                    total_km=workout.distance_km or 0.0,
+                    current_pace=block.pace_seconds_per_km,
+                    current_range=block.pace_range_end_seconds_per_km,
+                    uses_repetition=uses_repetition,
+                    tempo_is_cruise=tempo_is_cruise,
+                ),
+            )
+            for block in blocks
+        )
+        resolved.append(
+            _ResolvedWorkout(workout=workout, new_pace=new_pace, block_paces=block_paces)
+        )
+    return resolved
+
+
 def recalibration_preview(
     snapshot: PlanSnapshot,
     *,
@@ -645,39 +706,16 @@ def recalibration_preview(
     old_paces = get_training_paces_seconds(current_vdot)
     new_paces = get_training_paces_seconds(new_vdot)
     classification = classify_recalibration(current_vdot, new_vdot)
-    target_km = snapshot.plan.distance_km or 0.0
     weeks_by_id = {week.id: week for week in snapshot.weeks}
-    levels = _phase_levels(snapshot)
 
     changes: list[RecalibrationChange] = []
     affected_weeks: set[int] = set()
 
-    for workout in sorted(
-        snapshot.workouts, key=lambda item: (item.date, str(item.id))
+    for item in _resolve_future_workout_paces(
+        snapshot, new_paces=new_paces, effective_from_date=effective_date
     ):
-        if workout.date < effective_date:
-            continue
-
-        blocks = snapshot.blocks.get(workout.id, [])
-        uses_repetition, tempo_is_cruise = _geometry_rules(workout, blocks)
-        new_workout_pace = workout_pace_for(
-            workout.type, new_paces, workout.pace_seconds_per_km
-        )
-        changed = new_workout_pace != workout.pace_seconds_per_km
-        for block in blocks:
-            block_pace, block_range = block_paces_for(
-                workout.type,
-                block_type=block.block_type,
-                block_count=len(blocks),
-                paces=new_paces,
-                target_km=target_km,
-                progression_level=levels.get(workout.id, 1),
-                total_km=workout.distance_km or 0.0,
-                current_pace=block.pace_seconds_per_km,
-                current_range=block.pace_range_end_seconds_per_km,
-                uses_repetition=uses_repetition,
-                tempo_is_cruise=tempo_is_cruise,
-            )
+        changed = item.new_pace != item.workout.pace_seconds_per_km
+        for block, block_pace, block_range in item.block_paces:
             if (
                 block_pace != block.pace_seconds_per_km
                 or block_range != block.pace_range_end_seconds_per_km
@@ -689,14 +727,14 @@ def recalibration_preview(
 
         changes.append(
             RecalibrationChange(
-                workout_id=workout.id,
-                date=workout.date,
-                type=workout.type,
-                old_pace=workout.pace_seconds_per_km,
-                new_pace=new_workout_pace,
+                workout_id=item.workout.id,
+                date=item.workout.date,
+                type=item.workout.type,
+                old_pace=item.workout.pace_seconds_per_km,
+                new_pace=item.new_pace,
             )
         )
-        week = weeks_by_id.get(workout.week_id)
+        week = weeks_by_id.get(item.workout.week_id)
         if week is not None:
             affected_weeks.add(week.number)
 
@@ -812,43 +850,22 @@ def apply_recalibration(
     distances, structure, statuses or past weeks.
     """
     new_paces = get_training_paces_seconds(new_vdot)
-    target_km = snapshot.plan.distance_km or 0.0
     weeks_by_id = {week.id: week for week in snapshot.weeks}
-    levels = _phase_levels(snapshot)
 
     affected_workouts = 0
     affected_blocks = 0
     affected_weeks: set[int] = set()
 
-    for workout in snapshot.workouts:
-        if workout.date < effective_from_date:
-            continue
-
-        blocks = snapshot.blocks.get(workout.id, [])
-        uses_repetition, tempo_is_cruise = _geometry_rules(workout, blocks)
+    for item in _resolve_future_workout_paces(
+        snapshot, new_paces=new_paces, effective_from_date=effective_from_date
+    ):
         changed = False
 
-        new_pace = workout_pace_for(
-            workout.type, new_paces, workout.pace_seconds_per_km
-        )
-        if new_pace != workout.pace_seconds_per_km:
-            workout.pace_seconds_per_km = new_pace
+        if item.new_pace != item.workout.pace_seconds_per_km:
+            item.workout.pace_seconds_per_km = item.new_pace
             changed = True
 
-        for block in blocks:
-            pace, pace_range = block_paces_for(
-                workout.type,
-                block_type=block.block_type,
-                block_count=len(blocks),
-                paces=new_paces,
-                target_km=target_km,
-                progression_level=levels.get(workout.id, 1),
-                total_km=workout.distance_km or 0.0,
-                current_pace=block.pace_seconds_per_km,
-                current_range=block.pace_range_end_seconds_per_km,
-                uses_repetition=uses_repetition,
-                tempo_is_cruise=tempo_is_cruise,
-            )
+        for block, pace, pace_range in item.block_paces:
             block_changed = False
             if pace != block.pace_seconds_per_km:
                 block.pace_seconds_per_km = pace
@@ -862,7 +879,7 @@ def apply_recalibration(
 
         if changed:
             affected_workouts += 1
-            week = weeks_by_id.get(workout.week_id)
+            week = weeks_by_id.get(item.workout.week_id)
             if week is not None:
                 affected_weeks.add(week.number)
 
