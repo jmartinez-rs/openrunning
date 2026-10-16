@@ -11,8 +11,8 @@ import datetime as dt
 import uuid
 
 import pytest
-from sqlalchemy import create_engine
-from sqlmodel import Session, SQLModel, select
+from conftest import sqlite_session as _session
+from sqlmodel import Session, select
 
 from app.models import (
     AthleteBaseline,
@@ -49,12 +49,6 @@ PROFILES = [
 
 HALF = (21.1, 12, 45.0, [1, 2, 4, 5, 7], 5700)
 MARATHON = (42.2, 16, 60.0, [1, 2, 4, 5, 7], 12600)
-
-
-def _session() -> Session:
-    engine = create_engine("sqlite://")
-    SQLModel.metadata.create_all(engine)
-    return Session(engine)
 
 
 def _baseline(weekly_km: float, vdot: float) -> AthleteBaseline:

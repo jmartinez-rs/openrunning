@@ -734,3 +734,90 @@ def test_apply_takes_a_plan_row_lock(client, db_engine, user, monkeypatch):
 
     assert resp.status_code == 200
     assert locked == [uuid.UUID(seed["plan_id"])]
+
+
+# NOTE (documented limitation): the FOR UPDATE guarantee is compile-checked
+# (test_plan_lock_statement_emits_for_update_on_postgres) and wiring-spied
+# (test_apply_takes_a_plan_row_lock), but it is NOT contention-tested: SQLite
+# ignores FOR UPDATE, so a real two-transaction contention test would require a
+# live PostgreSQL instance, which is out of scope for this slice.
+
+
+# ---------------------------------------------------------------------------
+# F-i — observability, R21 surface, R29/S3 double apply
+# ---------------------------------------------------------------------------
+
+
+def test_recalibration_terminal_outcomes_emit_structured_observability(
+    client, db_engine, user, caplog
+):
+    future = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+    past = _seed_plan(db_engine, user.id, week_starts=_all_past_weeks())
+    no_baseline = _seed_plan(
+        db_engine, user.id, week_starts=_current_week_then_future(), with_baseline=False
+    )
+
+    with caplog.at_level(logging.INFO, logger="app.api.routes.running_plans"):
+        client.post(f"{BASE}/{future['plan_id']}/recalibrate/preview", json={})
+        client.post(f"{BASE}/{future['plan_id']}/recalibrate", json={"confirm": True})
+        client.post(f"{BASE}/{future['plan_id']}/recalibrate", json={"new_vdot": 46})
+        client.post(f"{BASE}/{past['plan_id']}/recalibrate/preview", json={"new_vdot": 46})
+        client.post(
+            f"{BASE}/{no_baseline['plan_id']}/recalibrate/preview", json={"new_vdot": 46}
+        )
+        client.post(
+            f"{BASE}/{future['plan_id']}/recalibrate",
+            json={"new_vdot": 48, "confirm": True},
+        )
+
+    events = {getattr(record, "event", None) for record in caplog.records}
+    assert {
+        "empty_evidence",
+        "no_evidence",
+        "confirmation_required",
+        "no_future_week",
+        "plan_has_no_baseline",
+        "risk_acknowledgement_required",
+    } <= events
+
+
+def test_recalibration_surface_exposes_exactly_three_routes(client, db_engine, user):
+    paths = client.get("/api/v1/openapi.json").json()["paths"]
+
+    recalibration_paths = sorted(path for path in paths if "recalibrat" in path)
+
+    assert recalibration_paths == [
+        f"{BASE}/{{plan_id}}/recalibrate",
+        f"{BASE}/{{plan_id}}/recalibrate/preview",
+        f"{BASE}/{{plan_id}}/recalibrations",
+    ]
+
+
+def test_double_apply_advances_current_vdot_and_keeps_baseline_immutable(
+    client, db_engine, user
+):
+    """R29 / E3 / S3: the second apply compares against the first's new VDOT."""
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+
+    first = client.post(
+        f"{BASE}/{seed['plan_id']}/recalibrate", json={"new_vdot": 47, "confirm": True}
+    )
+    second = client.post(
+        f"{BASE}/{seed['plan_id']}/recalibrate", json={"new_vdot": 48, "confirm": True}
+    )
+
+    assert first.status_code == 200 and second.status_code == 200
+    first_row = first.json()["recalibration"]
+    second_row = second.json()["recalibration"]
+    assert (first_row["old_vdot"], first_row["new_vdot"]) == (45.0, 47.0)
+    # The second apply's old_vdot is the FIRST apply's new_vdot, not the baseline.
+    assert second_row["old_vdot"] == first_row["new_vdot"] == 47.0
+    assert second_row["new_vdot"] == 48.0
+
+    # baseline.vdot is immutable; two rows persisted.
+    with Session(db_engine) as session:
+        plan = session.get(RunningPlan, uuid.UUID(seed["plan_id"]))
+        assert plan.baseline["vdot"]["value"] == 45.0
+    rows = _history(db_engine, seed["plan_id"])
+    assert len(rows) == 2
+    assert sorted(row.new_vdot for row in rows) == [47.0, 48.0]

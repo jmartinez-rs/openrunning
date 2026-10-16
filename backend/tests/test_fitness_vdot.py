@@ -5,8 +5,8 @@ import uuid
 from datetime import UTC, datetime, time
 
 import pytest
-from sqlalchemy import create_engine
-from sqlmodel import Session, SQLModel, select
+from conftest import sqlite_session as _session
+from sqlmodel import Session, select
 
 from app.models import (
     Activity,
@@ -27,12 +27,6 @@ from app.services.fitness import (
 from app.services.running_math import calculate_vdot
 
 TODAY = dt.date(2026, 10, 15)
-
-
-def _session() -> Session:
-    engine = create_engine("sqlite://")
-    SQLModel.metadata.create_all(engine)
-    return Session(engine)
 
 
 def _plan(session: Session) -> RunningPlan:

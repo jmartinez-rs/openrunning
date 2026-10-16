@@ -4,8 +4,8 @@ import datetime as dt
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import create_engine
-from sqlmodel import Session, SQLModel
+from conftest import sqlite_session as _session
+from sqlmodel import Session
 
 from app.models import (
     Activity,
@@ -17,12 +17,6 @@ from app.models import (
     User,
 )
 from app.services.running import resolve_workout_status, run_activity_query
-
-
-def _session() -> Session:
-    engine = create_engine("sqlite://")
-    SQLModel.metadata.create_all(engine)
-    return Session(engine)
 
 
 def _user(session: Session) -> User:

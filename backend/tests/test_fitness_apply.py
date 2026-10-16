@@ -9,8 +9,8 @@ the gate is proven in `test_plan_invariant_gate.py` with injected issue lists.
 import datetime as dt
 import uuid
 
-from sqlalchemy import create_engine
-from sqlmodel import Session, SQLModel, select
+from conftest import sqlite_session as _session
+from sqlmodel import Session, select
 
 from app.models import (
     AthleteBaseline,
@@ -34,12 +34,6 @@ from app.services.running_math import get_training_paces_seconds
 
 WEEK_1_START = dt.date(2026, 10, 5)
 EFFECTIVE_DATE = dt.date(2026, 10, 12)
-
-
-def _session() -> Session:
-    engine = create_engine("sqlite://")
-    SQLModel.metadata.create_all(engine)
-    return Session(engine)
 
 
 def _baseline(vdot: float = 45.0) -> AthleteBaseline:

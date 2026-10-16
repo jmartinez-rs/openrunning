@@ -643,6 +643,25 @@ def _today_local() -> date:
     return datetime.now(RUNNING_TIMEZONE).date()
 
 
+def _log_recalibration_outcome(
+    event: str, plan: RunningPlan, *, level: int = logging.WARNING, **extra: object
+) -> None:
+    """Structured log for a terminal / degraded recalibration outcome (F-i).
+
+    These outcomes (no_future_week, plan_has_no_baseline, no_evidence,
+    confirmation_required, risk_acknowledgement_required, empty_evidence) used to
+    return silently. A stable ``event`` key in ``extra`` makes them observable
+    without a custom log formatter.
+    """
+    logger.log(
+        level,
+        "%s plan_id=%s",
+        event,
+        plan.id,
+        extra={"event": event, "plan_id": str(plan.id), **extra},
+    )
+
+
 def plan_lock_statement(plan_id: uuid.UUID) -> Select[tuple[RunningPlan]]:
     """Locking SELECT for one plan row (``FOR UPDATE`` on PostgreSQL)."""
     return select(RunningPlan).where(RunningPlan.id == plan_id).with_for_update()
@@ -655,6 +674,11 @@ def lock_plan_for_update(session: SessionDep, plan: RunningPlan) -> RunningPlan:
     serializes them on the plan row. SQLite (used by unit tests) does not support
     ``FOR UPDATE`` and its dialect ignores it, while production PostgreSQL emits
     it. The lock is released on commit/rollback.
+
+    Note: this guarantee is compile-checked (``FOR UPDATE`` on the PostgreSQL
+    dialect) and wiring-spied (the apply route calls this helper) but is NOT
+    contention-tested under SQLite — a real two-transaction contention test would
+    need a live PostgreSQL instance.
     """
     return session.exec(plan_lock_statement(plan.id)).one()
 
@@ -675,6 +699,7 @@ def _snapshot_with_effective_week(
         today_local=today_local,
     )
     if effective_from is None:
+        _log_recalibration_outcome("no_future_week", plan)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="no_future_week"
         )
@@ -786,6 +811,7 @@ def preview_recalibration(
         plan, last_applied
     )
     if current_vdot is None:
+        _log_recalibration_outcome("plan_has_no_baseline", plan)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="plan_has_no_baseline"
         )
@@ -793,6 +819,9 @@ def preview_recalibration(
         session, plan, body, today_local=today_local
     )
     if new_vdot is None or source is None:
+        _log_recalibration_outcome(
+            "empty_evidence", plan, level=logging.INFO
+        )
         return RecalibrationPreviewPublic(
             vdot=None,
             recommend_fitness_test=True,
@@ -830,6 +859,7 @@ def apply_plan_recalibration(
     """Apply a recalibration. Normative gate order (R19/R28/R20/T13)."""
     plan = _get_owned_plan(session, current_user.id, plan_id)
     if body is None or not body.confirm:
+        _log_recalibration_outcome("confirmation_required", plan)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="confirmation_required"
         )
@@ -846,6 +876,7 @@ def apply_plan_recalibration(
         plan, last_applied
     )
     if current_vdot is None:
+        _log_recalibration_outcome("plan_has_no_baseline", plan)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="plan_has_no_baseline"
         )
@@ -853,6 +884,7 @@ def apply_plan_recalibration(
         session, plan, body, today_local=today_local
     )
     if new_vdot is None or source is None:
+        _log_recalibration_outcome("no_evidence", plan)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="no_evidence"
         )
@@ -860,6 +892,7 @@ def apply_plan_recalibration(
     classification = classify_recalibration(current_vdot, new_vdot)
     needs_ack = classification.suspicious or classification.kind == "decline"
     if needs_ack and not body.acknowledge_risk:
+        _log_recalibration_outcome("risk_acknowledgement_required", plan)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="risk_acknowledgement_required",

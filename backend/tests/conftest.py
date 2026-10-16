@@ -37,6 +37,17 @@ from app.main import app
 from app.models import User
 
 
+def sqlite_session() -> Session:
+    """A fresh in-memory SQLite session with the full schema created.
+
+    Shared by the pure service tests that build live ORM graphs without the HTTP
+    harness (previously duplicated as a local ``_session`` in each test module).
+    """
+    engine = create_engine("sqlite://")
+    SQLModel.metadata.create_all(engine)
+    return Session(engine)
+
+
 @pytest.fixture()
 def db_engine(tmp_path) -> Generator[Engine]:
     """A fresh file-backed SQLite database per test (shared across sessions)."""
