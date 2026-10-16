@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
   Check,
@@ -15,6 +15,7 @@ import {
   Sparkles,
   TrendingUp,
   Trophy,
+  X,
 } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 
@@ -29,6 +30,12 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -39,12 +46,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import useCustomToast from "@/hooks/useCustomToast"
 import {
   calculateVDOT,
@@ -165,6 +166,45 @@ const DAYS_OF_WEEK = [
   { id: 5, label: "Viernes", short: "Vie" },
   { id: 6, label: "Sábado", short: "Sáb" },
   { id: 0, label: "Domingo", short: "Dom" },
+]
+
+export const LEVELS = [
+  {
+    id: "beginner",
+    title: "Principiante",
+    desc: "Estoy empezando ahora o vuelvo tras una pausa.",
+    weeklyKm: 18,
+    longestKm: 7,
+    refTime: "00:32:00",
+    vdot: 32,
+  },
+  {
+    id: "intermediate",
+    title: "Intermedio",
+    desc: "Ya corro con regularidad y busco mejorar mis marcas.",
+    weeklyKm: 30,
+    longestKm: 12,
+    refTime: "00:24:30",
+    vdot: 42,
+  },
+  {
+    id: "advanced",
+    title: "Avanzado",
+    desc: "Entreno de forma estructurada con foco en rendimiento.",
+    weeklyKm: 50,
+    longestKm: 18,
+    refTime: "00:19:45",
+    vdot: 50,
+  },
+  {
+    id: "elite",
+    title: "Élite",
+    desc: "Competidor experimentado buscando optimización máxima.",
+    weeklyKm: 65,
+    longestKm: 22,
+    refTime: "00:17:15",
+    vdot: 58,
+  },
 ]
 
 /** ISO (YYYY-MM-DD) del lunes de la semana actual. */
@@ -856,13 +896,13 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
   const navigate = useNavigate()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
-  const [step, setStep] = useState<number>(editId ? 4 : 1)
+  const [step, setStep] = useState<number>(editId ? 6 : 1)
   const [draft, setDraft] = useState<PlanDraft>(createEmptyDraft)
+  const [showGuideModal, setShowGuideModal] = useState<boolean>(false)
 
   // Questionnaire / Onboarding state (Paccer style)
   const [userLevel, setUserLevel] = useState<string>("intermediate")
   const [hasInjury, setHasInjury] = useState<boolean>(false)
-  const [showAdvancedVdot, setShowAdvancedVdot] = useState<boolean>(false)
   const [showFullEditor, setShowFullEditor] = useState<boolean>(Boolean(editId))
 
   const [terrain, setTerrain] = useState<"road" | "trail">("road")
@@ -879,6 +919,38 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
 
   const [refDistanceKm, setRefDistanceKm] = useState<number>(5)
   const [refTimeInput, setRefTimeInput] = useState<string>("00:24:30")
+
+  const { refHours, refMinutes, refSeconds } = useMemo(() => {
+    if (!refTimeInput) return { refHours: 0, refMinutes: 24, refSeconds: 30 }
+    const parts = refTimeInput.split(":").map((p) => parseInt(p, 10) || 0)
+    if (parts.length === 2) {
+      // mm:ss
+      return {
+        refHours: 0,
+        refMinutes: Math.min(59, parts[0]),
+        refSeconds: Math.min(59, parts[1]),
+      }
+    }
+    if (parts.length >= 3) {
+      // hh:mm:ss
+      return {
+        refHours: Math.min(23, parts[0]),
+        refMinutes: Math.min(59, parts[1]),
+        refSeconds: Math.min(59, parts[2]),
+      }
+    }
+    return { refHours: 0, refMinutes: 24, refSeconds: 30 }
+  }, [refTimeInput])
+
+  const updateRefTime = (hours: number, minutes: number, seconds: number) => {
+    refTimeEdited.current = true
+    const h = Math.max(0, Math.min(23, hours))
+    const m = Math.max(0, Math.min(59, minutes))
+    const s = Math.max(0, Math.min(59, seconds))
+    const pad = (n: number) => n.toString().padStart(2, "0")
+    setRefTimeInput(`${pad(h)}:${pad(m)}:${pad(s)}`)
+  }
+
   const [currentWeeklyKm, setCurrentWeeklyKm] = useState<number | "">("")
   const [longestRunKm, setLongestRunKm] = useState<number | "">("")
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 3, 5, 6]) // Lun, Mié, Vie, Sáb (Paccer default)
@@ -913,7 +985,11 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
   useEffect(() => {
     const best = bestTimeByRefKm[refDistanceKm.toString()]
     if (best && !refTimeEdited.current) {
-      setRefTimeInput(formatTime(best))
+      const h = Math.floor(best / 3600)
+      const m = Math.floor((best % 3600) / 60)
+      const s = Math.round(best % 60)
+      const pad = (n: number) => n.toString().padStart(2, "0")
+      setRefTimeInput(`${pad(h)}:${pad(m)}:${pad(s)}`)
     }
   }, [refDistanceKm, bestTimeByRefKm])
 
@@ -1072,9 +1148,21 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
     mutationFn: async () => {
       const todayIso = new Date().toISOString().split("T")[0]
       const defaultWeeklyKm =
-        userLevel === "beginner" ? 18.0 : userLevel === "intermediate" ? 30.0 : 50.0
+        userLevel === "beginner"
+          ? 18.0
+          : userLevel === "intermediate"
+            ? 30.0
+            : userLevel === "elite"
+              ? 65.0
+              : 50.0
       const defaultLongestKm =
-        userLevel === "beginner" ? 7.0 : userLevel === "intermediate" ? 12.0 : 18.0
+        userLevel === "beginner"
+          ? 7.0
+          : userLevel === "intermediate"
+            ? 12.0
+            : userLevel === "elite"
+              ? 22.0
+              : 18.0
 
       const payload = {
         plan_type: planType,
@@ -1102,7 +1190,15 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
             confidence: confidence,
           },
           vdot: {
-            value: calculatedVdot || (userLevel === "beginner" ? 32.0 : userLevel === "intermediate" ? 42.0 : 50.0),
+            value:
+              calculatedVdot ||
+              (userLevel === "beginner"
+                ? 32.0
+                : userLevel === "intermediate"
+                  ? 42.0
+                  : userLevel === "elite"
+                    ? 58.0
+                    : 50.0),
             confidence: confidence,
           },
           runs_per_week: {
@@ -1132,7 +1228,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
         setDraft(d)
       }
       showSuccessToast("¡Plan generado con éxito según tu rutina y nivel!")
-      setStep(4)
+      setStep(6)
     },
     onError: () => {
       const fallbackName =
@@ -1141,9 +1237,21 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
           ? `Plan ${raceName.trim()}`
           : `Plan ${targetKm}K (${numWeeks} sem)`)
       const defaultWeeklyKm =
-        userLevel === "beginner" ? 18 : userLevel === "intermediate" ? 30 : 50
+        userLevel === "beginner"
+          ? 18
+          : userLevel === "intermediate"
+            ? 30
+            : userLevel === "elite"
+              ? 65
+              : 50
       const defaultLongestKm =
-        userLevel === "beginner" ? 7 : userLevel === "intermediate" ? 12 : 18
+        userLevel === "beginner"
+          ? 7
+          : userLevel === "intermediate"
+            ? 12
+            : userLevel === "elite"
+              ? 22
+              : 18
 
       const generated = generatePlanStructure({
         draft: {
@@ -1174,7 +1282,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
       })
       setDraft(generated)
       showSuccessToast("Plan generado localmente.")
-      setStep(4)
+      setStep(6)
     },
   })
 
@@ -1214,36 +1322,78 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto py-2">
-      {/* Top Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      {/* Runna-style Navigation Header (Steps 1 to 5) */}
+      {step <= 5 && (
+        <div className="flex items-center justify-between gap-4 max-w-xl mx-auto w-full px-2 pt-2 pb-1">
           <Button
             variant="ghost"
             size="icon"
-            className="bg-card border border-border text-muted-foreground hover:text-white hover:bg-surface-container-high rounded-xl"
-            asChild
+            onClick={() => {
+              if (step > 1) {
+                setStep(step - 1)
+              } else {
+                navigate({ to: "/routines" })
+              }
+            }}
+            className="size-10 rounded-full hover:bg-surface-container-high text-muted-foreground hover:text-white cursor-pointer shrink-0"
+            aria-label="Atrás"
           >
-            <Link to="/routines">
-              <ArrowLeft className="size-5" />
-            </Link>
+            <ArrowLeft className="size-5" />
           </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight text-white">
-                {editId ? "Editar Plan de Running" : "Creador de Planes"}
-              </h1>
-              <Badge className="bg-primary/15 text-primary border-primary/30 gap-1 text-[11px] font-bold">
-                <Sparkles className="size-3" /> Algoritmo VDOT
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Respondé las preguntas clave y el algoritmo calculará
-              matemáticamente tus cargas, ritmos y bloques.
-            </p>
-          </div>
-        </div>
 
-        {step === 4 && (
+          {/* 5-step thin segmented progress bar (Runna style) */}
+          <div className="flex items-center gap-1.5 flex-1 max-w-xs">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <div
+                key={s}
+                className={cn(
+                  "h-1 flex-1 rounded-full transition-all duration-300",
+                  s <= step ? "bg-white" : "bg-neutral-800",
+                )}
+              />
+            ))}
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate({ to: "/routines" })}
+            className="size-10 rounded-full hover:bg-surface-container-high text-muted-foreground hover:text-white cursor-pointer shrink-0"
+            aria-label="Cerrar"
+          >
+            <X className="size-5" />
+          </Button>
+        </div>
+      )}
+
+      {/* Standard Editor Header (Step 6) */}
+      {step === 6 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="bg-card border border-border text-muted-foreground hover:text-white hover:bg-surface-container-high rounded-xl"
+              onClick={() => setStep(5)}
+              title="Volver a los parámetros"
+            >
+              <ArrowLeft className="size-5" />
+            </Button>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold tracking-tight text-white">
+                  {editId ? "Editar Plan de Running" : "Creador de Planes"}
+                </h1>
+                <Badge className="bg-primary/15 text-primary border-primary/30 gap-1 text-[11px] font-bold">
+                  <Sparkles className="size-3" /> Algoritmo VDOT
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Revisá y personalizá los bloques, fases y cargas generadas antes de confirmar tu plan.
+              </p>
+            </div>
+          </div>
+
           <Button
             type="button"
             onClick={handleSave}
@@ -1257,173 +1407,66 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
             )}
             <span>{editId ? "Guardar Cambios" : "Guardar Plan"}</span>
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Paccer-style Step Indicator Bar */}
-      <div className="flex items-center justify-between max-w-sm mx-auto w-full px-4 mb-2">
-        {[1, 2, 3, 4].map((stepNumber, index) => {
-          const isCompleted = step > stepNumber
-          const isCurrent = step === stepNumber
-          return (
-            <div
-              key={stepNumber}
-              className="flex items-center flex-1 last:flex-none"
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  if (step > stepNumber || (step === 4 && stepNumber <= 3)) {
-                    setStep(stepNumber)
-                  }
-                }}
-                disabled={step < stepNumber}
-                aria-label={`Paso ${stepNumber}`}
-                className={cn(
-                  "size-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300",
-                  isCompleted
-                    ? "bg-primary text-black shadow-xs cursor-pointer hover:scale-105"
-                    : isCurrent
-                      ? "bg-primary text-black ring-4 ring-primary/25 shadow-glow"
-                      : "bg-surface-container-high text-muted-foreground border border-border/80 cursor-not-allowed",
-                )}
-              >
-                {isCompleted ? (
-                  <Check className="size-4.5 stroke-[3]" />
-                ) : (
-                  stepNumber
-                )}
-              </button>
-              {index < 3 && (
-                <div
-                  className={cn(
-                    "flex-1 h-1 mx-2 rounded-full transition-colors duration-300",
-                    step > stepNumber
-                      ? "bg-primary"
-                      : "bg-surface-container-high",
-                  )}
-                />
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* STEP 1: Vamos a empezar (1-criar-treino-nivel.png) */}
+      {/* STEP 1: Nivel de carrera (Runna parte 2) */}
       {step === 1 && (
         <Card className="max-w-xl mx-auto w-full p-6 sm:p-8 bg-card border-border/80 shadow-card rounded-3xl">
           <CardHeader className="px-0 pt-0 pb-6">
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              Vamos a empezar
+              Nivel de carrera
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Definí tu base de entrenamiento.
+              Elegí el nivel que mejor represente tu experiencia actual.
             </p>
           </CardHeader>
 
           <CardContent className="px-0 flex flex-col gap-6">
-            {/* Nivel de carrera */}
+            {/* Niveles con radio rings */}
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm text-white">
-                  ¿Cuál es tu nivel corriendo?
-                </span>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        className="text-muted-foreground hover:text-white transition-colors cursor-pointer"
-                      >
-                        <HelpCircle className="size-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-surface-container-high text-white border-border text-xs">
-                      Permite estimar el volumen semanal seguro y ritmos iniciales.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                {[
-                  {
-                    id: "beginner",
-                    title: "Principiante",
-                    desc: "Estoy empezando ahora.",
-                    weeklyKm: 18,
-                    longestKm: 7,
-                    refTime: "00:32:00",
-                  },
-                  {
-                    id: "intermediate",
-                    title: "Intermedio",
-                    desc: "Ya corro con regularidad.",
-                    weeklyKm: 30,
-                    longestKm: 12,
-                    refTime: "00:24:30",
-                  },
-                  {
-                    id: "advanced",
-                    title: "Avanzado",
-                    desc: "Foco en rendimiento.",
-                    weeklyKm: 50,
-                    longestKm: 18,
-                    refTime: "00:19:45",
-                  },
-                ].map((lvl) => {
-                  const isSelected = userLevel === lvl.id
-                  return (
-                    <button
-                      key={lvl.id}
-                      type="button"
-                      onClick={() => {
-                        setUserLevel(lvl.id)
-                        if (!volumeEdited.current) setCurrentWeeklyKm(lvl.weeklyKm)
-                        if (!longestEdited.current) setLongestRunKm(lvl.longestKm)
-                        if (!refTimeEdited.current) setRefTimeInput(lvl.refTime)
-                      }}
+              {LEVELS.map((lvl) => {
+                const isSelected = userLevel === lvl.id
+                return (
+                  <button
+                    key={lvl.id}
+                    type="button"
+                    onClick={() => {
+                      setUserLevel(lvl.id)
+                      if (!volumeEdited.current) setCurrentWeeklyKm(lvl.weeklyKm)
+                      if (!longestEdited.current) setLongestRunKm(lvl.longestKm)
+                      if (!refTimeEdited.current) setRefTimeInput(lvl.refTime)
+                    }}
+                    className={cn(
+                      "flex items-center justify-between p-4.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer",
+                      isSelected
+                        ? "bg-surface-container-high/90 border-white text-white shadow-sm ring-1 ring-white/20"
+                        : "bg-surface-container-high/30 border-border/80 text-white hover:bg-surface-container-high/60 hover:border-border",
+                    )}
+                  >
+                    <div className="flex flex-col pr-4">
+                      <span className="text-base font-bold text-white">
+                        {lvl.title}
+                      </span>
+                      <span className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                        {lvl.desc}
+                      </span>
+                    </div>
+                    <div
                       className={cn(
-                        "flex items-center gap-4 p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer",
+                        "size-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
                         isSelected
-                          ? "bg-primary text-black border-primary shadow-md font-bold"
-                          : "bg-surface-container-high/60 border-border/80 text-white hover:bg-surface-container-high hover:border-border",
+                          ? "border-white bg-white"
+                          : "border-neutral-500 bg-transparent",
                       )}
                     >
-                      <div
-                        className={cn(
-                          "p-2.5 rounded-xl transition-colors",
-                          isSelected
-                            ? "bg-black/10 text-black"
-                            : "bg-card text-muted-foreground",
-                        )}
-                      >
-                        <Footprints className="size-6" />
-                      </div>
-                      <div className="flex flex-col flex-1">
-                        <span
-                          className={cn(
-                            "text-base font-bold",
-                            isSelected ? "text-black" : "text-white",
-                          )}
-                        >
-                          {lvl.title}
-                        </span>
-                        <span
-                          className={cn(
-                            "text-xs mt-0.5",
-                            isSelected
-                              ? "text-black/80 font-medium"
-                              : "text-muted-foreground",
-                          )}
-                        >
-                          {lvl.desc}
-                        </span>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
+                      {isSelected && (
+                        <div className="size-2 rounded-full bg-black" />
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
             </div>
 
             {/* Pregunta Lesiones */}
@@ -1440,7 +1483,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                     setConfidence("measured")
                   }}
                   className={cn(
-                    "h-13 rounded-2xl border font-bold text-sm transition-all cursor-pointer",
+                    "h-12 rounded-2xl border font-bold text-sm transition-all cursor-pointer",
                     !hasInjury
                       ? "bg-primary text-black border-primary shadow-xs"
                       : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white hover:bg-surface-container-high",
@@ -1456,7 +1499,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                     setConfidence("estimated")
                   }}
                   className={cn(
-                    "h-13 rounded-2xl border font-bold text-sm transition-all cursor-pointer",
+                    "h-12 rounded-2xl border font-bold text-sm transition-all cursor-pointer",
                     hasInjury
                       ? "bg-primary text-black border-primary shadow-xs"
                       : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white hover:bg-surface-container-high",
@@ -1476,105 +1519,14 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               )}
             </div>
 
-            {/* Opciones avanzadas de Ritmos y VDOT colapsable */}
-            <div className="border-t border-border/80 pt-4">
-              <button
-                type="button"
-                onClick={() => setShowAdvancedVdot(!showAdvancedVdot)}
-                className="flex items-center justify-between w-full text-xs text-muted-foreground hover:text-white py-1 transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-2 font-medium">
-                  <SlidersHorizontal className="size-3.5" />
-                  Ajustes avanzados de Ritmos & VDOT (Opcional)
-                </span>
-                {showAdvancedVdot ? (
-                  <ChevronUp className="size-4" />
-                ) : (
-                  <ChevronDown className="size-4" />
-                )}
-              </button>
-
-              {showAdvancedVdot && (
-                <div className="flex flex-col gap-4 mt-3 p-4 rounded-2xl bg-surface-container-high/40 border border-border/80 animate-in fade-in duration-200">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <Label className="text-xs text-muted-foreground">
-                        Distancia de referencia
-                      </Label>
-                      <Select
-                        value={refDistanceKm.toString()}
-                        onValueChange={(val) => {
-                          setRefDistanceKm(parseFloat(val))
-                          refTimeEdited.current = false
-                        }}
-                      >
-                        <SelectTrigger className="h-10 bg-card border-border text-white rounded-xl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-card border-border text-white">
-                          <SelectItem value="5">5K Reciente</SelectItem>
-                          <SelectItem value="10">10K Reciente</SelectItem>
-                          <SelectItem value="21.1">21.1K Reciente</SelectItem>
-                          <SelectItem value="42.2">42.2K Reciente</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <Label className="text-xs text-muted-foreground">
-                        Tiempo reciente (hh:mm:ss)
-                      </Label>
-                      <Input
-                        value={refTimeInput}
-                        onChange={(e) => {
-                          refTimeEdited.current = true
-                          setRefTimeInput(e.target.value)
-                        }}
-                        className="h-10 bg-card border-border text-white rounded-xl font-mono text-xs"
-                      />
-                      {bestTimeForRef && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setRefTimeInput(formatTime(bestTimeForRef))
-                            refTimeEdited.current = true
-                          }}
-                          className="text-[11px] text-primary text-left hover:underline cursor-pointer"
-                        >
-                          Usar mejor marca registrada: {formatTime(bestTimeForRef)}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-card border border-border/60 text-xs">
-                    <span className="text-muted-foreground">VDOT Estimado:</span>
-                    <span className="font-extrabold text-primary font-mono text-sm">
-                      {calculatedVdot || 35}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Botón de acción */}
-            <div className="flex flex-col gap-2.5 mt-2">
-              <Button
-                type="button"
-                onClick={() => setStep(2)}
-                className="w-full h-14 rounded-2xl bg-white text-black hover:bg-neutral-200 font-bold text-base cursor-pointer shadow-card"
-              >
-                Continuar
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => navigate({ to: "/routines" })}
-                className="text-xs text-muted-foreground hover:text-white cursor-pointer"
-              >
-                Mantener plan actual
-              </Button>
-            </div>
+            {/* Botón continuar */}
+            <Button
+              type="button"
+              onClick={() => setStep(2)}
+              className="w-full h-14 rounded-full bg-white text-black hover:bg-neutral-200 font-extrabold text-base cursor-pointer shadow-card mt-2"
+            >
+              Continuar
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -1938,115 +1890,322 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               </div>
             )}
 
-            {/* Botones de acción */}
-            <div className="flex flex-col gap-2.5 mt-2">
-              <Button
-                type="button"
-                onClick={() => setStep(3)}
-                className="w-full h-14 rounded-2xl bg-white text-black hover:bg-neutral-200 font-bold text-base cursor-pointer shadow-card"
-              >
-                Continuar
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setStep(1)}
-                className="text-xs text-muted-foreground hover:text-white cursor-pointer"
-              >
-                Atrás
-              </Button>
-            </div>
+            {/* Botón continuar */}
+            <Button
+              type="button"
+              onClick={() => setStep(3)}
+              className="w-full h-14 rounded-full bg-white text-black hover:bg-neutral-200 font-extrabold text-base cursor-pointer shadow-card mt-2"
+            >
+              Continuar
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* STEP 3: Disponibilidade (3-criar-treino-disponibilidade.png) */}
+      {/* STEP 3: Tiempo estimado actual (Runna parte 3) */}
       {step === 3 && (
         <Card className="max-w-xl mx-auto w-full p-6 sm:p-8 bg-card border-border/80 shadow-card rounded-3xl">
-          <CardHeader className="px-0 pt-0 pb-6">
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              Disponibilidad
+          <CardHeader className="px-0 pt-0 pb-5">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+              ¿Cuál es tu tiempo estimado <span className="text-primary">actual</span> de carrera?
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Definí tu rutina de entrenamientos.
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+              Elige un tiempo que refleje tu nivel de condición física <span className="text-primary font-medium">actual</span>. ¡No utilices un tiempo de MP o de objetivo antiguo!
             </p>
           </CardHeader>
 
           <CardContent className="px-0 flex flex-col gap-6">
-            {/* Días en los que entrenarás */}
+            {/* Distancia de referencia (Chips horizontales estilo Runna) */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "5 km", km: 5 },
+                { label: "10 km", km: 10 },
+                { label: "Media maratón", km: 21.1 },
+                { label: "Maratón", km: 42.2 },
+              ].map((d) => {
+                const isSelected = refDistanceKm === d.km
+                return (
+                  <button
+                    key={d.km}
+                    type="button"
+                    onClick={() => {
+                      setRefDistanceKm(d.km)
+                      refTimeEdited.current = false
+                    }}
+                    className={cn(
+                      "px-4 py-2.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center",
+                      isSelected
+                        ? "bg-primary text-black font-extrabold shadow-sm"
+                        : "bg-surface-container-high/80 text-muted-foreground hover:text-white border border-border/50",
+                    )}
+                  >
+                    {d.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Runna Dynamic Sentence Callout */}
+            <div className="text-center py-1">
+              <p className="text-sm text-muted-foreground">
+                Actualmente puedo correr una carrera de{" "}
+                <span className="font-bold text-primary">
+                  {refDistanceKm === 5
+                    ? "5 km"
+                    : refDistanceKm === 10
+                      ? "10 km"
+                      : refDistanceKm === 21.1
+                        ? "Media maratón"
+                        : "Maratón"}
+                </span>{" "}
+                en{" "}
+                <span className="font-display font-black text-white text-base">
+                  {refHours > 0
+                    ? `${refHours}:${refMinutes.toString().padStart(2, "0")}:${refSeconds.toString().padStart(2, "0")}`
+                    : `${refMinutes}:${refSeconds.toString().padStart(2, "0")}`}
+                </span>
+                {refDistanceKm > 0 && refTimeSeconds > 0 && (
+                  <span className="text-xs text-muted-foreground ml-1.5">
+                    (~{mathFormatPace(Math.round(refTimeSeconds / refDistanceKm))}/km)
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {/* Runna Drum / Slot Picker (Horas : Minutos : Segundos) */}
+            <div className="flex flex-col items-center gap-1 w-full max-w-sm mx-auto">
+              <div className="flex items-center justify-center gap-2 sm:gap-3 w-full">
+                {/* Columna Horas */}
+                <div className="flex flex-col items-center flex-1 max-w-[96px]">
+                  {refHours > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => updateRefTime(refHours - 1, refMinutes, refSeconds)}
+                      className="h-8 text-xs font-semibold text-muted-foreground/40 hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1"
+                      aria-label="Menos horas"
+                    >
+                      <ChevronUp className="size-3" />
+                      <span>{refHours - 1}hora</span>
+                    </button>
+                  ) : (
+                    <div className="h-8" />
+                  )}
+
+                  <div className="w-full h-14 rounded-2xl bg-surface-container-high/90 border border-border/80 flex items-center justify-center font-display font-black text-lg sm:text-xl text-white shadow-xs select-none">
+                    {refHours}hora
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => updateRefTime(refHours + 1, refMinutes, refSeconds)}
+                    className="h-8 text-xs font-semibold text-muted-foreground/40 hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1"
+                    aria-label="Más horas"
+                  >
+                    <span>{refHours + 1}hora</span>
+                    <ChevronDown className="size-3" />
+                  </button>
+                </div>
+
+                <span className="text-xl font-black text-muted-foreground/60 select-none pb-0.5">
+                  :
+                </span>
+
+                {/* Columna Minutos */}
+                <div className="flex flex-col items-center flex-1 max-w-[96px]">
+                  <button
+                    type="button"
+                    onClick={() => updateRefTime(refHours, (refMinutes - 1 + 60) % 60, refSeconds)}
+                    className="h-8 text-xs font-semibold text-muted-foreground/40 hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1"
+                    aria-label="Menos minutos"
+                  >
+                    <ChevronUp className="size-3" />
+                    <span>{(refMinutes - 1 + 60) % 60}m</span>
+                  </button>
+
+                  <div className="w-full h-14 rounded-2xl bg-surface-container-high/90 border border-border/80 flex items-center justify-center font-display font-black text-lg sm:text-xl text-white shadow-xs select-none">
+                    {refMinutes}m
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => updateRefTime(refHours, (refMinutes + 1) % 60, refSeconds)}
+                    className="h-8 text-xs font-semibold text-muted-foreground/40 hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1"
+                    aria-label="Más minutos"
+                  >
+                    <span>{(refMinutes + 1) % 60}m</span>
+                    <ChevronDown className="size-3" />
+                  </button>
+                </div>
+
+                <span className="text-xl font-black text-muted-foreground/60 select-none pb-0.5">
+                  :
+                </span>
+
+                {/* Columna Segundos */}
+                <div className="flex flex-col items-center flex-1 max-w-[96px]">
+                  <button
+                    type="button"
+                    onClick={() => updateRefTime(refHours, refMinutes, (refSeconds - 1 + 60) % 60)}
+                    className="h-8 text-xs font-semibold text-muted-foreground/40 hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1"
+                    aria-label="Menos segundos"
+                  >
+                    <ChevronUp className="size-3" />
+                    <span>{(refSeconds - 1 + 60) % 60}s</span>
+                  </button>
+
+                  <div className="w-full h-14 rounded-2xl bg-surface-container-high/90 border border-border/80 flex items-center justify-center font-display font-black text-lg sm:text-xl text-white shadow-xs select-none">
+                    {refSeconds}s
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => updateRefTime(refHours, refMinutes, (refSeconds + 1) % 60)}
+                    className="h-8 text-xs font-semibold text-muted-foreground/40 hover:text-white transition-colors cursor-pointer flex items-center justify-center gap-1"
+                    aria-label="Más segundos"
+                  >
+                    <span>{(refSeconds + 1) % 60}s</span>
+                    <ChevronDown className="size-3" />
+                  </button>
+                </div>
+              </div>
+
+              {bestTimeForRef && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    refTimeEdited.current = true
+                    const h = Math.floor(bestTimeForRef / 3600)
+                    const m = Math.floor((bestTimeForRef % 3600) / 60)
+                    const s = Math.round(bestTimeForRef % 60)
+                    const pad = (n: number) => n.toString().padStart(2, "0")
+                    setRefTimeInput(`${pad(h)}:${pad(m)}:${pad(s)}`)
+                  }}
+                  className="text-xs text-primary text-center hover:underline cursor-pointer pt-2"
+                >
+                  Usar mejor marca registrada: {formatTime(bestTimeForRef)}
+                </button>
+              )}
+            </div>
+
+            {/* VDOT & Paces calculation preview */}
+            <div className="p-3.5 rounded-2xl bg-surface-container-high/40 border border-border/80 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Nivel de condición física (VDOT)
+                </span>
+                <span className="font-mono font-black text-primary text-sm sm:text-base">
+                  {calculatedVdot || 35} VDOT
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/50 text-center">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                    Rodaje Suave
+                  </span>
+                  <span className="text-xs font-bold text-white mt-0.5">
+                    {calculatedPaces.easyMin} - {calculatedPaces.easyMax}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-amber-400 uppercase font-semibold">
+                    Ritmo Tempo
+                  </span>
+                  <span className="text-xs font-bold text-white mt-0.5">
+                    {calculatedPaces.threshold} /km
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-red-400 uppercase font-semibold">
+                    Intervalos
+                  </span>
+                  <span className="text-xs font-bold text-white mt-0.5">
+                    {calculatedPaces.interval} /km
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Botón continuar */}
+            <Button
+              type="button"
+              onClick={() => setStep(4)}
+              className="w-full h-14 rounded-full bg-white text-black hover:bg-neutral-200 font-extrabold text-base cursor-pointer shadow-card mt-2"
+            >
+              Continuar
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 4: Días para entrenar (Runna parte 4) */}
+      {step === 4 && (
+        <Card className="max-w-xl mx-auto w-full p-6 sm:p-8 bg-card border-border/80 shadow-card rounded-3xl">
+          <CardHeader className="px-0 pt-0 pb-6">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Días para entrenar
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              ¿Qué días de la semana tenés disponibles para salir a correr?
+            </p>
+          </CardHeader>
+
+          <CardContent className="px-0 flex flex-col gap-6">
+            {/* Runna Guidance banner */}
+            <div className="p-3.5 rounded-2xl bg-surface-container-high/40 border border-border/80 flex items-start gap-2.5">
+              <Sparkles className="size-4 shrink-0 text-primary mt-0.5" />
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Recomendamos entre 3 y 5 días a la semana para un progreso equilibrado y permitir la recuperación adecuada de tus tejidos.
+              </p>
+            </div>
+
+            {/* 7 Vertical Full-width Day Rows (Runna Parte 4) */}
             <div className="flex flex-col gap-2.5">
-              <div className="flex flex-col">
-                <span className="font-bold text-sm text-white">
-                  ¿En qué días vas a entrenar?
-                </span>
-                <span className="text-xs text-muted-foreground mt-0.5">
-                  Recomendamos de 3 a 4 días por semana.
-                </span>
-              </div>
-
-              {/* Grid 4 + 3 idéntica a Paccer imagen 3 */}
-              <div className="flex flex-col gap-2.5">
-                <div className="grid grid-cols-4 gap-2.5">
-                  {[
-                    { id: 1, label: "Lun" },
-                    { id: 2, label: "Mar" },
-                    { id: 3, label: "Mié" },
-                    { id: 4, label: "Jue" },
-                  ].map((d) => {
-                    const isSelected = selectedDays.includes(d.id)
-                    return (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => toggleDay(d.id)}
-                        className={cn(
-                          "h-14 rounded-2xl border font-bold text-base transition-all duration-200 cursor-pointer flex items-center justify-center",
-                          isSelected
-                            ? "bg-primary text-black border-primary shadow-xs"
-                            : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white hover:bg-surface-container-high",
-                        )}
-                      >
-                        {d.label}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <div className="grid grid-cols-4 gap-2.5">
-                  {[
-                    { id: 5, label: "Vie" },
-                    { id: 6, label: "Sáb" },
-                    { id: 0, label: "Dom" },
-                  ].map((d) => {
-                    const isSelected = selectedDays.includes(d.id)
-                    return (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => toggleDay(d.id)}
-                        className={cn(
-                          "h-14 rounded-2xl border font-bold text-base transition-all duration-200 cursor-pointer flex items-center justify-center",
-                          isSelected
-                            ? "bg-primary text-black border-primary shadow-xs"
-                            : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white hover:bg-surface-container-high",
-                        )}
-                      >
-                        {d.label}
-                      </button>
-                    )
-                  })}
-                  {/* Cuarto espacio libre para mantener alineación Paccer */}
-                  <div className="hidden sm:block" />
-                </div>
-              </div>
+              {DAYS_OF_WEEK.map((day) => {
+                const isSelected = selectedDays.includes(day.id)
+                const isLong = isSelected && longRunDay === day.id
+                return (
+                  <button
+                    key={day.id}
+                    type="button"
+                    onClick={() => toggleDay(day.id)}
+                    className={cn(
+                      "w-full flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer text-left",
+                      isSelected
+                        ? "bg-surface-container-high/90 border-white text-white shadow-sm ring-1 ring-white/20"
+                        : "bg-surface-container-high/30 border-border/80 text-muted-foreground hover:text-white hover:bg-surface-container-high/60",
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-base font-bold text-white">
+                        {day.label}
+                      </span>
+                      {isLong && (
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                          Tirada Larga
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      className={cn(
+                        "size-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
+                        isSelected
+                          ? "border-white bg-white text-black"
+                          : "border-neutral-500 bg-transparent text-transparent",
+                      )}
+                    >
+                      <Check className="size-3.5 stroke-[3]" />
+                    </div>
+                  </button>
+                )
+              })}
             </div>
 
             {/* Día de entrenamiento largo (reactivo a selectedDays) */}
             <div className="flex flex-col gap-2.5 pt-2">
               <span className="font-bold text-sm text-white">
-                ¿Cuál es el día de tu entrenamiento largo?
+                ¿Cuál es tu día preferido para la Tirada Larga?
               </span>
-              <div className="flex flex-wrap gap-2.5">
+              <div className="flex flex-wrap gap-2">
                 {selectedDays.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">
                     Seleccioná al menos un día arriba primero.
@@ -2063,13 +2222,13 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                           type="button"
                           onClick={() => setLongRunDay(dayId)}
                           className={cn(
-                            "px-5 h-12 rounded-xl border font-bold text-sm transition-all duration-200 cursor-pointer",
+                            "px-4 h-11 rounded-xl border font-bold text-xs transition-all cursor-pointer",
                             isLong
-                              ? "bg-primary text-black border-primary shadow-xs"
+                              ? "bg-purple-500/20 text-purple-300 border-purple-500 font-extrabold shadow-xs"
                               : "bg-surface-container-high/60 border-border/80 text-muted-foreground hover:text-white",
                           )}
                         >
-                          {dayObj?.short || ""}
+                          {dayObj?.label || ""}
                         </button>
                       )
                     })
@@ -2077,10 +2236,156 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               </div>
             </div>
 
+            {/* Botón continuar */}
+            <Button
+              type="button"
+              onClick={() => {
+                if (selectedDays.length === 0) {
+                  showErrorToast("Seleccioná al menos 1 día de entrenamiento")
+                  return
+                }
+                setStep(5)
+              }}
+              className="w-full h-14 rounded-full bg-white text-black hover:bg-neutral-200 font-extrabold text-base cursor-pointer shadow-card mt-2"
+            >
+              Continuar
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 5: Preferencias & Resumen del Plan (Runna parte 1) */}
+      {step === 5 && (
+        <Card className="max-w-xl mx-auto w-full p-6 sm:p-8 bg-card border-border/80 shadow-card rounded-3xl">
+          <CardHeader className="px-0 pt-0 pb-6">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Estructura de tu plan
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Así organizaremos tu entrenamiento para alcanzar tu objetivo.
+            </p>
+          </CardHeader>
+
+          <CardContent className="px-0 flex flex-col gap-6">
+            {/* Plan Summary Card */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-surface-container-high/50 border border-border/80 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+                    Objetivo
+                  </span>
+                  <h3 className="text-lg font-black text-white mt-0.5">
+                    {raceName.trim() || `Plan ${targetKm}K`}
+                  </h3>
+                </div>
+                <div className="px-3 py-1 rounded-xl bg-primary/10 border border-primary/30 text-primary font-mono font-black text-sm">
+                  {targetKm} km
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/50 text-center">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                    Duración
+                  </span>
+                  <span className="text-sm font-bold text-white mt-0.5">
+                    {numWeeks} semanas
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                    Frecuencia
+                  </span>
+                  <span className="text-sm font-bold text-white mt-0.5">
+                    {selectedDays.length} días/sem
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                    Ritmo Meta
+                  </span>
+                  <span className="text-sm font-bold text-white mt-0.5">
+                    {predictedRaceSec ? `${mathFormatPace(Math.round(predictedRaceSec / targetKm))}/km` : "-"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Runna 2x2 Workout Types Mosaic (Parte 1) */}
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sm text-white">
+                  Tipos de entrenamiento incluidos
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowGuideModal(true)}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline cursor-pointer"
+                >
+                  <HelpCircle className="size-3.5" />
+                  <span>Ver guía</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Fondo / Tirada Larga */}
+                <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-purple-400" />
+                    <span className="font-bold text-xs text-purple-200">
+                      Tirada Larga
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-purple-100/70 leading-relaxed">
+                    Carrera continua progresiva para construir tu resistencia aeróbica base y confianza en la distancia.
+                  </p>
+                </div>
+
+                {/* Rodaje Fácil */}
+                <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-emerald-400" />
+                    <span className="font-bold text-xs text-emerald-200">
+                      Rodaje Fácil
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-100/70 leading-relaxed">
+                    Trote suave a ritmo conversacional para asimilar la carga de entrenamiento y promover recuperación activa.
+                  </p>
+                </div>
+
+                {/* Intervalos / VO2 Max */}
+                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-rose-400" />
+                    <span className="font-bold text-xs text-rose-200">
+                      Intervalos & Series
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-rose-100/70 leading-relaxed">
+                    Series de alta intensidad con pausas de trote para elevar tu potencia aeróbica y velocidad máxima.
+                  </p>
+                </div>
+
+                {/* Tempo / Umbral */}
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-amber-400" />
+                    <span className="font-bold text-xs text-amber-200">
+                      Tempo & Umbral
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-100/70 leading-relaxed">
+                    Bloques sostenidos a ritmo exigente pero controlado para desplazar tu umbral de lactato.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Cuándo comenzás */}
-            <div className="flex flex-col gap-1.5 pt-2">
+            <div className="flex flex-col gap-1.5 pt-1">
               <Label className="text-xs font-semibold text-muted-foreground">
-                ¿Cuándo comenzás?
+                ¿Cuándo querés comenzar?
               </Label>
               <Input
                 type="date"
@@ -2092,44 +2397,93 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               />
             </div>
 
-            {/* Nota legal / descriptiva */}
-            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-              Al crear tu plan de entrenamiento, nuestro motor algorítmico
-              calculará tus fases, ritmos exactos y cargas de forma equilibrada.
-            </p>
-
-            {/* Botones de acción */}
-            <div className="flex flex-col gap-2.5 mt-2">
+            {/* Runna Final CTA Button */}
+            <div className="flex flex-col gap-2 mt-2">
               <Button
                 type="button"
                 onClick={handleGeneratePlan}
                 disabled={generateDraftMutation.isPending}
-                className="w-full h-14 rounded-2xl bg-white text-black hover:bg-neutral-200 font-bold text-base cursor-pointer shadow-card gap-2"
+                className="w-full h-14 rounded-full bg-white text-black hover:bg-neutral-200 font-extrabold text-base cursor-pointer shadow-card gap-2"
               >
                 {generateDraftMutation.isPending ? (
                   <>
                     <Loader2 className="size-5 animate-spin" />
-                    <span>Creando tu plan estructurado...</span>
+                    <span>Calculando cargas y ritmos...</span>
                   </>
                 ) : (
-                  <span>Crear mi plan de entrenamiento</span>
+                  <>
+                    <Sparkles className="size-5" />
+                    <span>Generar mi plan de entrenamiento</span>
+                  </>
                 )}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setStep(2)}
-                className="text-xs text-muted-foreground hover:text-white cursor-pointer"
-              >
-                Atrás
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* STEP 4: Plan Generado & Activación / Editor */}
-      {step === 4 && (
+      {/* Guide Dialog Modal (Pagina_ArmarPlan_guia) */}
+      <Dialog open={showGuideModal} onOpenChange={setShowGuideModal}>
+        <DialogContent className="bg-card border-border text-white max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-extrabold">
+              Guía de Tipos de Entrenamiento
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-2">
+            <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="size-2.5 rounded-full bg-purple-400" />
+                <h4 className="font-bold text-sm text-purple-200">
+                  Tirada Larga (Long Run)
+                </h4>
+              </div>
+              <p className="text-xs text-purple-100/80 leading-relaxed">
+                El entrenamiento clave para la resistencia. Se realiza el fin de semana a un ritmo cómodo y controlado, incrementando progresivamente la distancia semana a semana para acostumbrar a tu cuerpo a pasar más tiempo de pie.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="size-2.5 rounded-full bg-emerald-400" />
+                <h4 className="font-bold text-sm text-emerald-200">
+                  Rodaje Fácil & Regenerativo
+                </h4>
+              </div>
+              <p className="text-xs text-emerald-100/80 leading-relaxed">
+                Corridas a ritmo suave donde deberías poder mantener una conversación sin esfuerzo (Zona 2). Construyen capilarización muscular y mitocondrias sin sobrecargar el sistema neuromuscular.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="size-2.5 rounded-full bg-amber-400" />
+                <h4 className="font-bold text-sm text-amber-200">
+                  Tempo / Ritmo Umbral
+                </h4>
+              </div>
+              <p className="text-xs text-amber-100/80 leading-relaxed">
+                Bloques de 15 a 30 minutos a un esfuerzo "confortablemente duro" (ritmo de 15k a media maratón). Entrenan a tu cuerpo para reciclar el lactato sanguíneo con mayor eficiencia a altas intensidades.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="size-2.5 rounded-full bg-rose-400" />
+                <h4 className="font-bold text-sm text-rose-200">
+                  Intervalos & VO2 Max
+                </h4>
+              </div>
+              <p className="text-xs text-rose-100/80 leading-relaxed">
+                Repeticiones de 400m a 1600m a ritmo de 3k/5k alternadas con recuperaciones al trote. Desarrollan la capacidad de tu corazón y pulmones para entregar oxígeno rápidamente a tus músculos.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* STEP 6: Plan Generado & Activación / Editor */}
+      {step === 6 && (
         <div className="flex flex-col gap-6">
           {/* Validation Warnings / Algorithmic Feedback (Hito 2) */}
           {warnings.length > 0 && (
@@ -2494,7 +2848,7 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
               type="button"
               variant="outline"
               className="w-full sm:w-auto border-border text-muted-foreground"
-              onClick={() => setStep(3)}
+              onClick={() => setStep(5)}
             >
               Volver al Asistente
             </Button>

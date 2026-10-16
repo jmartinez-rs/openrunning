@@ -63,24 +63,23 @@ function Races() {
 
   return (
     <div className="col-span-12 flex flex-col gap-6 pb-20">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">
-            Race Hub
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-display">
+            Carreras & Objetivos
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gestiona tus próximos desafíos y tu baúl de recuerdos.
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+            Gestioná tus próximos desafíos y tu baúl de recuerdos.
           </p>
         </div>
-        <Button
-          type="button"
-          className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-glow"
-          asChild
+        <Link
+          to="/races/new"
+          className="size-10 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-black shadow-glow flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
+          title="Nueva carrera u objetivo"
+          aria-label="Nueva carrera u objetivo"
         >
-          <Link to="/races/new">
-            <Plus className="mr-2 size-4" /> Nueva carrera
-          </Link>
-        </Button>
+          <Plus className="size-5 stroke-[2.5]" />
+        </Link>
       </div>
 
       {query.isLoading ? (

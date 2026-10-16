@@ -1,11 +1,7 @@
-import {
-  ChevronRight,
-  HelpCircle,
-  Sun,
-} from "lucide-react"
+import { useNavigate } from "@tanstack/react-router"
+import { ChevronRight, HelpCircle, Sun } from "lucide-react"
 import type React from "react"
 import { useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
 import {
   blocksDistanceKm,
   formatDistance,
@@ -57,7 +53,9 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
   const [unitMode, setUnitMode] = useState<UnitMode>("pace")
 
   if (isLoading) {
-    return <Skeleton className="h-64 w-full rounded-3xl bg-[#121214] border border-white/10" />
+    return (
+      <Skeleton className="h-64 w-full rounded-3xl bg-[#121214] border border-white/10" />
+    )
   }
 
   // Si no hay entrenamiento hoy o no hay plan
@@ -75,9 +73,12 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
         </div>
 
         <div className="py-4 text-center">
-          <p className="text-base font-bold text-white">Día de Descanso Activo</p>
+          <p className="text-base font-bold text-white">
+            Día de Descanso Activo
+          </p>
           <p className="text-xs text-zinc-400 mt-1 max-w-xs mx-auto">
-            Hoy no hay sesiones estructuradas asignadas. Puedes recuperar o registrar un trote suave si lo deseas.
+            Hoy no hay sesiones estructuradas asignadas. Puedes recuperar o
+            registrar un trote suave si lo deseas.
           </p>
           {onOpenManualRun && (
             <button
@@ -94,8 +95,11 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
   }
 
   const workoutTypeMeta = WORKOUT_TYPE_META[workout.type as WorkoutType]
-  const displayTitle = workout.title || workoutTypeMeta?.label || "Entrenamiento de hoy"
-  const distanceKm = workout.distance_km ?? (workout.blocks ? blocksDistanceKm(workout.blocks) : null)
+  const displayTitle =
+    workout.title || workoutTypeMeta?.label || "Entrenamiento de hoy"
+  const distanceKm =
+    workout.distance_km ??
+    (workout.blocks ? blocksDistanceKm(workout.blocks) : null)
 
   // Formato ritmo vs km/h
   const basePaceSec = workout.pace_seconds_per_km
@@ -112,7 +116,10 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
       navigate({
         to: "/routines/run/$planId",
         params: { planId },
-        search: weekNumber ? { week: weekNumber } : {},
+        search: {
+          ...(weekNumber ? { week: weekNumber } : {}),
+          ...(workout ? { day: workout.date } : {}),
+        },
       })
     }
   }
@@ -225,7 +232,9 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
                   Distancia
                 </span>
                 <span className="text-lg font-display font-black text-white">
-                  {distanceKm ? `${formatDistance(distanceKm).replace(" km", "")} km` : "--"}
+                  {distanceKm
+                    ? `${formatDistance(distanceKm).replace(" km", "")} km`
+                    : "--"}
                 </span>
               </div>
 
@@ -234,7 +243,9 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
                   {unitMode === "pace" ? "Ritmo Objetivo" : "Velocidad"}
                 </span>
                 <span className="text-lg font-display font-black text-white">
-                  {unitMode === "pace" ? `${paceFormatted}/km` : `${speedFormatted} km/h`}
+                  {unitMode === "pace"
+                    ? `${paceFormatted}/km`
+                    : `${speedFormatted} km/h`}
                 </span>
               </div>
 
@@ -264,24 +275,36 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
                   key={idx}
                   className="flex items-center gap-3 p-3 rounded-xl bg-black/30 border-l-4 border-l-primary border-t border-r border-b border-white/5 text-xs text-zinc-200"
                 >
-                  <span className="font-bold text-white">{b.name || `Bloque ${idx + 1}`}:</span>
+                  <span className="font-bold text-white">
+                    {b.name || `Bloque ${idx + 1}`}:
+                  </span>
                   <span>
                     {b.distance_m ? `${b.distance_m}m` : ""}
                     {b.repeats && b.repeats > 1 ? ` (${b.repeats} reps)` : ""}
-                    {b.pace_seconds_per_km ? ` @ ${formatPace(b.pace_seconds_per_km)}` : ""}
+                    {b.pace_seconds_per_km
+                      ? ` @ ${formatPace(b.pace_seconds_per_km)}`
+                      : ""}
                   </span>
                 </div>
               ))
             ) : (
               <div className="space-y-2 text-xs text-zinc-300">
                 <div className="p-3 rounded-xl bg-black/30 border-l-4 border-l-zinc-500">
-                  <span className="font-bold text-white">Calentamiento:</span> 1.5 km muy suave + movilidad articular
+                  <span className="font-bold text-white">Calentamiento:</span>{" "}
+                  1.5 km muy suave + movilidad articular
                 </div>
                 <div className="p-3 rounded-xl bg-black/30 border-l-4 border-l-primary">
-                  <span className="font-bold text-white">Bloque Principal:</span> {distanceKm ? `${distanceKm} km` : "Rodaje"} a ritmo conversacional continuo
+                  <span className="font-bold text-white">
+                    Bloque Principal:
+                  </span>{" "}
+                  {distanceKm ? `${distanceKm} km` : "Rodaje"} a ritmo
+                  conversacional continuo
                 </div>
                 <div className="p-3 rounded-xl bg-black/30 border-l-4 border-l-zinc-500">
-                  <span className="font-bold text-white">Vuelta a la calma:</span> 5 min caminata + estiramientos suaves
+                  <span className="font-bold text-white">
+                    Vuelta a la calma:
+                  </span>{" "}
+                  5 min caminata + estiramientos suaves
                 </div>
               </div>
             )}
@@ -294,8 +317,12 @@ export const TodayWorkoutCard: React.FC<TodayWorkoutCardProps> = ({
               <div className="flex items-center gap-2">
                 <Sun className="size-5 text-amber-400" />
                 <div>
-                  <span className="font-bold text-white">{weatherTemp} · {weatherDescription}</span>
-                  <p className="text-[11px] text-zinc-400">Viento 7 km/h · Humedad 76%</p>
+                  <span className="font-bold text-white">
+                    {weatherTemp} · {weatherDescription}
+                  </span>
+                  <p className="text-[11px] text-zinc-400">
+                    Viento 7 km/h · Humedad 76%
+                  </p>
                 </div>
               </div>
               <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">

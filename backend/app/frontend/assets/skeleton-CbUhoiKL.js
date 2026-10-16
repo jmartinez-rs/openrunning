@@ -1,0 +1,1 @@
+import{l as e,t}from"./utils-icuVcXqm.js";var n=e();function r({className:e,...r}){return(0,n.jsx)(`div`,{"data-slot":`skeleton`,className:t(`bg-surface-container-high animate-pulse rounded-xl`,e),...r})}export{r as t};

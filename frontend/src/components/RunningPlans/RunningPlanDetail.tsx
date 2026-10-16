@@ -1,21 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  CalendarDays,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Download,
-  FileDown,
-  Flag,
-  Footprints,
-  Pencil,
-  Timer,
-  Trash2,
-  TrendingUp,
-} from "lucide-react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { ArrowLeft, Bell } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 
 import {
   RacesService,
@@ -24,31 +10,16 @@ import {
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useCopyToClipboard } from "@/hooks/useCopyToClipboard"
 import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
-import { PhaseTimeline } from "./PhaseTimeline"
-import { WeekCarouselStrip } from "./WeekCarouselStrip"
-import { PaccerSessionCard } from "./PaccerSessionCard"
 import { PaccerWorkoutSheet } from "./PaccerWorkoutSheet"
-import { PlanEvolutionTab } from "./PlanEvolutionTab"
+import { PlanGuideSheet } from "./PlanGuideSheet"
+import { PlanPaceInsightsCard } from "./PlanPaceInsightsCard"
+import { PlanWeekOverviewCard } from "./PlanWeekOverviewCard"
+import { RunnaPlanHeroCard } from "./RunnaPlanHeroCard"
+import { RunnaPlanQuickActions } from "./RunnaPlanQuickActions"
 import {
   buildPlanMarkdown,
   downloadPlanFile,
@@ -57,21 +28,9 @@ import {
 } from "./plan-export"
 import {
   blocksDistanceKm,
-  computeProgress,
-  formatDateRange,
-  formatDistance,
-  formatDuration,
-  formatObjectiveText,
-  formatPace,
-  getCurrentWeekFromPhases,
-  isWithinPlanRange,
-  PHASE_COLORS,
-  type PhaseColor,
+  buildWeeklyOverview,
   PLAN_STATUS_META,
-  type PlanStatus,
-  todayIsoLocal,
 } from "./running-utils"
-import { WeekSessionCard } from "./WeekSessionCard"
 import { WorkoutBlocksDrawer } from "./WorkoutBlocksDrawer"
 
 type SelectedWorkout = {
@@ -80,60 +39,27 @@ type SelectedWorkout = {
   weekNumber: number
 }
 
-function StatChip({
-  label,
-  value,
-  icon: Icon,
-  className,
-}: {
-  label: string
-  value: string | number
-  icon?: React.ComponentType<{ className?: string }>
-  className?: string
-}) {
-  return (
-    <div className="flex items-center gap-2.5">
-      {Icon && <Icon className="size-4 text-primary/80 shrink-0" />}
-      <div className="flex flex-col">
-        <span
-          className={cn(
-            "text-base font-display font-black text-white leading-none tracking-tight tabular-nums",
-            className,
-          )}
-        >
-          {value}
-        </span>
-        <span className="mt-1 text-[11px] text-muted-foreground leading-none font-medium">
-          {label}
-        </span>
-      </div>
-    </div>
-  )
-}
-
 export function RunningPlanDetail({
   planId,
   initialWeek,
-  initialTab,
+  initialDay,
 }: {
   planId: string
   initialWeek?: number
-  initialTab?: string
+  initialDay?: string
+  initialView?: "overview" | "evolution"
 }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { showSuccessToast, showErrorToast } = useCustomToast()
-  const [, copyToClipboard] = useCopyToClipboard()
+
   const [selected, setSelected] = useState<SelectedWorkout | null>(null)
   const [paccerSheetOpen, setPaccerSheetOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<"paccer" | "expanded" | "evolution">(
-    initialTab === "evolution" ? "evolution" : "paccer",
-  )
-  const [selectedWeekNumber, setSelectedWeekNumber] = useState<number>(initialWeek ?? 1)
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
-  const [collapseInitialized, setCollapseInitialized] = useState(false)
-  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null)
-  const weekRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const [editOpen, setEditOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
+  const [expandedWeekIds, setExpandedWeekIds] = useState<Set<string>>(new Set())
+  const [initialized, setInitialized] = useState(false)
+  const [dayHandled, setDayHandled] = useState(false)
 
   const query = useQuery({
     queryKey: ["running-plan", planId],
@@ -150,25 +76,25 @@ export function RunningPlanDetail({
 
   const phases = plan?.phases ?? []
 
-  const currentWeek = useMemo(() => {
-    if (!plan || phases.length === 0) return null
-    // La semana 1 puede arrancar antes de start_date: sin ventana real de plan
-    // no marcamos ninguna semana como actual.
-    if (!isWithinPlanRange(todayIsoLocal(), plan.start_date, plan.end_date)) {
-      return null
-    }
-    return getCurrentWeekFromPhases(phases, undefined, plan.week_start_day ?? 1)
-  }, [phases, plan])
+  const weeks = useMemo(
+    () => buildWeeklyOverview(phases, undefined, plan?.week_start_day ?? 1),
+    [phases, plan?.week_start_day],
+  )
+
+  const currentWeekNumber = useMemo(
+    () => weeks.find((week) => week.status === "current")?.number,
+    [weeks],
+  )
 
   const summary = useMemo(() => {
-    let weeks = 0
+    let weeksCount = 0
     let sessions = 0
     let plannedKm = 0
     let completed = 0
     let missed = 0
     let planned = 0
     for (const phase of phases) {
-      weeks += phase.weeks?.length ?? 0
+      weeksCount += phase.weeks?.length ?? 0
       for (const week of phase.weeks ?? []) {
         for (const workout of week.workouts ?? []) {
           sessions += 1
@@ -183,7 +109,7 @@ export function RunningPlanDetail({
       }
     }
     return {
-      weeks,
+      weeks: weeksCount,
       sessions,
       plannedKm: Math.round(plannedKm * 10) / 10,
       completed,
@@ -192,65 +118,72 @@ export function RunningPlanDetail({
     }
   }, [phases])
 
-  const progress = useMemo(() => computeProgress(summary), [summary])
-
-  // Antes de arrancar el plan, el chrome de 0 completadas / 0 perdidas / 0% es
-  // ruido: se colapsa en una sola línea.
-  const hasStarted = progress.completed > 0 || progress.missed > 0
-
-  // Initial collapse state: keep current week expanded, collapse others if many
+  // Expande únicamente la semana actual (o la primera) por defecto para mantener la vista limpia
   useEffect(() => {
-    if (!plan || collapseInitialized) return
-    setCollapseInitialized(true)
-    if (initialWeek) {
-      setSelectedWeekNumber(initialWeek)
-    } else if (currentWeek?.weekNumber) {
-      setSelectedWeekNumber(currentWeek.weekNumber)
-    }
-    const weekIds =
-      plan.phases?.flatMap((phase) => phase.weeks?.map((w) => w.id) ?? []) ?? []
+    if (weeks.length === 0 || initialized) return
+    setInitialized(true)
+    const targetNumber =
+      initialWeek ?? weeks.find((week) => week.status === "current")?.number
+    const target =
+      weeks.find((week) => week.number === targetNumber) ?? weeks[0]
+    setExpandedWeekIds(target ? new Set([target.id]) : new Set())
+  }, [weeks, initialWeek, initialized])
 
-    if (weekIds.length > 2) {
-      // Si llegamos con ?week=, expandir esa semana; si no, la semana actual.
-      const targetWeekId = initialWeek
-        ? plan.phases
-            ?.flatMap((phase) => phase.weeks ?? [])
-            .find((w) => w.number === initialWeek)?.id
-        : currentWeek?.weekId
-      const initialCollapsed = new Set(
-        weekIds.filter((id) => id !== targetWeekId),
-      )
-      setCollapsed(initialCollapsed)
-    }
-  }, [plan, currentWeek, collapseInitialized, initialWeek])
-
-  // Scroll a la semana indicada por ?week= (desde el dashboard "Hoy").
+  // Deep link ?week=N → scroll suave al ancla de la semana.
   useEffect(() => {
-    if (!plan || !initialWeek) return
-    const targetId = plan.phases
-      ?.flatMap((phase) => phase.weeks ?? [])
-      .find((w) => w.number === initialWeek)?.id
-    if (!targetId) return
-    const el = weekRefs.current.get(targetId)
-    if (el) {
-      const t = window.setTimeout(
-        () => el.scrollIntoView({ behavior: "smooth", block: "start" }),
-        150,
-      )
-      return () => window.clearTimeout(t)
+    if (!initialWeek || weeks.length === 0) return
+    const timer = window.setTimeout(() => {
+      document
+        .getElementById(`week-${initialWeek}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 150)
+    return () => window.clearTimeout(timer)
+  }, [initialWeek, weeks.length])
+
+  // Deep link ?day=ISO → abre el sheet de esa sesión.
+  useEffect(() => {
+    if (!initialDay || dayHandled || weeks.length === 0) return
+    for (const week of weeks) {
+      const workout = week.workouts.find((w) => w.date === initialDay)
+      if (workout) {
+        setSelected({
+          workout,
+          phaseName: week.phaseName,
+          weekNumber: week.number,
+        })
+        setPaccerSheetOpen(true)
+        setDayHandled(true)
+        break
+      }
     }
-  }, [plan, initialWeek])
+  }, [initialDay, weeks, dayHandled])
 
   const toggleWeek = (weekId: string) => {
-    setCollapsed((prev) => {
+    setExpandedWeekIds((prev) => {
       const next = new Set(prev)
-      if (next.has(weekId)) {
-        next.delete(weekId)
-      } else {
-        next.add(weekId)
-      }
+      if (next.has(weekId)) next.delete(weekId)
+      else next.add(weekId)
       return next
     })
+  }
+
+  const openWorkout = (
+    workout: RunningWorkoutPublic,
+    phaseName: string,
+    weekNumber: number,
+  ) => {
+    setSelected({ workout, phaseName, weekNumber })
+    setPaccerSheetOpen(true)
+  }
+
+  const handleSelectWeek = (weekNumber: number) => {
+    const week = weeks.find((w) => w.number === weekNumber)
+    if (week) {
+      setExpandedWeekIds((prev) => new Set(prev).add(week.id))
+    }
+    document
+      .getElementById(`week-${weekNumber}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
   const deletePlan = useMutation({
@@ -259,80 +192,6 @@ export function RunningPlanDetail({
       showSuccessToast("Plan eliminado")
       queryClient.invalidateQueries({ queryKey: ["running-plans"] })
       navigate({ to: "/routines" })
-    },
-    onError: handleError.bind(showErrorToast),
-  })
-
-  const updateStatusMutation = useMutation({
-    mutationFn: (newStatus: PlanStatus) =>
-      RunningPlansService.replacePlan({
-        planId,
-        requestBody: {
-          name: plan!.name,
-          goal: plan!.goal,
-          distance_km: plan!.distance_km,
-          distance_unit: plan!.distance_unit === "mi" ? "mi" : "km",
-          target_time_seconds: plan!.target_time_seconds,
-          target_pace_seconds_per_km: plan!.target_pace_seconds_per_km,
-          start_date: plan!.start_date,
-          end_date: plan!.end_date,
-          week_start_day: plan!.week_start_day,
-          status: newStatus,
-          race_id: plan!.race_id,
-          notes: plan!.notes,
-          phases: (plan!.phases ?? []).map((phase, pi) => ({
-            position: pi + 1,
-            name: phase.name,
-            color: phase.color,
-            start_week: phase.start_week,
-            end_week: phase.end_week,
-            objective: phase.objective,
-            description: phase.description,
-            weeks: (phase.weeks ?? []).map((week) => ({
-              number: week.number,
-              start_date: week.start_date,
-              end_date: week.end_date,
-              name: week.name,
-              objective: week.objective,
-              notes: week.notes,
-              workouts: (week.workouts ?? []).map((workout) => ({
-                date: workout.date,
-                type: workout.type,
-                objective: workout.objective,
-                name: workout.name,
-                distance_km: workout.distance_km,
-                duration_seconds: workout.duration_seconds,
-                pace_seconds_per_km: workout.pace_seconds_per_km,
-                intensity: workout.intensity,
-                description: workout.description,
-                notes: workout.notes,
-                cancelled: workout.cancelled,
-                status_override: workout.status_override,
-                blocks: (workout.blocks ?? []).map((block, bi) => ({
-                  position: bi + 1,
-                  block_type: block.block_type,
-                  repeats: block.repeats,
-                  distance_m: block.distance_m,
-                  duration_seconds: block.duration_seconds,
-                  pace_seconds_per_km: block.pace_seconds_per_km,
-                  pace_range_end_seconds_per_km:
-                    block.pace_range_end_seconds_per_km,
-                  recovery_seconds: block.recovery_seconds,
-                  recovery_type:
-                    block.recovery_type === "walk" ? "walk" : "jog",
-                  notes: block.notes,
-                })),
-              })),
-            })),
-          })),
-        },
-      }),
-    onSuccess: (_, newStatus) => {
-      showSuccessToast(
-        `Estado del plan actualizado a "${PLAN_STATUS_META[newStatus].label}"`,
-      )
-      queryClient.invalidateQueries({ queryKey: ["running-plans"] })
-      queryClient.invalidateQueries({ queryKey: ["running-plan", planId] })
     },
     onError: handleError.bind(showErrorToast),
   })
@@ -347,20 +206,6 @@ export function RunningPlanDetail({
       return
     }
     deletePlan.mutate()
-  }
-
-  const handleCopyExport = async (scope: PlanExportScope) => {
-    if (!plan) return
-    const ok = await copyToClipboard(buildPlanMarkdown(plan, scope))
-    if (ok) {
-      showSuccessToast(
-        scope === "current"
-          ? "Semana actual copiada como Markdown"
-          : "Plan copiado como Markdown",
-      )
-    } else {
-      showErrorToast("No se pudo copiar al portapapeles")
-    }
   }
 
   const handleDownloadExport = (scope: PlanExportScope) => {
@@ -379,9 +224,15 @@ export function RunningPlanDetail({
   if (query.isLoading) {
     return (
       <div className="flex flex-col gap-4">
-        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-10 w-56" />
         <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-64 w-full" />
+        <div className="flex gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-20 shrink-0 rounded-2xl" />
+          ))}
+        </div>
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-24 w-full" />
       </div>
     )
   }
@@ -410,584 +261,124 @@ export function RunningPlanDetail({
 
   const planStatus = PLAN_STATUS_META[plan.status]
 
-  // Filter phases if selectedPhaseId is set
-  const filteredPhases = selectedPhaseId
-    ? phases.filter((p) => p.id === selectedPhaseId)
-    : phases
-
   return (
-    <div className="flex flex-col gap-5">
-      {/* Top Bar Navigation & Actions */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label="Volver a rutinas"
-              className="size-11 sm:size-10"
-              asChild
-            >
-              <Link to="/routines">
-                <ArrowLeft className="size-5" />
-              </Link>
-            </Button>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="truncate text-2xl font-display font-black tracking-tight">
-                  {plan.name}
-                </h1>
+    <div className="flex flex-col gap-5 max-w-2xl mx-auto">
+      {/* ── Top Bar estilo Runna (PAgina_tuplan_completa.jpg) ── */}
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Volver a rutinas"
+          className="size-10 rounded-full bg-card border border-border/60 hover:bg-white/10"
+          asChild
+        >
+          <Link to="/routines">
+            <ArrowLeft className="size-5" />
+          </Link>
+        </Button>
 
-                {/* Interactive Status Changer */}
-                <Select
-                  value={plan.status}
-                  onValueChange={(val: PlanStatus) =>
-                    updateStatusMutation.mutate(val)
-                  }
-                  disabled={updateStatusMutation.isPending}
-                >
-                  <SelectTrigger
-                    className={cn(
-                      "w-auto h-11 sm:h-7 px-3 gap-1.5 border font-extrabold text-xs rounded-full shadow-xs cursor-pointer hover:brightness-105 transition-all",
-                      planStatus.className,
-                    )}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem
-                      value="active"
-                      className="font-bold text-primary"
-                    >
-                      Activo (En curso)
-                    </SelectItem>
-                    <SelectItem
-                      value="planned"
-                      className="font-bold text-primary"
-                    >
-                      Pausado / Planificado
-                    </SelectItem>
-                    <SelectItem
-                      value="completed"
-                      className="font-bold text-primary"
-                    >
-                      Finalizado (Concluido)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <p className="truncate text-xs text-muted-foreground mt-0.5">
-                {plan.goal ? `${formatObjectiveText(plan.goal)} · ` : ""}
-                {formatDateRange(plan.start_date, plan.end_date)}
-              </p>
-            </div>
-          </div>
+        <h1 className="font-display text-lg font-black text-white tracking-tight">
+          Tu plan
+        </h1>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-11 sm:h-9"
-                >
-                  <Download className="mr-2 size-4" /> Exportar
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-64 bg-card border-border text-muted-foreground"
-              >
-                <DropdownMenuLabel className="text-foreground">
-                  Plan completo
-                </DropdownMenuLabel>
-                <DropdownMenuItem
-                  className="cursor-pointer hover:bg-surface-container-high hover:text-foreground focus:bg-surface-container-high focus:text-foreground"
-                  onClick={() => handleCopyExport("full")}
-                >
-                  <Copy className="mr-2 size-4" /> Copiar Markdown
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer hover:bg-surface-container-high hover:text-foreground focus:bg-surface-container-high focus:text-foreground"
-                  onClick={() => handleDownloadExport("full")}
-                >
-                  <FileDown className="mr-2 size-4" /> Descargar .md
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-border" />
-                <DropdownMenuLabel className="text-foreground">
-                  Semana actual
-                </DropdownMenuLabel>
-                <DropdownMenuItem
-                  className="cursor-pointer hover:bg-surface-container-high hover:text-foreground focus:bg-surface-container-high focus:text-foreground"
-                  onClick={() => handleCopyExport("current")}
-                >
-                  <Copy className="mr-2 size-4" /> Copiar Markdown
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer hover:bg-surface-container-high hover:text-foreground focus:bg-surface-container-high focus:text-foreground"
-                  onClick={() => handleDownloadExport("current")}
-                >
-                  <FileDown className="mr-2 size-4" /> Descargar .md
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-11 sm:h-9"
-              asChild
-            >
-              <Link to="/routines/run/new" search={{ edit: planId }}>
-                <Pencil className="mr-2 size-4" /> Editar plan
-              </Link>
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              className="h-11 sm:h-9"
-              disabled={deletePlan.isPending}
-              onClick={handleDelete}
-            >
-              <Trash2 className="mr-2 size-4" /> Eliminar
-            </Button>
-          </div>
-        </div>
-
-        {plan.race_id && (
+        <div className="flex items-center gap-2">
           <Badge
-            variant="outline"
-            asChild
-            className="w-fit gap-1.5 border-domain-cardio/30 bg-domain-cardio/10 px-3 py-1 text-domain-cardio hover:bg-domain-cardio/15"
+            variant={planStatus.variant}
+            className={cn("hidden sm:flex font-bold text-xs", planStatus.className)}
           >
-            <Link to="/races/$raceId" params={{ raceId: plan.race_id }}>
-              <Flag className="size-3.5" />
-              <span className="font-semibold">Carrera Objetivo:</span>
-              <span>{raceQuery.data?.event_name ?? "Ver evento"}</span>
-            </Link>
+            {planStatus.label}
           </Badge>
-        )}
-      </div>
-
-      {/* Progress & Target Time Hero Card */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card/80 p-5 shadow-card">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          {/* Progress bar */}
-          <div className="flex max-w-md flex-1 flex-col gap-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-muted-foreground">
-                Progreso General
-              </span>
-              <span className="font-display font-bold text-primary tabular-nums">
-                {hasStarted
-                  ? `${progress.percent}% completado`
-                  : "Aún no empezaste"}
-              </span>
-            </div>
-            <div
-              role="progressbar"
-              aria-label="Progreso general del plan"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={progress.percent}
-              className="h-2.5 w-full overflow-hidden rounded-full bg-surface-container-high"
-            >
-              <div className="flex h-full">
-                <div
-                  className="h-full rounded-l-full bg-gradient-to-r from-primary/70 to-primary transition-[width] duration-500"
-                  style={{
-                    width: `${(progress.completed / (progress.total || 1)) * 100}%`,
-                  }}
-                />
-                <div
-                  className="h-full bg-destructive/70 transition-[width] duration-500"
-                  style={{
-                    width: `${(progress.missed / (progress.total || 1)) * 100}%`,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Target Race Time / Pace — tonos planos, sin chips anidados */}
-          {(plan.target_time_seconds || plan.target_pace_seconds_per_km) && (
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-              {plan.target_time_seconds && (
-                <div className="flex items-center gap-2.5">
-                  <Timer className="size-4 shrink-0 text-primary" />
-                  <div className="flex flex-col">
-                    <span className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground">
-                      Tiempo Objetivo
-                    </span>
-                    <span className="text-lg font-display font-black leading-tight text-primary tabular-nums">
-                      {formatDuration(plan.target_time_seconds)}
-                    </span>
-                  </div>
-                </div>
-              )}
-              {plan.target_time_seconds && plan.target_pace_seconds_per_km && (
-                <div className="hidden h-9 w-px bg-border sm:block" />
-              )}
-              {plan.target_pace_seconds_per_km && (
-                <div className="flex items-center gap-2.5">
-                  <TrendingUp className="size-4 shrink-0 text-primary" />
-                  <div className="flex flex-col">
-                    <span className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground">
-                      Ritmo Objetivo
-                    </span>
-                    <span className="text-lg font-display font-black leading-tight text-white tabular-nums">
-                      {formatPace(plan.target_pace_seconds_per_km)}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Quick Stats — una sola superficie, sin chips anidados */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-border pt-4 sm:grid-cols-3 lg:grid-cols-6">
-          <StatChip label="Semanas" value={summary.weeks} icon={CalendarDays} />
-          <StatChip
-            label="Sesiones total"
-            value={summary.sessions}
-            icon={Footprints}
-          />
-          <StatChip
-            label="Km planificados"
-            value={formatDistance(summary.plannedKm)}
-            icon={TrendingUp}
-          />
-          {hasStarted ? (
-            <>
-              <StatChip
-                label="Completadas"
-                value={progress.completed}
-                className="text-primary"
-              />
-              <StatChip
-                label="Perdidas"
-                value={progress.missed}
-                className="text-destructive"
-              />
-              <StatChip
-                label="Pendientes"
-                value={progress.planned}
-                className="text-muted-foreground"
-              />
-            </>
-          ) : (
-            <div className="col-span-2 flex items-center gap-2 sm:col-span-3 lg:col-span-3">
-              <span className="font-display text-base font-black text-primary tabular-nums">
-                0 / {progress.total}
-              </span>
-              <span className="text-xs font-medium text-muted-foreground">
-                sesiones completadas · Aún no empezaste
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Selector de vistas: Entrenamientos vs Evolución vs Vista Completa */}
-      <div className="flex items-center justify-between border-b border-white/5 pb-2">
-        <div className="inline-flex rounded-2xl bg-[#141416] p-1.5 border border-border/80 gap-1.5">
           <Button
             type="button"
-            size="sm"
-            variant={viewMode === "paccer" ? "default" : "ghost"}
-            onClick={() => setViewMode("paccer")}
-            className={`rounded-xl text-xs font-bold transition-all ${
-              viewMode === "paccer"
-                ? "bg-primary text-black font-extrabold shadow-sm"
-                : "text-zinc-400 hover:text-white hover:bg-white/5"
-            }`}
+            variant="ghost"
+            size="icon"
+            className="size-10 rounded-full bg-card border border-border/60 text-muted-foreground hover:text-white"
+            onClick={() => showSuccessToast("No hay nuevas notificaciones del plan")}
+            title="Notificaciones"
           >
-            Entrenamientos
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={viewMode === "evolution" ? "default" : "ghost"}
-            onClick={() => setViewMode("evolution")}
-            className={`rounded-xl text-xs font-bold transition-all ${
-              viewMode === "evolution"
-                ? "bg-primary text-black font-extrabold shadow-sm"
-                : "text-zinc-400 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            Evolución
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={viewMode === "expanded" ? "default" : "ghost"}
-            onClick={() => setViewMode("expanded")}
-            className={`rounded-xl text-xs font-bold transition-all ${
-              viewMode === "expanded"
-                ? "bg-primary text-black font-extrabold shadow-sm"
-                : "text-zinc-400 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            Todas las fases
+            <Bell className="size-5" />
           </Button>
         </div>
       </div>
 
-      {viewMode === "evolution" ? (
-        /* PACCER EVOLUÇÃO VIEW (Image 13) */
-        <PlanEvolutionTab plan={plan} />
-      ) : viewMode === "paccer" ? (
-        /* PACCER VIEW (Imágenes 8, 9, 10) */
-        <div className="space-y-6">
-          {/* 1. Selector Horizontal de Semanas (Image 8) */}
-          <WeekCarouselStrip
-            weeks={Array.from({ length: summary.weeks || 12 }).map((_, idx) => {
-              const num = idx + 1
-              return {
-                number: num,
-                isCurrent: currentWeek?.weekNumber === num,
-                isCompleted: currentWeek?.weekNumber ? num < currentWeek.weekNumber : false,
+      {/* ── 1. Tarjeta Hero del Plan (PAgina_tuplan_completa.jpg) ── */}
+      <RunnaPlanHeroCard
+        plan={plan}
+        race={raceQuery.data}
+        weeks={weeks}
+        totalKm={summary.plannedKm}
+      />
+
+      {/* ── 2. Acciones Rápidas: Visión general | Apps conectadas | Gestionar plan ── */}
+      <RunnaPlanQuickActions
+        plan={plan}
+        weeks={weeks}
+        currentWeekNumber={currentWeekNumber}
+        onSelectWeek={handleSelectWeek}
+        onExportMarkdown={() => handleDownloadExport("full")}
+        onDeletePlan={handleDelete}
+      />
+
+      {/* ── 3. Análisis del Ritmo & Tiempos Estimados ── */}
+      <PlanPaceInsightsCard plan={plan} race={raceQuery.data} />
+
+      {/* ── 4. Semanas del Plan (Feed limpio con semana actual desplegada) ── */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Semanas del plan ({weeks.length})
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (expandedWeekIds.size === weeks.length) {
+                setExpandedWeekIds(new Set())
+              } else {
+                setExpandedWeekIds(new Set(weeks.map((w) => w.id)))
               }
-            })}
-            selectedWeek={selectedWeekNumber}
-            onSelectWeek={setSelectedWeekNumber}
-          />
+            }}
+            className="text-xs font-bold text-primary hover:underline cursor-pointer"
+          >
+            {expandedWeekIds.size === weeks.length
+              ? "Colapsar todas"
+              : "Expandir todas"}
+          </button>
+        </div>
 
-          {/* 2. Lista de Sesiones de la Semana Seleccionada */}
-          {(() => {
-            // Encontrar la semana y sus sesiones
-            let activeWeekData: any = null
-            let activePhaseData: any = null
-            for (const p of phases) {
-              const w = (p.weeks ?? []).find((wk) => wk.number === selectedWeekNumber)
-              if (w) {
-                activeWeekData = w
-                activePhaseData = p
-                break
-              }
+        {weeks.map((week) => (
+          <PlanWeekOverviewCard
+            key={week.id}
+            week={week}
+            expanded={expandedWeekIds.has(week.id)}
+            onToggle={() => toggleWeek(week.id)}
+            onSelectWorkout={(workout) =>
+              openWorkout(workout, week.phaseName, week.number)
             }
-
-            const workouts = activeWeekData?.workouts ?? []
-
-            return (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between px-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-display font-black text-white">
-                      Semana {selectedWeekNumber}
-                    </h3>
-                    {activePhaseData && (
-                      <span className="text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
-                        {activePhaseData.name}
-                      </span>
-                    )}
-                  </div>
-                  {activeWeekData?.target_volume_km && (
-                    <span className="text-xs font-semibold text-zinc-400">
-                      Volumen: {activeWeekData.target_volume_km} km
-                    </span>
-                  )}
-                </div>
-
-                {workouts.length === 0 ? (
-                  <div className="p-8 rounded-3xl bg-[#121214] border border-white/5 text-center">
-                    <p className="text-sm font-bold text-zinc-400">
-                      No hay entrenamientos programados para esta semana.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {workouts.map((workout: RunningWorkoutPublic) => (
-                      <PaccerSessionCard
-                        key={workout.id}
-                        workout={workout}
-                        onClick={() => {
-                          setSelected({
-                            workout,
-                            phaseName: activePhaseData?.name || "Fase",
-                            weekNumber: selectedWeekNumber,
-                          })
-                          setPaccerSheetOpen(true)
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-          })()}
-        </div>
-      ) : (
-        /* EXPANDED VIEW */
-        <>
-          {/* Phase Timeline & Filter Navigator */}
-          <PhaseTimeline
-            phases={phases}
-            selectedPhaseId={selectedPhaseId}
-            onSelectPhase={setSelectedPhaseId}
-            currentWeekNumber={currentWeek?.weekNumber}
           />
+        ))}
+      </div>
 
-          {/* Plan Phases & Weeks Container */}
-          <div className="flex flex-col gap-5">
-            {filteredPhases.map((phase) => {
-              const phaseColor =
-                PHASE_COLORS[phase.color as PhaseColor] ?? PHASE_COLORS.slate
-              return (
-                <section key={phase.id} className="flex flex-col gap-3">
-                  <div className="flex items-start gap-3 px-0.5">
-                    <div
-                      className={cn(
-                        "w-1.5 self-stretch rounded-full",
-                        phaseColor.bar,
-                      )}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-display font-bold text-base text-white">
-                          {phase.name}
-                        </h3>
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            "shrink-0 text-[11px] font-semibold",
-                            phaseColor.badge,
-                          )}
-                        >
-                          Semanas {phase.start_week}–{phase.end_week}
-                        </Badge>
-                      </div>
-                      {phase.objective && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {formatObjectiveText(phase.objective)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Weeks List */}
-                  <div className="flex flex-col gap-3">
-                    {(phase.weeks ?? []).map((week) => {
-                      const isCollapsed = collapsed.has(week.id)
-                      const workouts = week.workouts ?? []
-                      const isCurrentWeek = currentWeek?.weekId === week.id
-
-                      return (
-                        <div
-                          key={week.id}
-                          ref={(el) => {
-                            if (el) weekRefs.current.set(week.id, el)
-                            else weekRefs.current.delete(week.id)
-                          }}
-                          className={cn(
-                            "rounded-xl border border-border bg-card/80 transition-colors duration-200 overflow-hidden shadow-md scroll-mt-24",
-                            isCurrentWeek &&
-                              "ring-2 ring-primary border-primary/50 shadow-card",
-                          )}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => toggleWeek(week.id)}
-                            aria-expanded={!isCollapsed}
-                            aria-controls={`week-panel-${week.id}`}
-                            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-container-high/60"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              {isCollapsed ? (
-                                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                              ) : (
-                                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-                              )}
-                              <div className="flex flex-wrap items-center gap-2 min-w-0">
-                                <span className="font-display font-bold text-sm text-white">
-                                  Semana {week.number}
-                                </span>
-                                {week.name &&
-                                  week.name !== `Semana ${week.number}` && (
-                                    <span className="truncate text-xs text-muted-foreground font-medium">
-                                      · {week.name}
-                                    </span>
-                                  )}
-                                {isCurrentWeek && (
-                                  <Badge className="bg-primary text-primary-foreground text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md">
-                                    Semana Actual
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-
-                            <span className="shrink-0 text-xs font-semibold text-muted-foreground">
-                              {formatDateRange(week.start_date, week.end_date)}
-                              {workouts.length > 0 &&
-                                ` · ${workouts.length} sesiones`}
-                            </span>
-                          </button>
-
-                          {!isCollapsed && (
-                            <section
-                              id={`week-panel-${week.id}`}
-                              aria-label={`Semana ${week.number}`}
-                              className="flex flex-col gap-3 border-t border-border p-4 bg-surface-container-lowest/40"
-                            >
-                              {week.objective && (
-                                <p className="text-xs text-muted-foreground font-medium italic">
-                                  Objetivo: {formatObjectiveText(week.objective)}
-                                </p>
-                              )}
-
-                              {workouts.length === 0 ? (
-                                <p className="text-xs text-muted-foreground py-2">
-                                  Sin sesiones en esta semana.
-                                </p>
-                              ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                  {workouts.map((workout) => (
-                                    <WeekSessionCard
-                                      key={workout.id}
-                                      workout={workout}
-                                      onClick={() =>
-                                        setSelected({
-                                          workout,
-                                          phaseName: phase.name,
-                                          weekNumber: week.number,
-                                        })
-                                      }
-                                    />
-                                  ))}
-                                </div>
-                              )}
-                            </section>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </section>
-              )
-            })}
-          </div>
-        </>
-      )}
-
-      {/* Paccer Bottom Sheet Drawer (Images 9, 10) */}
+      {/* Lectura de la sesión */}
       <PaccerWorkoutSheet
         open={paccerSheetOpen}
         onOpenChange={setPaccerSheetOpen}
         workout={selected?.workout ?? null}
         phaseName={selected?.phaseName}
         weekNumber={selected?.weekNumber}
+        onEdit={() => {
+          setPaccerSheetOpen(false)
+          setEditOpen(true)
+        }}
       />
 
-      {/* Slide-out Session Detail Drawer para edición avanzada */}
-      {selected && !paccerSheetOpen && (
+      {/* Edición avanzada de la sesión */}
+      {selected && (
         <WorkoutBlocksDrawer
-          open
+          open={editOpen}
           onOpenChange={(open) => {
+            setEditOpen(open)
             if (!open) setSelected(null)
           }}
           planId={planId}
@@ -996,6 +387,9 @@ export function RunningPlanDetail({
           weekNumber={selected.weekNumber}
         />
       )}
+
+      {/* Guía del plan */}
+      <PlanGuideSheet open={guideOpen} onOpenChange={setGuideOpen} />
     </div>
   )
 }

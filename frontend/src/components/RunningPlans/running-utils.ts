@@ -1,6 +1,8 @@
 // Metadatos y formateo del dominio de planes de running.
 // Contrato compartido entre el wizard, el listado y el detalle.
 
+import type { RunningPhasePublic, RunningWorkoutPublic } from "@/client"
+
 export type WorkoutType =
   | "easy_run"
   | "regeneration"
@@ -721,4 +723,342 @@ export function weekDaysISO(mondayISO: string): string[] {
     d.setDate(base.getDate() + i)
     return isoLocal(d)
   })
+}
+
+// ---------------------------------------------------------------------------
+// Lectura jerárquica del plan: Plan → Semana → Día → Sesión
+// Derivaciones puras usadas por PlanTimeline / PlanWeekOverviewCard / NextSessionCard.
+// ---------------------------------------------------------------------------
+
+export type WeekStatus = "past" | "current" | "future"
+
+export interface WeekOverviewCounts {
+  total: number
+  completed: number
+  missed: number
+  planned: number
+}
+
+export interface WeekOverview {
+  id: string
+  number: number
+  phaseName: string
+  phaseColor: PhaseColor
+  startDate: string | null
+  endDate: string | null
+  status: WeekStatus
+  /** Semana de descarga/recuperación (por nombre o por caída de volumen). */
+  isRestOrCutback: boolean
+  /** Volumen planificado de la semana en km (suma de distancias o bloques). */
+  volumeKm: number
+  counts: WeekOverviewCounts
+  workouts: RunningWorkoutPublic[]
+}
+
+const CUTBACK_NAME_RE =
+  /descarga|cutback|recuperaci|recovery|afinamiento|taper/i
+
+/** Estado de una semana a partir de su ventana de fechas. Sin `start` ⇒ `future`. */
+export function getWeekStatus(
+  weekStart?: string | null,
+  weekEnd?: string | null,
+  ref?: Date,
+): WeekStatus {
+  if (!weekStart) return "future"
+  const end = weekEnd ?? addDaysToIso(weekStart, 6)
+  const today = isoLocal(ref ?? new Date())
+  if (today < weekStart) return "future"
+  if (today > end) return "past"
+  return "current"
+}
+
+/** Volumen de una semana en km: prioriza `distance_km`, si no cae a los bloques. */
+export function computeWeeklyVolumeKm(
+  workouts: Array<{
+    distance_km?: number | null
+    blocks?: Array<{
+      repeats?: number | null
+      distance_m?: number | null
+    }> | null
+  }>,
+): number {
+  let km = 0
+  for (const workout of workouts ?? []) {
+    const distance =
+      workout.distance_km ?? blocksDistanceKm(workout.blocks ?? [])
+    if (distance != null) km += distance
+  }
+  return Math.round(km * 10) / 10
+}
+
+/**
+ * Aplana las fases en un array de semanas con fase, fechas y estado resueltos.
+ * Cuando faltan fechas reconstruye la grilla de 7 días a partir de la primera
+ * semana datada (alineada a `weekStartDayIso`), respetando el nº de semana.
+ */
+export function buildWeeklyOverview(
+  phases: RunningPhasePublic[],
+  referenceDate?: Date,
+  weekStartDayIso = 1,
+): WeekOverview[] {
+  const flat: Array<{
+    number: number
+    phaseName: string
+    phaseColor: PhaseColor
+    week: NonNullable<RunningPhasePublic["weeks"]>[number]
+  }> = []
+
+  for (const phase of phases) {
+    for (const week of phase.weeks ?? []) {
+      flat.push({
+        number: week.number,
+        phaseName: phase.name,
+        phaseColor: (phase.color as PhaseColor) ?? "slate",
+        week,
+      })
+    }
+  }
+  flat.sort((a, b) => a.number - b.number)
+
+  // Ancla de la grilla: primera semana con `start_date`.
+  let anchorIso: string | null = null
+  let anchorNumber: number | null = null
+  for (const item of flat) {
+    if (item.week.start_date) {
+      anchorIso = alignIsoToWeekStart(item.week.start_date, weekStartDayIso)
+      anchorNumber = item.number
+      break
+    }
+  }
+
+  const weeks: WeekOverview[] = flat.map((item) => {
+    let start = item.week.start_date ?? null
+    let end = item.week.end_date ?? null
+    if (!start && anchorIso != null && anchorNumber != null) {
+      start = addDaysToIso(anchorIso, (item.number - anchorNumber) * 7)
+    }
+    if (!end && start) end = addDaysToIso(start, 6)
+
+    const workouts = item.week.workouts ?? []
+    const counts: WeekOverviewCounts = {
+      total: workouts.length,
+      completed: 0,
+      missed: 0,
+      planned: 0,
+    }
+    for (const workout of workouts) {
+      if (workout.status === "completed") counts.completed += 1
+      else if (workout.status === "missed") counts.missed += 1
+      else if (workout.status === "planned") counts.planned += 1
+    }
+
+    return {
+      id: item.week.id,
+      number: item.number,
+      phaseName: item.phaseName,
+      phaseColor: item.phaseColor,
+      startDate: start,
+      endDate: end,
+      status: getWeekStatus(start, end, referenceDate),
+      isRestOrCutback: CUTBACK_NAME_RE.test(item.week.name ?? ""),
+      volumeKm: computeWeeklyVolumeKm(workouts),
+      counts,
+      workouts,
+    }
+  })
+
+  // Heurística de descarga: caída de volumen ≥25% respecto a la semana previa.
+  weeks.forEach((week, index) => {
+    if (week.isRestOrCutback) return
+    const prev = weeks[index - 1]
+    if (
+      prev &&
+      prev.volumeKm > 0 &&
+      week.volumeKm > 0 &&
+      week.volumeKm <= prev.volumeKm * 0.75
+    ) {
+      week.isRestOrCutback = true
+    }
+  })
+
+  return weeks
+}
+
+/** Próxima sesión no completada ni cancelada con fecha ≥ hoy (o la de hoy). */
+export function getNextWorkout(
+  weeks: WeekOverview[],
+  referenceDate?: Date,
+): { workout: RunningWorkoutPublic; week: WeekOverview } | null {
+  const today = isoLocal(referenceDate ?? new Date())
+  const candidates: Array<{
+    workout: RunningWorkoutPublic
+    week: WeekOverview
+  }> = []
+
+  for (const week of weeks) {
+    for (const workout of week.workouts) {
+      if (workout.cancelled || workout.status === "cancelled") continue
+      if (workout.status === "completed") continue
+      if (workout.date < today) continue
+      candidates.push({ workout, week })
+    }
+  }
+
+  candidates.sort((a, b) => a.workout.date.localeCompare(b.workout.date))
+  return candidates[0] ?? null
+}
+
+/**
+ * Progreso contra lo PLANIFICADO HASTA HOY (no contra el total del plan).
+ * Solo considera sesiones con `date <= hoy`, excluyendo canceladas.
+ */
+export function computeProgressToDate(
+  weeks: WeekOverview[],
+  referenceDate?: Date,
+): {
+  plannedToDate: number
+  completed: number
+  missed: number
+  percent: number
+} {
+  const today = isoLocal(referenceDate ?? new Date())
+  let plannedToDate = 0
+  let completed = 0
+  let missed = 0
+
+  for (const week of weeks) {
+    for (const workout of week.workouts) {
+      if (workout.date > today) continue
+      if (workout.cancelled || workout.status === "cancelled") continue
+      plannedToDate += 1
+      if (workout.status === "completed") completed += 1
+      else if (workout.status === "missed") missed += 1
+    }
+  }
+
+  const percent =
+    plannedToDate > 0 ? Math.round((completed / plannedToDate) * 100) : 0
+  return { plannedToDate, completed, missed, percent }
+}
+
+// ---------------------------------------------------------------------------
+// Runna-inspired UI helpers (Phase 1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Formato de rango de fechas estilo Runna: "12 OCT - 18 OCT" | "12 OCT" | "—".
+ */
+export function formatRunnaDateRange(
+  start?: string | null,
+  end?: string | null,
+): string {
+  if (!start) return "—"
+  const formatPart = (iso: string) => {
+    const d = new Date(`${iso}T12:00:00`)
+    if (Number.isNaN(d.getTime())) return iso
+    const day = d.getDate()
+    const month = new Intl.DateTimeFormat("es-AR", { month: "short" })
+      .format(d)
+      .replace(".", "")
+      .trim()
+      .toUpperCase()
+    return `${day} ${month}`
+  }
+  if (end) return `${formatPart(start)} - ${formatPart(end)}`
+  return formatPart(start)
+}
+
+/**
+ * Fecha estilo Runna: "29 NOV 2026" | "—".
+ */
+export function formatRunnaDate(iso?: string | null): string {
+  if (!iso) return "—"
+  const d = new Date(`${iso}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return iso
+  const day = d.getDate()
+  const month = new Intl.DateTimeFormat("es-AR", { month: "short" })
+    .format(d)
+    .replace(".", "")
+    .trim()
+    .toUpperCase()
+  const year = d.getFullYear()
+  return `${day} ${month} ${year}`
+}
+
+/**
+ * Nombre abreviado del día estilo Runna: "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom".
+ */
+export function getRunnaWeekday(iso?: string | null): string {
+  if (!iso) return "—"
+  const d = new Date(`${iso}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return "—"
+  const name = new Intl.DateTimeFormat("es-AR", { weekday: "short" })
+    .format(d)
+    .replace(".", "")
+    .trim()
+  return name.charAt(0).toUpperCase() + name.slice(1)
+}
+
+/**
+ * Color de la pastilla temática de tipo de sesión según el código visual de Runna:
+ * - Carrera fácil: Lima / Verde claro
+ * - Carrera larga: Violeta / Púrpura
+ * - Intervalos: Naranja
+ * - Tempo: Ámbar / Dorado
+ * - Test / Carrera: Rojo / Carmesí
+ * - Recuperación / Activación: Cian / Turquesa
+ */
+export const RUNNA_WORKOUT_COLORS: Record<
+  string,
+  { bg: string; text: string; label: string }
+> = {
+  easy_run: {
+    bg: "bg-lime-400 dark:bg-lime-500",
+    text: "text-zinc-950",
+    label: "Carrera fácil",
+  },
+  long_run: {
+    bg: "bg-purple-500 dark:bg-purple-600",
+    text: "text-white",
+    label: "Carrera larga",
+  },
+  intervals: {
+    bg: "bg-orange-500 dark:bg-orange-600",
+    text: "text-white",
+    label: "Intervalos",
+  },
+  tempo: {
+    bg: "bg-amber-400 dark:bg-amber-500",
+    text: "text-zinc-950",
+    label: "Tempo",
+  },
+  test: {
+    bg: "bg-red-500 dark:bg-red-600",
+    text: "text-white",
+    label: "Test",
+  },
+  race: {
+    bg: "bg-rose-500 dark:bg-rose-600",
+    text: "text-white",
+    label: "Carrera",
+  },
+  recovery: {
+    bg: "bg-cyan-400 dark:bg-cyan-500",
+    text: "text-zinc-950",
+    label: "Recuperación",
+  },
+  activation: {
+    bg: "bg-teal-400 dark:bg-teal-500",
+    text: "text-zinc-950",
+    label: "Activación",
+  },
+}
+
+export function getRunnaWorkoutColor(type?: string | null): {
+  bg: string
+  text: string
+  label: string
+} {
+  if (!type) return RUNNA_WORKOUT_COLORS.easy_run
+  return RUNNA_WORKOUT_COLORS[type] ?? RUNNA_WORKOUT_COLORS.easy_run
 }

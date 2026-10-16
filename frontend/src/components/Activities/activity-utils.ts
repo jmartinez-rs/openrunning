@@ -43,3 +43,31 @@ export function isCardio(activity: {
 }): boolean {
   return activity.source_type === "strava" || Boolean(activity.cardio)
 }
+
+export function formatRunnaTime(seconds: number | undefined | null): string {
+  if (!seconds || seconds <= 0) return "--:--"
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const secs = Math.floor(seconds % 60)
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
+  }
+  return `${minutes}:${String(secs).padStart(2, "0")}`
+}
+
+export function formatRunnaDateTime(value: string): string {
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  const day = d.getDate()
+  const month = new Intl.DateTimeFormat("es-AR", { month: "short" })
+    .format(d)
+    .replace(".", "")
+    .trim()
+  const year = d.getFullYear()
+  const time = new Intl.DateTimeFormat("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d)
+  return `${day} ${month} ${year} a las ${time}`
+}

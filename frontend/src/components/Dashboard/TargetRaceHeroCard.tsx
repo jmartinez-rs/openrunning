@@ -72,21 +72,8 @@ export const TargetRaceHeroCard: React.FC<TargetRaceHeroCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-black/60 pointer-events-none" />
         <div className="absolute top-0 right-0 w-64 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top Header / Image banner feel */}
-        <div className="relative h-28 sm:h-36 w-full overflow-hidden bg-[#18181b] border-b border-white/5">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/20 via-primary/10 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#121214] via-[#121214]/40 to-transparent" />
-          
-          <div className="absolute top-3 right-3">
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-zinc-300">
-              <Flag className="size-3 text-primary" />
-              {distanceKm ? `${distanceKm} km` : "Carrera"}
-            </span>
-          </div>
-        </div>
-
         {/* Content Body */}
-        <div className="relative p-5 pt-3">
+        <div className="relative p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             {/* Days Left Badge (Paccer style) */}
             <div className="flex flex-col items-center justify-center size-20 rounded-2xl bg-primary text-black shrink-0 shadow-[0_4px_20px_rgba(234,252,95,0.25)] select-none">
@@ -103,15 +90,22 @@ export const TargetRaceHeroCard: React.FC<TargetRaceHeroCardProps> = ({
 
             {/* Title & Subtitle */}
             <div className="flex-1 min-w-0">
-              <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-                Prueba Objetivo
-              </span>
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                  Prueba Objetivo
+                </span>
+                {distanceKm && (
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 text-[10px] font-semibold text-zinc-300">
+                    <Flag className="size-2.5 text-primary" />
+                    {distanceKm} km
+                  </span>
+                )}
+              </div>
               <h2 className="text-xl font-display font-black text-white tracking-tight truncate group-hover:text-primary transition-colors">
                 {raceName}
               </h2>
               <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-2">
                 {dateText && <span>{dateText}</span>}
-                {distanceKm && <span>· {distanceKm} km</span>}
               </p>
             </div>
 

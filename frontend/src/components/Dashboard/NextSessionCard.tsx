@@ -123,9 +123,10 @@ export function NextSessionCard({
         navigate({
           to: "/routines/run/$planId",
           params: { planId },
-          search: nextSession.weekNumber
-            ? { week: nextSession.weekNumber }
-            : {},
+          search: {
+            week: nextSession.weekNumber,
+            day: nextSession.date,
+          },
         })
       }
       className="group w-full text-left flex items-center justify-between gap-4 rounded-2xl border border-primary/40 bg-primary/5 p-4 transition-all hover:border-primary hover:bg-primary/10 cursor-pointer shadow-card"

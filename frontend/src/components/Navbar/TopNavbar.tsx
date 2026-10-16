@@ -1,11 +1,11 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   Link as RouterLink,
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router"
 import { Bell, Loader2, Menu, RefreshCw, Settings2, User } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { SyncService } from "@/client"
 import { Logo } from "@/components/Common/Logo"
 import { MoreMenuContent } from "@/components/Navbar/MoreMenuContent"
@@ -20,6 +20,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import useAuth from "@/hooks/useAuth"
+import useCustomToast from "@/hooks/useCustomToast"
+import { handleError } from "@/utils"
 import {
   desktopNavItems,
   isAnyMoreItemActive,
@@ -116,27 +118,59 @@ function RightActions() {
   const { user: currentUser, logout } = useAuth()
   const navigate = useNavigate()
 
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+
+  const syncLogsQuery = useQuery({
+    queryKey: ["sync-logs"],
+    queryFn: () => SyncService.readSyncLogs({ limit: 1 }),
+    staleTime: 60 * 1000,
+  })
+
+  const latestLog = syncLogsQuery.data?.data?.[0]
+  const lastSyncMessage = useMemo(() => {
+    if (!latestLog?.started_at) return "Sin sincronizar"
+    const diffMin = Math.floor(
+      (Date.now() - new Date(latestLog.started_at).getTime()) / 60000,
+    )
+    if (diffMin < 1) return "Recién"
+    if (diffMin < 60) return `Hace ${diffMin} min`
+    if (diffMin < 1440) return `Hace ${Math.floor(diffMin / 60)} h`
+    return `Hace ${Math.floor(diffMin / 1440)} d`
+  }, [latestLog?.started_at])
+
   const syncMutation = useMutation({
     mutationFn: async () => {
       await SyncService.triggerSync({ provider: "strava" })
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sync-logs"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      queryClient.invalidateQueries({ queryKey: ["activities"] })
+      showSuccessToast("Sincronización con Strava iniciada")
+    },
+    onError: handleError.bind(showErrorToast),
   })
 
   return (
     <div className="flex items-center gap-2 md:gap-3">
       <Button
         variant="ghost"
-        size="icon"
-        className="text-muted-foreground hover:bg-surface-container-high hover:text-foreground"
-        aria-label="Sincronizar con Strava"
+        size="sm"
+        className="h-9 px-2 sm:px-3 gap-2 text-muted-foreground hover:bg-surface-container-high hover:text-foreground rounded-lg"
+        aria-label={`Sincronizar con Strava (${lastSyncMessage})`}
+        title={`Strava: ${lastSyncMessage}. Clic para sincronizar`}
         disabled={syncMutation.isPending}
         onClick={() => syncMutation.mutate()}
       >
         {syncMutation.isPending ? (
-          <Loader2 className="size-5 animate-spin text-primary" />
+          <Loader2 className="size-4 animate-spin text-primary" />
         ) : (
-          <RefreshCw className="size-5 text-primary" />
+          <RefreshCw className="size-4 text-primary" />
         )}
+        <span className="text-xs font-semibold text-zinc-300 hidden sm:inline">
+          {syncMutation.isPending ? "Sincronizando..." : lastSyncMessage}
+        </span>
       </Button>
 
       <DropdownMenu>

@@ -1,26 +1,33 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Play } from "lucide-react"
 import { useMemo, useState } from "react"
-import { AnalyticsService, RunningPlansService, SyncService } from "@/client"
-import { CoachCard } from "@/components/Dashboard/CoachCard"
-import { StravaSyncBar } from "@/components/Dashboard/StravaSyncBar"
-import { StreakCard } from "@/components/Dashboard/StreakCard"
+import {
+  AnalyticsService,
+  RunningPlansService,
+  SyncService,
+  type RunningWorkoutPublic,
+} from "@/client"
+import { RunnaDashboardHeader } from "@/components/Dashboard/RunnaDashboardHeader"
+import { RunnaHeroWorkoutCard } from "@/components/Dashboard/RunnaHeroWorkoutCard"
+import { RunnaMisDatosSection } from "@/components/Dashboard/RunnaMisDatosSection"
+import {
+  type RunnaDayItem,
+  RunnaWeekStrip,
+} from "@/components/Dashboard/RunnaWeekStrip"
+import { RunnaWeekSummaryCard } from "@/components/Dashboard/RunnaWeekSummaryCard"
 import { TargetRaceHeroCard } from "@/components/Dashboard/TargetRaceHeroCard"
-import { TodayWorkoutCard } from "@/components/Dashboard/TodayWorkoutCard"
-
 import { VolumeCard } from "@/components/Dashboard/VolumeCard"
-import { type DayStatus, WeekStrip } from "@/components/Dashboard/WeekStrip"
+import { PaccerWorkoutSheet } from "@/components/RunningPlans/PaccerWorkoutSheet"
 import { ManualRunSheet } from "@/components/Sheets/ManualRunSheet"
-import { Button } from "@/components/ui/button"
-import useAuth from "@/hooks/useAuth"
+import useCustomToast from "@/hooks/useCustomToast"
+import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/_layout/")({
   component: OpenRunningDashboard,
   head: () => ({
     meta: [
       {
-        title: "Dashboard - OpenRunning",
+        title: "Hoy - OpenRunning",
       },
     ],
   }),
@@ -39,16 +46,22 @@ function formatDateIso(d: Date): string {
   return d.toISOString().split("T")[0]
 }
 
-const DAYS_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+const RUNNA_DAYS_SHORT = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"]
 
 function OpenRunningDashboard() {
-  const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+
+  const todayIso = useMemo(() => formatDateIso(new Date()), [])
+  const [selectedDateIso, setSelectedDateIso] = useState<string>(todayIso)
+  const [isManualSheetOpen, setIsManualSheetOpen] = useState(false)
+  const [workoutForSheet, setWorkoutForSheet] =
+    useState<RunningWorkoutPublic | null>(null)
 
   const [weekOffset, setWeekOffset] = useState(0)
-  const [isManualSheetOpen, setIsManualSheetOpen] = useState(false)
 
+  // Base Monday correspondiente a la semana con offset de navegación
   const baseMonday = useMemo(() => {
     const today = new Date()
     const monday = getMonday(today)
@@ -56,22 +69,30 @@ function OpenRunningDashboard() {
     return monday
   }, [weekOffset])
 
+  const weekLabel = useMemo(() => {
+    if (weekOffset === 0) return "Esta semana"
+    const sunday = new Date(baseMonday)
+    sunday.setDate(baseMonday.getDate() + 6)
+    return `${baseMonday.getDate()} ${baseMonday.toLocaleDateString("es-AR", { month: "short" })} – ${sunday.getDate()} ${sunday.toLocaleDateString("es-AR", { month: "short" })}`
+  }, [baseMonday, weekOffset])
+
   const weekStartIso = formatDateIso(baseMonday)
 
+  // Query general de analíticas/dashboard
   const dashboardQuery = useQuery({
     queryKey: ["dashboard", weekStartIso],
     queryFn: () => AnalyticsService.readDashboard({ weekStart: weekStartIso }),
   })
-
   const dashboard = dashboardQuery.data
 
-  // Plan actual y detalle de fases
+  // Planes de running
   const plansQuery = useQuery({
     queryKey: ["running-plans"],
     queryFn: () => RunningPlansService.readPlans(),
   })
   const activePlan = plansQuery.data?.data.find((p) => p.status === "active")
 
+  // Detalle del plan activo (fases, semanas, sesiones estructuradas)
   const planDetailQuery = useQuery({
     queryKey: ["running-plan", activePlan?.id],
     queryFn: () => RunningPlansService.readPlan({ planId: activePlan!.id }),
@@ -79,100 +100,175 @@ function OpenRunningDashboard() {
     staleTime: 5 * 60 * 1000,
   })
 
+  // Sincronización con Strava
   const syncMutation = useMutation({
     mutationFn: () => SyncService.triggerSync({ provider: "strava" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] })
       queryClient.invalidateQueries({ queryKey: ["shoes"] })
       queryClient.invalidateQueries({ queryKey: ["shoe-stats"] })
+      showSuccessToast("Sincronización con Strava iniciada")
     },
+    onError: handleError.bind(showErrorToast),
   })
 
-  const todayIso = formatDateIso(new Date())
+  // Mutación para marcar/desmarcar sesión como completada desde la Hero Card
+  const toggleCompleteMutation = useMutation({
+    mutationFn: async ({
+      workoutId,
+      currentCompleted,
+    }: {
+      workoutId: string
+      currentCompleted: boolean
+    }) => {
+      if (!activePlan?.id) return
+      return RunningPlansService.updateWorkout({
+        planId: activePlan.id,
+        workoutId,
+        requestBody: {
+          status_override: currentCompleted ? null : "completed",
+          cancelled: false,
+        },
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["running-plan", activePlan?.id],
+      })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      showSuccessToast("Estado del entrenamiento actualizado")
+    },
+    onError: handleError.bind(showErrorToast),
+  })
 
-  // Sesión de hoy y progreso de semanas del plan activo
-  const planStats = useMemo(() => {
-    if (!planDetailQuery.data) {
-      return {
-        todayWorkout: null,
-        currentWeekNumber: 1,
-        totalWeeks: 12,
-        totalPlanKm: undefined,
+  // Extraer todas las sesiones y estadísticas del plan activo
+  const { allWorkouts, currentWeekNumber, totalWeeks, totalPlanKm } =
+    useMemo(() => {
+      if (!planDetailQuery.data) {
+        return {
+          allWorkouts: [] as RunningWorkoutPublic[],
+          currentWeekNumber: 1,
+          totalWeeks: 12,
+          totalPlanKm: undefined as number | undefined,
+        }
       }
-    }
-    const plan = planDetailQuery.data
-    const phases = plan.phases ?? []
-    const allWorkouts: any[] = []
-    let totalKm = 0
-    let totalWeeksCount = 0
 
-    phases.forEach((p) => {
-      (p.weeks ?? []).forEach((w) => {
-        totalWeeksCount = Math.max(totalWeeksCount, w.number)
-        ;(w.workouts ?? []).forEach((wo) => {
-          totalKm += wo.distance_km || 0
-          allWorkouts.push({ ...wo, weekNumber: w.number })
+      const plan = planDetailQuery.data
+      const phases = plan.phases ?? []
+      const workoutsList: RunningWorkoutPublic[] = []
+      let totalKm = 0
+      let totalWeeksCount = 0
+
+      phases.forEach((p) => {
+        ;(p.weeks ?? []).forEach((w) => {
+          totalWeeksCount = Math.max(totalWeeksCount, w.number)
+          ;(w.workouts ?? []).forEach((wo) => {
+            totalKm += wo.distance_km || 0
+            workoutsList.push(wo)
+          })
         })
       })
+
+      // Calcular semana actual según fecha de inicio
+      let currentWeekNum = 1
+      if (plan.start_date) {
+        const start = new Date(plan.start_date).getTime()
+        const now = new Date(todayIso).getTime()
+        const diffWeeks =
+          Math.floor((now - start) / (7 * 24 * 60 * 60 * 1000)) + 1
+        currentWeekNum = Math.max(1, Math.min(diffWeeks, totalWeeksCount || 1))
+      }
+
+      return {
+        allWorkouts: workoutsList,
+        currentWeekNumber: currentWeekNum,
+        totalWeeks: totalWeeksCount || 12,
+        totalPlanKm: totalKm > 0 ? totalKm : undefined,
+      }
+    }, [planDetailQuery.data, todayIso])
+
+  // Entrenamientos mapeados por fecha ISO ("YYYY-MM-DD")
+  const workoutsByDate = useMemo(() => {
+    const map = new Map<string, RunningWorkoutPublic>()
+    allWorkouts.forEach((wo) => {
+      if (wo.date && !wo.cancelled) {
+        map.set(wo.date, wo)
+      }
     })
+    return map
+  }, [allWorkouts])
 
-    // Buscar entrenamiento de hoy (o próximo)
-    const todayWo = allWorkouts.find((wo) => wo.date === todayIso && !wo.cancelled) || null
-    
-    // Calcular en qué semana del plan estamos según fecha de inicio
-    let currentWeekNumber = 1
-    if (plan.start_date) {
-      const start = new Date(plan.start_date).getTime()
-      const now = new Date(todayIso).getTime()
-      const diffWeeks = Math.floor((now - start) / (7 * 24 * 60 * 60 * 1000)) + 1
-      currentWeekNumber = Math.max(1, Math.min(diffWeeks, totalWeeksCount || 1))
-    }
-
-    return {
-      todayWorkout: todayWo,
-      currentWeekNumber,
-      totalWeeks: totalWeeksCount || 12,
-      totalPlanKm: totalKm > 0 ? totalKm : undefined,
-    }
-  }, [planDetailQuery.data, todayIso])
-
-  // Generate 7 day statuses for WeekStrip
-  const days: DayStatus[] = useMemo(() => {
-    const result: DayStatus[] = []
-    const timeline = dashboard?.timeline || []
-    const timelineMap = new Map(timeline.map((d) => [d.date, d]))
+  // 7 Días de la semana para el WeekStrip interactivo de Runna
+  const weekDays: RunnaDayItem[] = useMemo(() => {
+    const result: RunnaDayItem[] = []
 
     for (let i = 0; i < 7; i++) {
       const current = new Date(baseMonday)
       current.setDate(baseMonday.getDate() + i)
       const iso = formatDateIso(current)
       const isToday = iso === todayIso
-      const dayData = timelineMap.get(iso)
+      const isSelected = iso === selectedDateIso
 
-      let status: DayStatus["status"] = "empty"
-      if (dayData?.activities && dayData.activities.length > 0) {
-        status = "done"
-      }
+      const wo = workoutsByDate.get(iso)
+      const hasWorkout = Boolean(wo)
+      const isCompleted =
+        wo?.status_override === "completed" || Boolean(wo?.matched_activity_id)
 
       result.push({
         dateIso: iso,
-        dayName: DAYS_SHORT[current.getDay()],
+        dayName: RUNNA_DAYS_SHORT[i],
         dayNumber: current.getDate(),
         isToday,
-        status,
-        workoutTitle: dayData?.activities?.[0]?.name || undefined,
-        activityId: dayData?.activities?.[0]?.id || undefined,
+        isSelected,
+        hasWorkout,
+        workoutType: wo?.type || null,
+        isCompleted,
       })
     }
-    return result
-  }, [baseMonday, dashboard, todayIso])
 
-  const weekLabel = useMemo(() => {
-    if (weekOffset === 0) return "Esta semana"
-    const sunday = new Date(baseMonday)
-    sunday.setDate(baseMonday.getDate() + 6)
-    return `${baseMonday.getDate()} ${baseMonday.toLocaleDateString("es-AR", { month: "short" })} – ${sunday.getDate()} ${sunday.toLocaleDateString("es-AR", { month: "short" })}`
-  }, [baseMonday, weekOffset])
+    return result
+  }, [baseMonday, todayIso, selectedDateIso, workoutsByDate])
+
+  // Entrenamiento correspondiente a la fecha seleccionada
+  const selectedWorkout = useMemo(() => {
+    return workoutsByDate.get(selectedDateIso) || null
+  }, [workoutsByDate, selectedDateIso])
+
+  // Estadísticas de la semana actual para RunnaWeekSummaryCard
+  const weekSummary = useMemo(() => {
+    const currentWeekDates = weekDays.map((d) => d.dateIso)
+    const weekWorkouts = allWorkouts.filter(
+      (wo) => wo.date && currentWeekDates.includes(wo.date) && !wo.cancelled,
+    )
+
+    const totalWorkouts = weekWorkouts.length
+    const completedWorkouts = weekWorkouts.filter(
+      (wo) =>
+        wo.status_override === "completed" || Boolean(wo.matched_activity_id),
+    ).length
+
+    const totalWeekKm = weekWorkouts.reduce(
+      (sum, wo) => sum + (wo.distance_km || 0),
+      0,
+    )
+    const completedKmCalculated = weekWorkouts
+      .filter(
+        (wo) =>
+          wo.status_override === "completed" || Boolean(wo.matched_activity_id),
+      )
+      .reduce((sum, wo) => sum + (wo.distance_km || 0), 0)
+
+    // Si hay km de Strava registrados en la semana y no están linkeados, usar el máximo
+    const stravaWeekKm = (dashboard?.kpis?.cardio_distance_meters || 0) / 1000
+    const completedKm = Math.max(completedKmCalculated, stravaWeekKm)
+
+    return {
+      totalWorkouts,
+      completedWorkouts,
+      totalWeekKm,
+      completedKm,
+    }
+  }, [weekDays, allWorkouts, dashboard?.kpis?.cardio_distance_meters])
 
   const kpis = dashboard?.kpis
   const currentKm = (kpis?.cardio_distance_meters || 0) / 1000
@@ -191,18 +287,20 @@ function OpenRunningDashboard() {
   }
   const avgPaceText = formatPace(kpis?.cardio_avg_pace_seconds_per_km)
 
+  // Datos de la próxima carrera objetivo (TargetRace)
   const upcomingRace = dashboard?.upcoming_race
-  const daysToRace = upcomingRace
+  const targetDateIso = upcomingRace?.date || activePlan?.end_date
+  const daysToRace = targetDateIso
     ? Math.max(
         0,
         Math.ceil(
-          (new Date(upcomingRace.date).getTime() - Date.now()) /
+          (new Date(targetDateIso).getTime() - Date.now()) /
             (1000 * 60 * 60 * 24),
         ),
       )
-    : 0
+    : undefined
 
-  // 1. Strava Sync State
+  // Estado de sincronización Strava
   const stravaSyncState = dashboard?.sync_state?.find(
     (s) => s.provider === "strava",
   )
@@ -226,106 +324,86 @@ function OpenRunningDashboard() {
 
   const handleManualRunSubmit = async (_data: any) => {
     queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+    queryClient.invalidateQueries({ queryKey: ["running-plan"] })
   }
 
   return (
-    <div className="col-span-12 flex flex-col gap-6 pb-20 max-w-xl mx-auto w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between pt-2 px-1">
-        <div>
-          <h1 className="text-2xl font-display font-black text-white tracking-tight">
-            ¡Hola, {user?.full_name?.split(" ")[0] || "Corredor"}!
-          </h1>
-          <p className="text-xs text-muted-foreground capitalize font-medium">
-            {new Date().toLocaleDateString("es-AR", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-            })}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setIsManualSheetOpen(true)}
-          aria-label="RUN"
-          className="group flex flex-col items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-        >
-          <div className="flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_4px_16px_rgba(234,252,95,0.25)] transition-transform active:scale-95 group-hover:scale-105">
-            <Play className="size-5 fill-current stroke-none ml-0.5" />
-          </div>
-          <span className="text-[10px] font-bold leading-none text-primary tracking-wider">
-            RUN
-          </span>
-        </button>
-      </div>
+    <div className="col-span-12 flex flex-col gap-5 pb-28 max-w-xl mx-auto w-full px-2 sm:px-0">
+      {/* 1. Header: Nombre semana y flechas en los laterales para moverme entre semanas */}
+      <RunnaDashboardHeader
+        weekLabel={weekLabel}
+        currentWeekNumber={Math.max(
+          1,
+          Math.min(currentWeekNumber + weekOffset, totalWeeks),
+        )}
+        totalWeeks={totalWeeks}
+        hasActivePlan={Boolean(activePlan)}
+        onPrevWeek={() => setWeekOffset((w) => w - 1)}
+        onNextWeek={() => setWeekOffset((w) => w + 1)}
+      />
 
-      {/* Strava Sync Bar */}
-      <StravaSyncBar
-        lastSyncText={lastSyncText}
-        isSyncing={syncMutation.isPending}
-        onSyncStrava={() => syncMutation.mutate()}
+      {/* 2. Week Strip interactivo estilo Runna con puntos de color y notch expandible a mes */}
+      <RunnaWeekStrip
+        days={weekDays}
+        selectedDateIso={selectedDateIso}
+        workoutsByDate={workoutsByDate}
+        onSelectDay={(dateIso) => setSelectedDateIso(dateIso)}
+      />
+
+      {/* 3. Hero Card del Entrenamiento (Hoy o día seleccionado) */}
+      <RunnaHeroWorkoutCard
+        workout={selectedWorkout}
+        selectedDateIso={selectedDateIso}
+        isToday={selectedDateIso === todayIso}
+        weatherTemp="18°"
+        weatherCondition="cloudy"
+        isTogglingComplete={toggleCompleteMutation.isPending}
+        onToggleComplete={(workoutId, currentCompleted) => {
+          toggleCompleteMutation.mutate({ workoutId, currentCompleted })
+        }}
+        onViewDetails={() => {
+          if (selectedWorkout) {
+            setWorkoutForSheet(selectedWorkout)
+          }
+        }}
         onOpenManualRun={() => setIsManualSheetOpen(true)}
       />
 
-      {/* 1. Sección Fija: Progreso del Entrenamiento */}
-      <div className="rounded-3xl border border-white/5 bg-[#121214] overflow-hidden shadow-card p-5 space-y-4">
-        <div className="flex items-center justify-between pb-1 border-b border-white/5">
-          <h2 className="text-base font-bold text-white tracking-tight">
-            Progreso del entrenamiento
-          </h2>
-          {activePlan?.id && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() =>
-                navigate({
-                  to: "/routines/run/$planId",
-                  params: { planId: activePlan.id },
-                  search: { tab: "evolution" },
-                })
-              }
-              className="text-primary hover:text-primary hover:bg-primary/10 text-xs font-bold"
-            >
-              Ver evolución
-            </Button>
-          )}
-        </div>
+      {/* 4. Resumen de la semana estilo Runna (por arriba de prueba objetivo) */}
+      <RunnaWeekSummaryCard
+        weekNumber={Math.max(
+          1,
+          Math.min(currentWeekNumber + weekOffset, totalWeeks),
+        )}
+        completedWorkouts={weekSummary.completedWorkouts}
+        totalWorkouts={weekSummary.totalWorkouts}
+        completedKm={weekSummary.completedKm}
+        totalWeekKm={weekSummary.totalWeekKm}
+        onNavigateToWeek={() => {
+          if (activePlan?.id) {
+            navigate({
+              to: "/routines/run/$planId",
+              params: { planId: activePlan.id },
+              search: { week: currentWeekNumber },
+            })
+          }
+        }}
+      />
 
-        <WeekStrip
-          days={days}
-          weekLabel={weekLabel}
-          onPrevWeek={() => setWeekOffset((w) => w - 1)}
-          onNextWeek={() => setWeekOffset((w) => w + 1)}
-          onSelectDay={(day) => {
-            if (day.activityId) {
-              navigate({
-                to: "/activities/$activityId",
-                params: { activityId: day.activityId },
-              })
-            }
-          }}
-        />
+      {/* 5. Volumen semanal y Ritmo promedio */}
+      <VolumeCard
+        currentKm={currentKm}
+        targetKm={targetKm}
+        avgPaceText={avgPaceText}
+        onOpenCalendar={() => navigate({ to: "/analytics" as any })}
+      />
 
-        <VolumeCard
-          currentKm={currentKm}
-          targetKm={targetKm}
-          avgPaceText={avgPaceText}
-          onOpenCalendar={() => navigate({ to: "/analytics" as any })}
-        />
-
-        <StreakCard
-          streakWeeks={0}
-          completedSessions={kpis?.sessions || 0}
-          plannedSessions={4}
-          onOpenCalendar={() => navigate({ to: "/analytics" as any })}
-        />
-      </div>
-
-      {/* 2. Carrera Objetivo Principal (por debajo del progreso del entrenamiento) */}
+      {/* 6. ⭐ PRÓXIMA CARRERA (PRUEBA OBJETIVO) - PRESERVADO AL 100% ⭐ */}
       <TargetRaceHeroCard
-        raceName={upcomingRace?.event_name || (activePlan ? activePlan.name : undefined)}
-        daysRemaining={upcomingRace ? daysToRace : undefined}
+        raceName={
+          upcomingRace?.event_name || (activePlan ? activePlan.name : undefined)
+        }
+        daysRemaining={daysToRace}
         dateText={
           upcomingRace
             ? new Date(upcomingRace.date).toLocaleDateString("es-AR", {
@@ -341,11 +419,13 @@ function OpenRunningDashboard() {
                 })
               : undefined
         }
-        distanceKm={upcomingRace?.distance_km || activePlan?.distance_km || undefined}
-        currentWeek={planStats.currentWeekNumber}
-        totalWeeks={planStats.totalWeeks}
-        totalPlanKm={planStats.totalPlanKm}
-        goalText={activePlan?.goal || "Completar la distancia"}
+        distanceKm={
+          upcomingRace?.distance_km || activePlan?.distance_km || undefined
+        }
+        currentWeek={currentWeekNumber}
+        totalWeeks={totalWeeks}
+        totalPlanKm={totalPlanKm}
+        goalText={activePlan?.goal || "Completar con buenas sensaciones"}
         onViewWorkouts={() => {
           if (activePlan?.id) {
             navigate({
@@ -358,24 +438,30 @@ function OpenRunningDashboard() {
         }}
       />
 
-      {/* 3. Entrenamiento de Hoy (Mockup 4) */}
-      <TodayWorkoutCard
-        workout={planStats.todayWorkout}
-        planId={activePlan?.id}
-        weekNumber={planStats.currentWeekNumber}
-        isLoading={planDetailQuery.isLoading}
-        onOpenManualRun={() => setIsManualSheetOpen(true)}
+      {/* 7. Sección colapsable "Mis datos": Strava */}
+      <RunnaMisDatosSection
+        stravaLastSyncText={lastSyncText}
+        isSyncingStrava={syncMutation.isPending}
+        onSyncStrava={() => syncMutation.mutate()}
       />
 
-      {/* AI Coach Proposal Card */}
-      <CoachCard
-        title="AI Coach en desarrollo..."
-        subtitle="Las rutinas y planes inteligentes estarán disponibles pronto."
-        hasProposal={false}
-        onReview={() => {}}
+      {/* Hoja de detalle estructurado del entrenamiento (Runna/Paccer style) */}
+      <PaccerWorkoutSheet
+        open={Boolean(workoutForSheet)}
+        onOpenChange={(open) => !open && setWorkoutForSheet(null)}
+        workout={workoutForSheet}
+        weekNumber={currentWeekNumber}
+        onEdit={() => {
+          if (activePlan?.id) {
+            navigate({
+              to: "/routines/run/$planId",
+              params: { planId: activePlan.id },
+            })
+          }
+        }}
       />
 
-      {/* Manual Run Bottom Sheet */}
+      {/* Bottom Sheet de Registro Manual */}
       <ManualRunSheet
         isOpen={isManualSheetOpen}
         onClose={() => setIsManualSheetOpen(false)}
