@@ -876,15 +876,39 @@ def test_recalibration_terminal_outcomes_emit_structured_observability(
 
 
 def test_recalibration_surface_exposes_exactly_three_routes(client, db_engine, user):
+    """R21: the contract is exactly three routes, pinned by path AND method.
+
+    The three expected ``(path, method)`` pairs are selected by EXACT path (not a
+    substring) and asserted together, so a renamed path, a wrong HTTP verb or a
+    4th recalibration route all fail the test.
+    """
     paths = client.get("/api/v1/openapi.json").json()["paths"]
+    prefix = f"{BASE}/{{plan_id}}"
+    expected = {
+        (f"{prefix}/recalibrate", "post"),
+        (f"{prefix}/recalibrate/preview", "post"),
+        (f"{prefix}/recalibrations", "get"),
+    }
 
-    recalibration_paths = sorted(path for path in paths if "recalibrat" in path)
+    declared = {
+        (path, method)
+        for path, operations in paths.items()
+        if path.startswith(f"{prefix}/")
+        for method in operations
+        if (path, method) in expected
+    }
 
-    assert recalibration_paths == [
-        f"{BASE}/{{plan_id}}/recalibrate",
-        f"{BASE}/{{plan_id}}/recalibrate/preview",
-        f"{BASE}/{{plan_id}}/recalibrations",
-    ]
+    assert declared == expected
+    # No undeclared route may live under a recalibration-looking path.
+    expected_paths = {path for path, _method in expected}
+    assert (
+        [
+            path
+            for path in paths
+            if path.startswith(f"{prefix}/recalibrat") and path not in expected_paths
+        ]
+        == []
+    )
 
 
 def test_double_apply_advances_current_vdot_and_keeps_baseline_immutable(
