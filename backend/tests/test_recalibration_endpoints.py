@@ -939,3 +939,168 @@ def test_double_apply_advances_current_vdot_and_keeps_baseline_immutable(
     rows = _history(db_engine, seed["plan_id"])
     assert len(rows) == 2
     assert sorted(row.new_vdot for row in rows) == [47.0, 48.0]
+
+
+# ---------------------------------------------------------------------------
+# B1 — a plan created THROUGH the API keeps its generation snapshot
+# ---------------------------------------------------------------------------
+
+
+def _generator_config(**overrides) -> dict:
+    """A real ``PlanGeneratorConfig`` body for POST /running-plans/generate-draft."""
+    config = {
+        "plan_type": "race",
+        "goal_type": "time",
+        "target_km": 21.1,
+        "target_time_seconds": 5700,
+        "num_weeks": 12,
+        "start_date": TODAY.isoformat(),
+        "week_start_day": WEEK_START_DAY,
+        "selected_days": [2, 4, 6, 7],
+        "long_run_day": 7,
+        "baseline": _baseline(45.0),
+        "confidence": "measured",
+        "conservative_mode": False,
+    }
+    config.update(overrides)
+    return config
+
+
+def _plan_body(week_starts: list[dt.date], **overrides) -> dict:
+    """A valid ``RunningPlanCreate`` body (PUT/POST) with one phase/week/workout."""
+    body: dict = {
+        "name": "Plan 21.1K",
+        "distance_km": 21.1,
+        "start_date": week_starts[0].isoformat(),
+        "week_start_day": WEEK_START_DAY,
+        "status": "active",
+        "phases": [
+            {
+                "position": 1,
+                "name": "Base",
+                "start_week": 1,
+                "end_week": len(week_starts),
+                "weeks": [
+                    {
+                        "number": number,
+                        "start_date": start.isoformat(),
+                        "end_date": (start + dt.timedelta(days=6)).isoformat(),
+                        "workouts": [
+                            {
+                                "date": (start + dt.timedelta(days=2)).isoformat(),
+                                "type": "easy_run",
+                                "intensity": "easy",
+                                "distance_km": 8.0,
+                                "pace_seconds_per_km": 330.0,
+                            }
+                        ],
+                    }
+                    for number, start in enumerate(week_starts, start=1)
+                ],
+            }
+        ],
+    }
+    body.update(overrides)
+    return body
+
+
+def _stored_plan(engine, plan_id: str) -> RunningPlan:
+    with Session(engine) as session:
+        plan = session.get(RunningPlan, uuid.UUID(plan_id))
+        session.refresh(plan)
+        return plan
+
+
+def _get_plan_snapshot(engine, plan_id: str) -> tuple[dict | None, dict | None]:
+    plan = _stored_plan(engine, plan_id)
+    return plan.baseline, plan.generation_params
+
+
+def test_api_created_plan_from_a_generated_draft_can_recalibrate(client, db_engine, user):
+    """B1 — the missing end-to-end proof: draft -> create -> preview -> apply.
+
+    The plan is created THROUGH THE API from the real generator draft (never a
+    fabricated ``_seed_plan`` row), so ``baseline``/``generation_params`` must
+    survive ``POST /running-plans/`` or recalibration would 409
+    ``plan_has_no_baseline`` forever.
+    """
+    draft_resp = client.post(f"{BASE}/generate-draft", json=_generator_config())
+    assert draft_resp.status_code == 200, draft_resp.text
+    draft = draft_resp.json()["draft"]
+    # The draft IS the create payload and already carries the generation snapshot.
+    assert draft["baseline"]["vdot"]["value"] == 45.0
+    assert draft["generation_params"]["target_km"] == 21.1
+
+    create_resp = client.post(f"{BASE}/", json=draft)
+    assert create_resp.status_code == 201, create_resp.text
+    plan_id = create_resp.json()["id"]
+
+    baseline, generation_params = _get_plan_snapshot(db_engine, plan_id)
+    assert baseline is not None and baseline["vdot"]["value"] == 45.0
+    assert generation_params is not None and generation_params["target_km"] == 21.1
+
+    preview = client.post(f"{BASE}/{plan_id}/recalibrate/preview", json={"new_vdot": 47})
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["current_vdot"] == 45.0
+    assert preview.json()["new_vdot"] == 47.0
+
+    applied = client.post(
+        f"{BASE}/{plan_id}/recalibrate", json={"new_vdot": 46, "confirm": True}
+    )
+    assert applied.status_code == 200, applied.text
+    assert applied.json()["recalibration"]["source"] == "manual"
+    assert len(_history(db_engine, plan_id)) == 1
+
+
+def test_create_plan_persists_a_snapshot_sent_by_any_client(client, db_engine, user):
+    """A non-generated create that DOES send a snapshot must keep it too."""
+    body = _plan_body(
+        _current_week_then_future(),
+        baseline=_baseline(41.0),
+        generation_params={"target_km": 10.0, "num_weeks": 4},
+    )
+
+    resp = client.post(f"{BASE}/", json=body)
+
+    assert resp.status_code == 201, resp.text
+    baseline, generation_params = _get_plan_snapshot(db_engine, resp.json()["id"])
+    assert baseline is not None and baseline["vdot"]["value"] == 41.0
+    assert generation_params is not None and generation_params["target_km"] == 10.0
+
+
+def test_replace_plan_keeps_the_stored_snapshot_when_the_request_omits_it(
+    client, db_engine, user
+):
+    """B1 — a PUT without the snapshot must not wipe the plan's generation data."""
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+
+    resp = client.put(
+        f"{BASE}/{seed['plan_id']}",
+        json=_plan_body(_current_week_then_future(), name="Plan renombrado"),
+    )
+
+    assert resp.status_code == 200, resp.text
+    baseline, generation_params = _get_plan_snapshot(db_engine, seed["plan_id"])
+    assert baseline is not None and baseline["vdot"]["value"] == 45.0
+    assert generation_params is not None and generation_params["target_km"] == 21.1
+
+
+def test_replace_plan_persists_an_explicit_snapshot(client, db_engine, user):
+    """B1 — a PUT that DOES send a snapshot replaces the stored one."""
+    seed = _seed_plan(
+        db_engine, user.id, week_starts=_current_week_then_future(), with_baseline=False
+    )
+
+    resp = client.put(
+        f"{BASE}/{seed['plan_id']}",
+        json=_plan_body(
+            _current_week_then_future(),
+            baseline=_baseline(52.0),
+            generation_params={"target_km": 42.2, "num_weeks": 4},
+        ),
+    )
+
+    assert resp.status_code == 200, resp.text
+    baseline, generation_params = _get_plan_snapshot(db_engine, seed["plan_id"])
+    assert baseline is not None and baseline["vdot"]["value"] == 52.0
+    assert generation_params is not None and generation_params["target_km"] == 42.2

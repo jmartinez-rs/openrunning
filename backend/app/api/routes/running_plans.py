@@ -391,6 +391,11 @@ def create_plan(
         week_start_day=plan_in.week_start_day,
         status=plan_in.status,
         notes=plan_in.notes,
+        # The generation snapshot travels with the create payload (see
+        # ``RunningPlanBase``). Without it the plan has no ``baseline.vdot`` and
+        # every recalibration would 409 ``plan_has_no_baseline`` forever.
+        baseline=plan_in.baseline,
+        generation_params=plan_in.generation_params,
         created_at=now,
         updated_at=now,
     )
@@ -431,6 +436,14 @@ def replace_plan(
     plan.week_start_day = plan_in.week_start_day
     plan.status = plan_in.status
     plan.notes = plan_in.notes
+    # ``baseline``/``generation_params`` are generation metadata, not editable
+    # plan fields, so a PUT only replaces them when the client actually sends
+    # them. A PUT that omits them (every client today, including the wizard's
+    # edit path) keeps the stored snapshot instead of wiping it.
+    if "baseline" in plan_in.model_fields_set:
+        plan.baseline = plan_in.baseline
+    if "generation_params" in plan_in.model_fields_set:
+        plan.generation_params = plan_in.generation_params
     plan.updated_at = datetime.now(UTC)
     session.add(plan)
     session.flush()

@@ -132,7 +132,7 @@ interface PhaseDraft {
   weeks: WeekDraft[]
 }
 
-interface PlanDraft {
+export interface PlanDraft {
   name: string
   goal: string
   distance_km: number | null
@@ -145,6 +145,15 @@ interface PlanDraft {
   status: PlanStatus
   race_id: string | null
   notes: string
+  /**
+   * Generation snapshot returned by `POST /running-plans/generate-draft`.
+   *
+   * Optional: an edit loaded through `GET /running-plans/{id}` does not expose
+   * it, and the local fallback generator has none. `buildPayload` omits the keys
+   * when absent so a PUT never wipes the stored snapshot.
+   */
+  baseline?: Record<string, unknown> | null
+  generation_params?: Record<string, unknown> | null
   phases: PhaseDraft[]
 }
 
@@ -189,6 +198,13 @@ function createEmptyDraft(): PlanDraft {
 }
 
 function publicToDraft(plan: RunningPlanPublic): PlanDraft {
+  // The generated OpenAPI client type predates `RunningPlanBase.baseline` /
+  // `generation_params`, so they are read through a widened view instead of
+  // regenerating the client (out of scope for this change).
+  const withSnapshot = plan as RunningPlanPublic & {
+    baseline?: Record<string, unknown> | null
+    generation_params?: Record<string, unknown> | null
+  }
   return {
     name: plan.name,
     goal: plan.goal ?? "",
@@ -202,6 +218,8 @@ function publicToDraft(plan: RunningPlanPublic): PlanDraft {
     status: plan.status,
     race_id: plan.race_id,
     notes: plan.notes ?? "",
+    baseline: withSnapshot.baseline ?? null,
+    generation_params: withSnapshot.generation_params ?? null,
     phases: (plan.phases ?? []).map((phase, pi) => ({
       id: phase.id,
       position: pi + 1,
@@ -254,7 +272,21 @@ function publicToDraft(plan: RunningPlanPublic): PlanDraft {
   }
 }
 
-function buildPayload(draft: PlanDraft): RunningPlanCreate {
+/**
+ * The create/replace body plus the plan's generation snapshot.
+ *
+ * `RunningPlanCreate` in the generated client predates
+ * `RunningPlanBase.baseline` / `generation_params`, so the two keys are
+ * re-declared here instead of regenerating the whole client for one change.
+ * The backend keeps them (see `create_plan` / `replace_plan`), which is what
+ * lets a created plan be recalibrated later.
+ */
+export type RunningPlanCreateWithSnapshot = RunningPlanCreate & {
+  baseline?: Record<string, unknown> | null
+  generation_params?: Record<string, unknown> | null
+}
+
+export function buildPayload(draft: PlanDraft): RunningPlanCreateWithSnapshot {
   return {
     name: draft.name.trim(),
     goal: draft.goal.trim() || null,
@@ -268,6 +300,12 @@ function buildPayload(draft: PlanDraft): RunningPlanCreate {
     status: draft.status,
     race_id: draft.race_id,
     notes: draft.notes.trim() || null,
+    // Omitted (not sent as null) when the draft has no snapshot: a PUT that
+    // omits them keeps the plan's stored baseline/generation_params.
+    ...(draft.baseline ? { baseline: draft.baseline } : {}),
+    ...(draft.generation_params
+      ? { generation_params: draft.generation_params }
+      : {}),
     phases: draft.phases.map((phase, pi) => ({
       position: pi + 1,
       name: phase.name.trim(),
