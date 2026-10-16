@@ -709,8 +709,16 @@ def _snapshot_with_effective_week(
 def _current_vdot_metadata(
     plan: RunningPlan, last_applied: PlanRecalibration | None
 ) -> tuple[float | None, str | None, date | None]:
-    """Derived current VDOT plus its source and date (R21/R29)."""
-    current_vdot = derive_current_vdot(plan.baseline, last_applied)
+    """Derived current VDOT plus its source and date (R21/R29).
+
+    A stored ``baseline.vdot.value`` the JSON column cannot hold as a number is
+    client-fixable data corruption: it maps to 409 ``invalid_plan_data`` — never a
+    500 — so preview, apply and history all fail the same, documented way (G1.1).
+    """
+    try:
+        current_vdot = derive_current_vdot(plan.baseline, last_applied)
+    except (TypeError, ValueError) as exc:
+        raise _invalid_plan_data(exc) from exc
     if last_applied is not None:
         created = last_applied.created_at
         when = created.date() if created else last_applied.effective_from_date
@@ -741,12 +749,24 @@ def _resolve_target(
 
 
 def _invalid_plan_data(exc: Exception) -> HTTPException:
-    """Map a pydantic ``ValidationError`` from stored plan data to 409 (F-c).
+    """Map a stored-plan-data decoding failure to 409 (F-c).
 
     A stored value the request/response models cannot represent (for example a
-    workout type written to the unconstrained ``String(32)`` column) is
-    client-fixable data corruption, not a server error.
+    workout type written to the unconstrained ``String(32)`` column, or a
+    non-numeric ``baseline.vdot``) is client-fixable data corruption, not a server
+    error. The cause is logged so the corruption is observable instead of only
+    surfacing as a bare 409.
     """
+    logger.warning(
+        "invalid_plan_data error_type=%s error=%s",
+        type(exc).__name__,
+        exc,
+        extra={
+            "event": "invalid_plan_data",
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+        },
+    )
     return HTTPException(
         status_code=status.HTTP_409_CONFLICT, detail="invalid_plan_data"
     )
@@ -898,11 +918,14 @@ def apply_plan_recalibration(
             detail="risk_acknowledgement_required",
         )
 
-    # A legacy/malformed baseline cannot rebuild the generator config: map the
-    # uncaught ValueError / pydantic ValidationError to 409, never 500.
+    # A legacy/malformed stored plan cannot rebuild the generator config: map the
+    # uncaught ValueError / pydantic ValidationError and TypeError (a null
+    # generation_params["target_km"], a non-iterable selected_days) to 409, never
+    # 500. AttributeError is included so a future field read cannot regress this
+    # guard back into a 500.
     try:
         config = reconstruct_generator_config(plan)
-    except (ValueError, ValidationError) as exc:
+    except (AttributeError, TypeError, ValueError, ValidationError) as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="plan_has_no_baseline"
         ) from exc
@@ -1025,8 +1048,17 @@ def read_recalibrations(
     current_vdot, current_source, current_date = _current_vdot_metadata(
         plan, last_applied
     )
+    # An audit row whose `source`/`kind` is outside the domain (the columns are
+    # unconstrained strings) cannot be serialized: map it to 409 rather than
+    # letting ONE corrupt row turn the whole history endpoint into a 500 (G1.3).
+    # Failing loudly (instead of skip-and-log) keeps `count` honest and matches
+    # the preview/apply contract, which also maps malformed stored data to 409.
+    try:
+        data = [PlanRecalibrationPublic.model_validate(row) for row in rows]
+    except ValidationError as exc:
+        raise _invalid_plan_data(exc) from exc
     return PlanRecalibrationsPublic(
-        data=[PlanRecalibrationPublic.model_validate(row) for row in rows],
+        data=data,
         count=count,
         current_vdot=current_vdot,
         current_vdot_source=current_source,

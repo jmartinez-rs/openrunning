@@ -10,6 +10,7 @@ import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.dialects import postgresql
 from sqlmodel import Session, select
@@ -221,6 +222,24 @@ def _set_workout_type(engine, workout_id: str, workout_type: str) -> None:
         workout = session.get(RunningWorkout, uuid.UUID(workout_id))
         workout.type = workout_type
         session.add(workout)
+        session.commit()
+
+
+def _set_generation_params(engine, plan_id: str, params: dict) -> None:
+    """Overwrite the stored ``generation_params`` JSON blob (unconstrained column)."""
+    with Session(engine) as session:
+        plan = session.get(RunningPlan, uuid.UUID(plan_id))
+        plan.generation_params = params
+        session.add(plan)
+        session.commit()
+
+
+def _set_recalibration_source(engine, row_id: str, source: str) -> None:
+    """Corrupt one stored audit row's ``source`` (an unconstrained String(16))."""
+    with Session(engine) as session:
+        row = session.get(PlanRecalibration, uuid.UUID(row_id))
+        row.source = source
+        session.add(row)
         session.commit()
 
 
@@ -506,6 +525,81 @@ def test_apply_maps_malformed_stored_workout_data_to_409_not_500(client, db_engi
     assert resp.status_code == 409
     assert resp.json()["detail"] == "invalid_plan_data"
     assert _history(db_engine, seed["plan_id"]) == []
+
+
+# ---------------------------------------------------------------------------
+# G1 — the "never 500" guards must cover every stored-data path (all 3 routes)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("bad_value", ["fast", ["45"]])
+def test_all_three_routes_map_a_non_numeric_stored_baseline_vdot_to_409(
+    client, db_engine, user, bad_value
+):
+    """G1.1 — ``derive_current_vdot`` guards ``float(vdot["value"])`` (3 routes)."""
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+    _set_baseline(
+        db_engine,
+        seed["plan_id"],
+        {"vdot": {"value": bad_value, "confidence": "measured"}},
+    )
+
+    responses = [
+        client.post(f"{BASE}/{seed['plan_id']}/recalibrate/preview", json={"new_vdot": 47}),
+        client.post(
+            f"{BASE}/{seed['plan_id']}/recalibrate",
+            json={"new_vdot": 47, "confirm": True},
+        ),
+        client.get(f"{BASE}/{seed['plan_id']}/recalibrations"),
+    ]
+
+    assert [response.status_code for response in responses] == [409, 409, 409]
+    assert {response.json()["detail"] for response in responses} == {"invalid_plan_data"}
+
+
+def test_apply_maps_a_null_stored_target_km_to_409_not_500(client, db_engine, user):
+    """G1.2 — ``float(params.get("target_km"))`` raises TypeError when it is null."""
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+    _set_generation_params(db_engine, seed["plan_id"], {"target_km": None, "num_weeks": 4})
+
+    resp = client.post(
+        f"{BASE}/{seed['plan_id']}/recalibrate", json={"new_vdot": 46, "confirm": True}
+    )
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "plan_has_no_baseline"
+    assert _history(db_engine, seed["plan_id"]) == []
+
+
+def test_apply_maps_a_non_iterable_stored_selected_days_to_409_not_500(
+    client, db_engine, user
+):
+    """G1.2 — ``[int(d) for d in params["selected_days"]]`` raises TypeError."""
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+    _set_generation_params(db_engine, seed["plan_id"], {"target_km": 21.1, "selected_days": 5})
+
+    resp = client.post(
+        f"{BASE}/{seed['plan_id']}/recalibrate", json={"new_vdot": 46, "confirm": True}
+    )
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "plan_has_no_baseline"
+    assert _history(db_engine, seed["plan_id"]) == []
+
+
+@pytest.mark.parametrize("bad_source", ["bogus", "STRAVA"])
+def test_history_maps_an_out_of_domain_stored_audit_row_to_409(
+    client, db_engine, user, bad_source
+):
+    """G1.3 — ``PlanRecalibrationPublic.model_validate(row)`` must not 500 history."""
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+    row_id = _add_recalibration_row(db_engine, seed["plan_id"], user.id, new_vdot=46.0)
+    _set_recalibration_source(db_engine, row_id, bad_source)
+
+    resp = client.get(f"{BASE}/{seed['plan_id']}/recalibrations")
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "invalid_plan_data"
 
 
 # ---------------------------------------------------------------------------

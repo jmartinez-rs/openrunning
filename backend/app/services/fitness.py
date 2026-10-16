@@ -842,19 +842,35 @@ def snapshot_plan(session: Session, plan: RunningPlan) -> PlanSnapshot:
     )
 
 
+def _stored_vdot_value(raw: object) -> float:
+    """Numerically coerce a stored ``baseline.vdot.value`` (R29).
+
+    ``baseline`` is an unconstrained JSON column, so the value can be anything a
+    bad import or manual edit produced. ``float`` raises ``TypeError`` (list/dict)
+    or ``ValueError`` (non-numeric string); both are re-raised as ``ValueError`` so
+    the caller maps the corruption to a 409 instead of a 500.
+    """
+    try:
+        return float(raw)  # type: ignore[arg-type]
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"stored baseline.vdot.value is not numeric: {raw!r}") from exc
+
+
 def derive_current_vdot(
     baseline: dict | None, last_applied: PlanRecalibration | None
 ) -> float | None:
     """Current VDOT: latest applied recalibration, else `baseline.vdot` (R29).
 
-    `baseline.vdot` is never written back, so generation stays untouched.
+    `baseline.vdot` is never written back, so generation stays untouched. A stored
+    value that cannot be read as a number raises ``ValueError`` (never an uncaught
+    ``TypeError``); callers map that to a 409.
     """
     if last_applied is not None:
         return last_applied.new_vdot
     if baseline:
         vdot = baseline.get("vdot")
         if isinstance(vdot, dict) and vdot.get("value") is not None:
-            return float(vdot["value"])
+            return _stored_vdot_value(vdot["value"])
     return None
 
 
