@@ -8,7 +8,7 @@ import logging
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import ValidationError
 from sqlalchemy import Select
 from sqlmodel import Field, SQLModel, col, func, select
@@ -711,6 +711,18 @@ def _resolve_target(
     return estimate.vdot, estimate.source, estimate.evidence
 
 
+def _invalid_plan_data(exc: Exception) -> HTTPException:
+    """Map a pydantic ``ValidationError`` from stored plan data to 409 (F-c).
+
+    A stored value the request/response models cannot represent (for example a
+    workout type written to the unconstrained ``String(32)`` column) is
+    client-fixable data corruption, not a server error.
+    """
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT, detail="invalid_plan_data"
+    )
+
+
 def _preview_public(
     preview,
     *,
@@ -792,13 +804,16 @@ def preview_recalibration(
         evidence=evidence,
         effective_from=effective_from,
     )
-    return _preview_public(
-        preview,
-        new_vdot=new_vdot,
-        current_vdot=current_vdot,
-        current_vdot_source=current_source,
-        current_vdot_date=current_date,
-    )
+    try:
+        return _preview_public(
+            preview,
+            new_vdot=new_vdot,
+            current_vdot=current_vdot,
+            current_vdot_source=current_source,
+            current_vdot_date=current_date,
+        )
+    except ValidationError as exc:
+        raise _invalid_plan_data(exc) from exc
 
 
 @router.post("/{plan_id}/recalibrate", response_model=RecalibrationApplyPublic)
@@ -863,12 +878,29 @@ def apply_plan_recalibration(
         evidence=evidence,
         effective_from=effective_from,
     )
-    pre_issues = validate_plan_invariants(plan_to_create(snapshot), config)
+    try:
+        pre_issues = validate_plan_invariants(plan_to_create(snapshot), config)
+        # Build the response DTO before mutating: a stored value the response
+        # model cannot represent must 409, not 500 after the commit.
+        public = _preview_public(
+            preview,
+            new_vdot=new_vdot,
+            current_vdot=current_vdot,
+            current_vdot_source=current_source,
+            current_vdot_date=current_date,
+        )
+    except ValidationError as exc:
+        raise _invalid_plan_data(exc) from exc
+
     result = apply_recalibration(
         snapshot, new_vdot=new_vdot, effective_from_date=effective_from[1]
     )
     session.flush()
-    post_issues = validate_plan_invariants(plan_to_create(snapshot), config)
+    try:
+        post_issues = validate_plan_invariants(plan_to_create(snapshot), config)
+    except ValidationError as exc:
+        session.rollback()
+        raise _invalid_plan_data(exc) from exc
 
     new_errors = new_error_issues(pre_issues, post_issues)
     if new_errors:
@@ -916,13 +948,6 @@ def apply_plan_recalibration(
     session.commit()
     session.refresh(row)
 
-    public = _preview_public(
-        preview,
-        new_vdot=new_vdot,
-        current_vdot=current_vdot,
-        current_vdot_source=current_source,
-        current_vdot_date=current_date,
-    )
     return RecalibrationApplyPublic(
         **public.model_dump(),
         recalibration=PlanRecalibrationPublic.model_validate(row),
@@ -934,8 +959,8 @@ def read_recalibrations(
     session: SessionDep,
     current_user: CurrentUser,
     plan_id: uuid.UUID,
-    skip: int = 0,
-    limit: int = 20,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
 ) -> PlanRecalibrationsPublic:
     """Paginated audit history plus the derived current VDOT (R21/R23)."""
     plan = _get_owned_plan(session, current_user.id, plan_id)

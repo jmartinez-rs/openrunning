@@ -215,6 +215,15 @@ def _set_baseline(engine, plan_id: str, baseline: dict) -> None:
         session.commit()
 
 
+def _set_workout_type(engine, workout_id: str, workout_type: str) -> None:
+    """Corrupt one stored workout type (the column is an unconstrained String(32))."""
+    with Session(engine) as session:
+        workout = session.get(RunningWorkout, uuid.UUID(workout_id))
+        workout.type = workout_type
+        session.add(workout)
+        session.commit()
+
+
 def _workout_paces(engine, plan_id: str) -> dict[str, float | None]:
     with Session(engine) as session:
         workouts = session.exec(
@@ -357,6 +366,22 @@ def test_history_is_paginated_ordered_and_reports_current_vdot(client, db_engine
     assert payload["current_vdot_source"] == "manual"
 
 
+def test_history_rejects_out_of_range_pagination(client, db_engine, user):
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+    url = f"{BASE}/{seed['plan_id']}/recalibrations"
+
+    negative_skip = client.get(url, params={"skip": -1})
+    zero_limit = client.get(url, params={"limit": 0})
+    over_max = client.get(url, params={"limit": 101})
+
+    assert negative_skip.status_code == 422
+    assert zero_limit.status_code == 422
+    assert over_max.status_code == 422
+    # The bounded extremes remain valid.
+    assert client.get(url, params={"skip": 0, "limit": 100}).status_code == 200
+    assert client.get(url, params={"skip": 0, "limit": 20}).status_code == 200
+
+
 # ---------------------------------------------------------------------------
 # T11 — source resolution (test / activity / manual) and no-500
 # ---------------------------------------------------------------------------
@@ -433,6 +458,29 @@ def test_apply_maps_a_malformed_baseline_to_409_not_500(client, db_engine, user)
     )
 
     assert resp.status_code == 409
+
+
+def test_preview_maps_malformed_stored_workout_data_to_409_not_500(client, db_engine, user):
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+    _set_workout_type(db_engine, seed["workout_ids"][1], "fartlek")
+
+    resp = client.post(f"{BASE}/{seed['plan_id']}/recalibrate/preview", json={"new_vdot": 47})
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "invalid_plan_data"
+
+
+def test_apply_maps_malformed_stored_workout_data_to_409_not_500(client, db_engine, user):
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+    _set_workout_type(db_engine, seed["workout_ids"][1], "fartlek")
+
+    resp = client.post(
+        f"{BASE}/{seed['plan_id']}/recalibrate", json={"new_vdot": 46, "confirm": True}
+    )
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "invalid_plan_data"
+    assert _history(db_engine, seed["plan_id"]) == []
 
 
 # ---------------------------------------------------------------------------
