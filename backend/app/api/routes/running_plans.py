@@ -589,10 +589,14 @@ def duplicate_workout(
 
 
 class RecalibrationPreviewRequest(SQLModel):
-    """Optional body: an explicit `new_vdot` and a forward-compat `source`."""
+    """Optional body carrying an explicit `new_vdot`.
+
+    The persisted `source` is always server-resolved (test / activity / manual);
+    the request deliberately does NOT accept a `source` field so the API does not
+    advertise a value that would be ignored.
+    """
 
     new_vdot: float | None = Field(default=None, ge=20, le=85)
-    source: RecalibrationSource | None = None
 
 
 class RecalibrationApplyRequest(RecalibrationPreviewRequest):

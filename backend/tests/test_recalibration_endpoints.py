@@ -395,6 +395,31 @@ def test_preview_source_is_manual_when_new_vdot_is_explicit(client, db_engine, u
     assert resp.json()["source"] == "manual"
 
 
+def test_recalibration_request_models_do_not_declare_a_source_field(client, db_engine, user):
+    """The request surface must not advertise a field the server never reads."""
+    from app.api.routes.running_plans import (
+        RecalibrationApplyRequest,
+        RecalibrationPreviewRequest,
+    )
+
+    assert set(RecalibrationPreviewRequest.model_fields) == {"new_vdot"}
+    assert set(RecalibrationApplyRequest.model_fields) == {
+        "new_vdot",
+        "confirm",
+        "acknowledge_risk",
+    }
+
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+    # A stray `source` in the body is not honoured: the server still resolves it.
+    resp = client.post(
+        f"{BASE}/{seed['plan_id']}/recalibrate",
+        json={"new_vdot": 46, "confirm": True, "source": "test"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["recalibration"]["source"] == "manual"
+
+
 def test_preview_source_is_test_when_a_fitness_test_mark_is_recent(client, db_engine, user):
     seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
     activity_id = _seed_activity(db_engine, user.id, days_ago=10)
