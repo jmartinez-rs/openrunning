@@ -10,6 +10,7 @@ paces for the new VDOT instead of duplicating its offsets (R11/R12).
 """
 
 import datetime as dt
+import logging
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
@@ -40,10 +41,13 @@ from app.services.running import RUNNING_TIMEZONE, run_activity_query
 from app.services.running_math import calculate_vdot, get_training_paces_seconds
 from app.services.workout_library import (
     LONG_RUN_BLOCK_COUNT_FOR_GOAL_PACE,
+    MARATHON_TARGET_KM,
     interval_distance_is_repetition,
     resolve_block_paces,
     tempo_main_is_cruise_from_repeats,
 )
+
+logger = logging.getLogger(__name__)
 
 # Recency window "W" and minimum qualifying distance "D" from the spec glossary.
 RECENCY_WINDOW_DAYS = 42
@@ -433,7 +437,7 @@ def block_paces_for(
     block_type: str,
     block_count: int,
     paces: dict[str, float],
-    target_km: float,
+    target_km: float | None,
     progression_level: int,
     total_km: float,
     current_pace: float | None,
@@ -453,15 +457,28 @@ def block_paces_for(
     `tempo_is_cruise` or `long_run_goal_key`, those decisions override the
     volume/phase/target rule so an edited `workout.distance_km` (or plan
     `distance_km`) cannot flip a stored cruise, R or goal-pace block.
+
+    `target_km` here is the plan's PERSISTED goal distance (never the editable
+    `RunningPlan.distance_km`). `None` means "no persisted goal is available", in
+    which case a goal-pace long-run main block keeps its stored pair instead of
+    guessing from an editable distance (G3).
     """
     if workout_type == "race":
+        return (current_pace, current_range)
+    if (
+        workout_type == "long_run"
+        and block_type == "main"
+        and block_count >= LONG_RUN_BLOCK_COUNT_FOR_GOAL_PACE
+        and long_run_goal_key is None
+        and target_km is None
+    ):
         return (current_pace, current_range)
     return resolve_block_paces(
         workout_type=workout_type,
         block_type=block_type,
         paces=paces,
         total_km=total_km,
-        target_km=target_km,
+        target_km=target_km if target_km is not None else 0.0,
         progression_level=progression_level,
         block_count=block_count,
         uses_repetition=uses_repetition,
@@ -488,11 +505,85 @@ def _stored_goal_pace_key(
     return None
 
 
+def _persisted_target_km(plan: RunningPlan) -> float | None:
+    """The target distance the plan was GENERATED with (R11/R12).
+
+    ``RunningPlan.distance_km`` is PATCH/PUT-editable without regenerating the
+    stored blocks, so it cannot decide marathon-vs-threshold for a goal-pace long
+    run. ``generation_params["target_km"]`` is written once at generation and is
+    not part of the update models, so it is the plan's persisted goal distance.
+    """
+    params = plan.generation_params
+    if not isinstance(params, dict):
+        return None
+    target = params.get("target_km")
+    if isinstance(target, bool) or not isinstance(target, (int, float)):
+        return None
+    return float(target)
+
+
+def _long_run_goal_key(
+    stored_pace: float | None,
+    *,
+    old_paces: dict[str, float],
+    plan: RunningPlan,
+    workout: RunningWorkout,
+) -> str | None:
+    """Marathon/threshold key for a stored goal-pace long-run main block (R11/R12).
+
+    Preference order:
+    1. the stored geometry (the block pace matching the previous VDOT's table);
+    2. the plan's PERSISTED goal distance — never the editable
+       ``plan.distance_km``, so editing the distance cannot flip a stored long run;
+    3. ``None`` when neither is available, which makes the caller keep the stored
+       pace pair instead of guessing.
+
+    Every fallback emits structured telemetry (event
+    ``long_run_goal_key_fallback``) so an unresolvable long run is observable
+    rather than silently wrong.
+    """
+    key = _stored_goal_pace_key(stored_pace, old_paces)
+    if key is not None:
+        return key
+
+    target_km = _persisted_target_km(plan)
+    if target_km is None:
+        logger.warning(
+            "long_run_goal_key_fallback plan_id=%s workout_id=%s resolved_from=stored_pace",
+            plan.id,
+            workout.id,
+            extra={
+                "event": "long_run_goal_key_fallback",
+                "plan_id": str(plan.id),
+                "workout_id": str(workout.id),
+                "resolved_from": "stored_pace",
+            },
+        )
+        return None
+
+    key = "marathon" if target_km >= MARATHON_TARGET_KM else "threshold"
+    logger.info(
+        "long_run_goal_key_fallback plan_id=%s workout_id=%s resolved_from=persisted_goal goal_key=%s",
+        plan.id,
+        workout.id,
+        key,
+        extra={
+            "event": "long_run_goal_key_fallback",
+            "plan_id": str(plan.id),
+            "workout_id": str(workout.id),
+            "resolved_from": "persisted_goal",
+            "goal_key": key,
+        },
+    )
+    return key
+
+
 def _geometry_rules(
     workout: RunningWorkout,
     blocks: Sequence[WorkoutBlock],
     *,
     old_paces: dict[str, float],
+    plan: RunningPlan,
 ) -> tuple[bool | None, bool | None, str | None]:
     """Stored-geometry decisions (uses_repetition, tempo_is_cruise, long_run_goal_key).
 
@@ -500,7 +591,7 @@ def _geometry_rules(
     restructuring the blocks, so re-deriving the R-vs-I, cruise-vs-continuous or
     marathon-vs-threshold rule from them would disagree with the blocks that
     actually exist. The stored geometry stays authoritative; `None` means
-    "unknown" and lets the volume/phase/target rule apply instead.
+    "unknown" and lets the persisted goal (or, failing that, the stored pace) win.
     """
     uses_repetition: bool | None = None
     tempo_is_cruise: bool | None = None
@@ -518,8 +609,11 @@ def _geometry_rules(
     elif workout.type == "long_run":
         main = next((block for block in blocks if block.block_type == "main"), None)
         if main is not None and len(blocks) >= LONG_RUN_BLOCK_COUNT_FOR_GOAL_PACE:
-            long_run_goal_key = _stored_goal_pace_key(
-                main.pace_seconds_per_km, old_paces
+            long_run_goal_key = _long_run_goal_key(
+                main.pace_seconds_per_km,
+                old_paces=old_paces,
+                plan=plan,
+                workout=workout,
             )
     return (uses_repetition, tempo_is_cruise, long_run_goal_key)
 
@@ -684,8 +778,11 @@ def _resolve_future_workout_paces(
     only workouts whose date is on/after `effective_from_date` are resolved.
     `old_paces` is the previous VDOT's pace table, used only to pin the stored
     goal-pace long-run key; `new_paces` drives every rewritten pace.
+
+    `target_km` is the plan's PERSISTED goal distance, never the editable
+    ``plan.distance_km`` (G3): an edited distance must not flip a stored long run.
     """
-    target_km = snapshot.plan.distance_km or 0.0
+    target_km = _persisted_target_km(snapshot.plan)
     levels = _phase_levels(snapshot)
     resolved: list[_ResolvedWorkout] = []
     for workout in sorted(
@@ -696,7 +793,7 @@ def _resolve_future_workout_paces(
 
         blocks = tuple(snapshot.blocks.get(workout.id, []))
         uses_repetition, tempo_is_cruise, long_run_goal_key = _geometry_rules(
-            workout, blocks, old_paces=old_paces
+            workout, blocks, old_paces=old_paces, plan=snapshot.plan
         )
         new_pace = workout_pace_for(
             workout.type, new_paces, workout.pace_seconds_per_km

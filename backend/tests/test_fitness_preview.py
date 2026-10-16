@@ -1,6 +1,7 @@
 """Unit tests for pace rules, effective week and recalibration preview (R7-R9, R12, R14, R24-R26)."""
 
 import datetime as dt
+import logging
 import uuid
 
 from app.models import (
@@ -456,6 +457,147 @@ def test_preview_changes_equal_what_apply_performs():
         applied = next(w for w in snapshot.workouts if w.id == workout_id)
         assert applied.pace_seconds_per_km == change.new_pace
         assert change.old_pace == before_workouts[workout_id]
+
+
+# ---------------------------------------------------------------------------
+# G3 — the long-run goal-pace fallback must never read the editable distance
+# ---------------------------------------------------------------------------
+
+_LONG_RUN_WEEK_START = dt.date(2026, 10, 12)
+_LONG_RUN_DATE = dt.date(2026, 10, 14)
+
+
+def _long_run_snapshot(
+    *,
+    stored_main_pace: float,
+    generation_params: dict,
+    distance_km: float,
+) -> tuple[PlanSnapshot, RunningWorkout]:
+    """One future week holding a 3-block goal-pace long run.
+
+    ``stored_main_pace`` is deliberately far from the pace table so the stored
+    geometry cannot key the block and the fallback has to resolve it.
+    """
+    plan = _plan()
+    plan.distance_km = distance_km
+    plan.generation_params = generation_params
+    phase = RunningPhase(plan_id=plan.id, position=1, name="Build", start_week=1, end_week=4)
+    week = RunningWeek(
+        phase_id=phase.id,
+        number=2,
+        start_date=_LONG_RUN_WEEK_START,
+        end_date=_LONG_RUN_WEEK_START + dt.timedelta(days=6),
+    )
+    workout = _workout(plan, week, _LONG_RUN_DATE, "long_run", stored_main_pace)
+    blocks = {
+        workout.id: [
+            _block(workout.id, 1, "warmup", distance_m=2000, pace=300.0),
+            _block(workout.id, 2, "main", distance_m=10000, pace=stored_main_pace),
+            _block(workout.id, 3, "cooldown", distance_m=1500, pace=310.0),
+        ]
+    }
+    return (
+        PlanSnapshot(
+            plan=plan, phases=[phase], weeks=[week], workouts=[workout], blocks=blocks
+        ),
+        workout,
+    )
+
+
+def _long_run_main_pace(snapshot: PlanSnapshot, workout: RunningWorkout) -> float | None:
+    return next(
+        block.pace_seconds_per_km
+        for block in snapshot.blocks[workout.id]
+        if block.block_type == "main"
+    )
+
+
+def _apply(snapshot: PlanSnapshot) -> None:
+    apply_recalibration(
+        snapshot,
+        current_vdot=45.0,
+        new_vdot=47.0,
+        effective_from_date=_LONG_RUN_WEEK_START,
+    )
+
+
+def test_long_run_fallback_uses_the_persisted_goal_not_the_edited_distance(caplog):
+    """G3 — an edited distance_km must not flip the goal-pace long-run block."""
+    snapshot, long_run = _long_run_snapshot(
+        stored_main_pace=999.0,
+        generation_params={"target_km": 21.1},  # persisted goal: half marathon
+        distance_km=42.2,  # edited: the old fallback would pick marathon
+    )
+
+    with caplog.at_level(logging.INFO, logger="app.services.fitness"):
+        _apply(snapshot)
+
+    assert _long_run_main_pace(snapshot, long_run) == get_training_paces_seconds(47.0)[
+        "threshold"
+    ]
+    events = [
+        record
+        for record in caplog.records
+        if getattr(record, "event", None) == "long_run_goal_key_fallback"
+    ]
+    assert len(events) == 1
+    assert events[0].resolved_from == "persisted_goal"
+
+
+def test_long_run_fallback_uses_the_persisted_goal_when_it_is_a_marathon():
+    snapshot, long_run = _long_run_snapshot(
+        stored_main_pace=999.0,
+        generation_params={"target_km": 42.2},  # persisted goal: marathon
+        distance_km=21.1,  # edited: the old fallback would pick threshold
+    )
+
+    _apply(snapshot)
+
+    assert _long_run_main_pace(snapshot, long_run) == get_training_paces_seconds(47.0)[
+        "marathon"
+    ]
+
+
+def test_long_run_fallback_keeps_the_stored_pace_without_a_persisted_goal(caplog):
+    """Neither stored geometry nor a persisted goal: keep the pair, never guess."""
+    snapshot, long_run = _long_run_snapshot(
+        stored_main_pace=999.0,
+        generation_params={"goal_type": "finish"},  # no persisted target_km
+        distance_km=42.2,  # the editable distance must NOT be used
+    )
+
+    with caplog.at_level(logging.INFO, logger="app.services.fitness"):
+        _apply(snapshot)
+
+    assert _long_run_main_pace(snapshot, long_run) == 999.0
+    events = [
+        record
+        for record in caplog.records
+        if getattr(record, "event", None) == "long_run_goal_key_fallback"
+    ]
+    assert len(events) == 1
+    assert events[0].resolved_from == "stored_pace"
+
+
+def test_long_run_uses_stored_geometry_without_emitting_the_fallback(caplog):
+    paces = get_training_paces_seconds(45.0)
+    snapshot, long_run = _long_run_snapshot(
+        stored_main_pace=round(paces["marathon"], 1),  # resolves to stored geometry
+        generation_params={"target_km": 21.1},
+        distance_km=21.1,
+    )
+
+    with caplog.at_level(logging.INFO, logger="app.services.fitness"):
+        _apply(snapshot)
+
+    assert _long_run_main_pace(snapshot, long_run) == get_training_paces_seconds(47.0)[
+        "marathon"
+    ]
+    assert not [
+        record
+        for record in caplog.records
+        if getattr(record, "event", None) == "long_run_goal_key_fallback"
+    ]
 
 
 def test_plan_to_create_rebuilds_the_stored_structure():
