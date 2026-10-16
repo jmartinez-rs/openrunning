@@ -230,7 +230,10 @@ def _recalibrate(session: Session, plan: RunningPlan):
         effective_from=(1, plan.start_date),
     )
     result = apply_recalibration(
-        snapshot, new_vdot=NEW_VDOT, effective_from_date=plan.start_date
+        snapshot,
+        current_vdot=OLD_VDOT,
+        new_vdot=NEW_VDOT,
+        effective_from_date=plan.start_date,
     )
     session.commit()
     return preview, result

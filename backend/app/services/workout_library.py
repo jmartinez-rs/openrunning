@@ -185,6 +185,7 @@ def resolve_block_paces(
     block_count: int = 1,
     uses_repetition: bool | None = None,
     tempo_is_cruise: bool | None = None,
+    long_run_goal_key: str | None = None,
 ) -> tuple[float | None, float | None]:
     """Pace pair `(pace, range end)` for one generated block.
 
@@ -196,8 +197,10 @@ def resolve_block_paces(
 
     `uses_repetition` / `tempo_is_cruise` let a caller that holds a plan's STORED
     block geometry pin the R-vs-I and cruise-vs-continuous decisions to that
-    geometry instead of re-deriving them from a possibly-edited `total_km`. The
-    generator passes neither and keeps the volume/phase rule.
+    geometry instead of re-deriving them from a possibly-edited `total_km`.
+    `long_run_goal_key` does the same for a goal-pace long run's marathon-vs-
+    threshold main block. The generator passes none of them and keeps the
+    volume/phase/target rule.
     """
     easy_min = paces.get("easy_min")
     easy_max = paces.get("easy_max")
@@ -213,6 +216,8 @@ def resolve_block_paces(
     if workout_type == "long_run":
         if block_type == "main":
             if block_count >= LONG_RUN_BLOCK_COUNT_FOR_GOAL_PACE:
+                if long_run_goal_key is not None:
+                    return (paces.get(long_run_goal_key), None)
                 key = "marathon" if target_km >= MARATHON_TARGET_KM else "threshold"
                 return (paces.get(key), None)
             return (easy_min, None)

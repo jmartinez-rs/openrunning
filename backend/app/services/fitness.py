@@ -39,6 +39,7 @@ from app.services.plan_calendar import week_start_offset
 from app.services.running import RUNNING_TIMEZONE, run_activity_query
 from app.services.running_math import calculate_vdot, get_training_paces_seconds
 from app.services.workout_library import (
+    LONG_RUN_BLOCK_COUNT_FOR_GOAL_PACE,
     interval_distance_is_repetition,
     resolve_block_paces,
     tempo_main_is_cruise_from_repeats,
@@ -439,6 +440,7 @@ def block_paces_for(
     current_range: float | None,
     uses_repetition: bool | None = None,
     tempo_is_cruise: bool | None = None,
+    long_run_goal_key: str | None = None,
 ) -> tuple[float | None, float | None]:
     """Block pace + range, delegated to the generator's own rules (R11/R12/R24).
 
@@ -447,9 +449,10 @@ def block_paces_for(
     distances and repetition counts are never touched. `race` blocks are
     goal-pinned (D6): their stored pace pair is returned unchanged.
 
-    When a recalibration passes the plan's stored geometry via `uses_repetition`
-    or `tempo_is_cruise`, those decisions override the volume/phase rule so an
-    edited `workout.distance_km` cannot flip a stored cruise or R block.
+    When a recalibration passes the plan's stored geometry via `uses_repetition`,
+    `tempo_is_cruise` or `long_run_goal_key`, those decisions override the
+    volume/phase/target rule so an edited `workout.distance_km` (or plan
+    `distance_km`) cannot flip a stored cruise, R or goal-pace block.
     """
     if workout_type == "race":
         return (current_pace, current_range)
@@ -463,32 +466,62 @@ def block_paces_for(
         block_count=block_count,
         uses_repetition=uses_repetition,
         tempo_is_cruise=tempo_is_cruise,
+        long_run_goal_key=long_run_goal_key,
     )
 
 
-def _geometry_rules(
-    workout: RunningWorkout, blocks: Sequence[WorkoutBlock]
-) -> tuple[bool | None, bool | None]:
-    """(uses_repetition, tempo_is_cruise) from the STORED block geometry (R11/R12).
+def _stored_goal_pace_key(
+    pace: float | None, old_paces: dict[str, float]
+) -> str | None:
+    """Which goal-pace key a stored long-run main block was generated from (R11/R12).
 
-    `workout.distance_km` is PATCH-editable without restructuring the blocks, so
-    re-deriving the R-vs-I or cruise-vs-continuous rule from it would disagree
-    with the blocks that actually exist. The stored geometry stays authoritative;
-    `None` means "unknown" and lets the volume/phase rule apply instead.
+    Compares the STORED block pace against the previous VDOT's pace table so an
+    edited plan `distance_km` cannot flip a stored marathon/threshold block.
+    Returns `None` when the geometry is unknown, so the target rule can apply.
     """
+    if pace is None:
+        return None
+    for key in ("marathon", "threshold"):
+        reference = old_paces.get(key)
+        if reference is not None and abs(pace - reference) <= 1.0:
+            return key
+    return None
+
+
+def _geometry_rules(
+    workout: RunningWorkout,
+    blocks: Sequence[WorkoutBlock],
+    *,
+    old_paces: dict[str, float],
+) -> tuple[bool | None, bool | None, str | None]:
+    """Stored-geometry decisions (uses_repetition, tempo_is_cruise, long_run_goal_key).
+
+    `workout.distance_km` and `plan.distance_km` are PATCH-editable without
+    restructuring the blocks, so re-deriving the R-vs-I, cruise-vs-continuous or
+    marathon-vs-threshold rule from them would disagree with the blocks that
+    actually exist. The stored geometry stays authoritative; `None` means
+    "unknown" and lets the volume/phase/target rule apply instead.
+    """
+    uses_repetition: bool | None = None
+    tempo_is_cruise: bool | None = None
+    long_run_goal_key: str | None = None
     if workout.type == "intervals":
         interval = next(
             (block for block in blocks if block.block_type == "interval"), None
         )
-        if interval is None:
-            return (None, None)
-        return (interval_distance_is_repetition(interval.distance_m), None)
-    if workout.type == "tempo":
+        if interval is not None:
+            uses_repetition = interval_distance_is_repetition(interval.distance_m)
+    elif workout.type == "tempo":
         main = next((block for block in blocks if block.block_type == "main"), None)
-        if main is None:
-            return (None, None)
-        return (None, tempo_main_is_cruise_from_repeats(main.repeats))
-    return (None, None)
+        if main is not None:
+            tempo_is_cruise = tempo_main_is_cruise_from_repeats(main.repeats)
+    elif workout.type == "long_run":
+        main = next((block for block in blocks if block.block_type == "main"), None)
+        if main is not None and len(blocks) >= LONG_RUN_BLOCK_COUNT_FOR_GOAL_PACE:
+            long_run_goal_key = _stored_goal_pace_key(
+                main.pace_seconds_per_km, old_paces
+            )
+    return (uses_repetition, tempo_is_cruise, long_run_goal_key)
 
 
 def _phase_levels(snapshot: PlanSnapshot) -> dict[uuid.UUID, int]:
@@ -639,6 +672,7 @@ class _ResolvedWorkout:
 def _resolve_future_workout_paces(
     snapshot: PlanSnapshot,
     *,
+    old_paces: dict[str, float],
     new_paces: dict[str, float],
     effective_from_date: dt.date,
 ) -> list[_ResolvedWorkout]:
@@ -648,6 +682,8 @@ def _resolve_future_workout_paces(
     so the preview can never describe a different rewrite than the apply performs.
     Workouts are ordered canonically by `(date, id)` — the sort is owned here — and
     only workouts whose date is on/after `effective_from_date` are resolved.
+    `old_paces` is the previous VDOT's pace table, used only to pin the stored
+    goal-pace long-run key; `new_paces` drives every rewritten pace.
     """
     target_km = snapshot.plan.distance_km or 0.0
     levels = _phase_levels(snapshot)
@@ -659,7 +695,9 @@ def _resolve_future_workout_paces(
             continue
 
         blocks = tuple(snapshot.blocks.get(workout.id, []))
-        uses_repetition, tempo_is_cruise = _geometry_rules(workout, blocks)
+        uses_repetition, tempo_is_cruise, long_run_goal_key = _geometry_rules(
+            workout, blocks, old_paces=old_paces
+        )
         new_pace = workout_pace_for(
             workout.type, new_paces, workout.pace_seconds_per_km
         )
@@ -678,6 +716,7 @@ def _resolve_future_workout_paces(
                     current_range=block.pace_range_end_seconds_per_km,
                     uses_repetition=uses_repetition,
                     tempo_is_cruise=tempo_is_cruise,
+                    long_run_goal_key=long_run_goal_key,
                 ),
             )
             for block in blocks
@@ -712,7 +751,10 @@ def recalibration_preview(
     affected_weeks: set[int] = set()
 
     for item in _resolve_future_workout_paces(
-        snapshot, new_paces=new_paces, effective_from_date=effective_date
+        snapshot,
+        old_paces=old_paces,
+        new_paces=new_paces,
+        effective_from_date=effective_date,
     ):
         changed = item.new_pace != item.workout.pace_seconds_per_km
         for block, block_pace, block_range in item.block_paces:
@@ -840,15 +882,22 @@ def latest_applied_recalibration(
 
 
 def apply_recalibration(
-    snapshot: PlanSnapshot, *, new_vdot: float, effective_from_date: dt.date
+    snapshot: PlanSnapshot,
+    *,
+    current_vdot: float,
+    new_vdot: float,
+    effective_from_date: dt.date,
 ) -> RecalibrationResult:
     """Rewrite future-workout paces in place (R10-R14, R25).
 
     Mutates the snapshot's LIVE session-bound ORM objects: the caller's
     `session.flush()`/`commit()` persists the change. Only
     `pace_seconds_per_km` and the paired block range move — never dates,
-    distances, structure, statuses or past weeks.
+    distances, structure, statuses or past weeks. `current_vdot` is the derived
+    current VDOT, used only to pin stored block-geometry decisions (it never
+    rewrites `baseline.vdot`).
     """
+    old_paces = get_training_paces_seconds(current_vdot)
     new_paces = get_training_paces_seconds(new_vdot)
     weeks_by_id = {week.id: week for week in snapshot.weeks}
 
@@ -857,7 +906,10 @@ def apply_recalibration(
     affected_weeks: set[int] = set()
 
     for item in _resolve_future_workout_paces(
-        snapshot, new_paces=new_paces, effective_from_date=effective_from_date
+        snapshot,
+        old_paces=old_paces,
+        new_paces=new_paces,
+        effective_from_date=effective_from_date,
     ):
         changed = False
 

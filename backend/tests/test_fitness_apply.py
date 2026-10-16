@@ -200,7 +200,10 @@ def test_apply_rewrites_only_future_pace_fields_and_persists_on_commit():
         }
 
         result = apply_recalibration(
-            snapshot, new_vdot=47.0, effective_from_date=EFFECTIVE_DATE
+            snapshot,
+            current_vdot=45.0,
+            new_vdot=47.0,
+            effective_from_date=EFFECTIVE_DATE,
         )
 
         assert result.affected_workouts == 2
@@ -247,7 +250,9 @@ def test_apply_leaves_baseline_and_engine_version_and_audit_rows_untouched():
         plan, _ = _persist_plan(session)
         snapshot = snapshot_plan(session, plan)
 
-        apply_recalibration(snapshot, new_vdot=47.0, effective_from_date=EFFECTIVE_DATE)
+        apply_recalibration(
+            snapshot, current_vdot=45.0, new_vdot=47.0, effective_from_date=EFFECTIVE_DATE
+        )
         session.commit()
         session.expire_all()
 
@@ -390,6 +395,147 @@ def _persist_geometry_plan(
 _WORKOUT_KEY = {"tempo": "threshold", "intervals": "interval"}
 
 
+def _persist_goal_pace_long_run_plan(
+    session: Session, *, stored_target_km: float, edited_distance_km: float
+) -> tuple[RunningPlan, RunningWorkout]:
+    """A goal-pace long run stored for `stored_target_km`, with `distance_km` edited.
+
+    `RunningPlan.distance_km` is PATCH-editable without regenerating the blocks, so
+    re-deriving the marathon-vs-threshold long-run key from it would flip the stored
+    goal-pace block. The stored block pace is the source of truth.
+    """
+    user = User(email=f"{uuid.uuid4()}@example.com", hashed_password="x")
+    session.add(user)
+    session.flush()
+    paces = get_training_paces_seconds(45.0)
+    goal_key = "marathon" if stored_target_km >= 42.2 else "threshold"
+    plan = RunningPlan(
+        name="Plan",
+        distance_km=edited_distance_km,
+        start_date=WEEK_1_START,
+        week_start_day=1,
+        status="active",
+        user_id=user.id,
+        engine_version="v3",
+        baseline=_baseline().model_dump(),
+        generation_params={
+            "goal_type": "finish",
+            "confidence": "measured",
+            "conservative_mode": False,
+            "target_km": stored_target_km,
+            "num_weeks": 1,
+        },
+    )
+    session.add(plan)
+    session.flush()
+    phase = RunningPhase(
+        plan_id=plan.id, position=1, name="Base", start_week=1, end_week=1
+    )
+    session.add(phase)
+    session.flush()
+    week = RunningWeek(
+        phase_id=phase.id,
+        number=1,
+        start_date=WEEK_1_START,
+        end_date=WEEK_1_START + dt.timedelta(days=6),
+    )
+    session.add(week)
+    session.flush()
+    workout = RunningWorkout(
+        week_id=week.id,
+        plan_id=plan.id,
+        date=WEEK_1_START + dt.timedelta(days=1),
+        type="long_run",
+        intensity="moderate",
+        distance_km=25.0,
+        pace_seconds_per_km=paces["easy_min"],
+    )
+    session.add(workout)
+    session.flush()
+    block_specs = [
+        {"block_type": "warmup", "distance_m": 4000, "pace": paces["easy_min"]},
+        {"block_type": "main", "distance_m": 8000, "pace": round(paces[goal_key], 1)},
+        {"block_type": "cooldown", "distance_m": 3000, "pace": paces["easy_max"]},
+    ]
+    for index, spec in enumerate(block_specs):
+        session.add(
+            WorkoutBlock(
+                workout_id=workout.id,
+                position=index + 1,
+                block_type=spec["block_type"],
+                repeats=1,
+                distance_m=spec["distance_m"],
+                pace_seconds_per_km=spec["pace"],
+            )
+        )
+    session.commit()
+    return plan, workout
+
+
+def test_edited_plan_distance_never_flips_a_stored_goal_pace_long_run():
+    """F-h: a stored threshold long run must not become marathon when the plan's
+    PATCH-editable `distance_km` is edited to 42.2."""
+    with _session() as session:
+        plan, workout = _persist_goal_pace_long_run_plan(
+            session, stored_target_km=21.1, edited_distance_km=42.2
+        )
+        snapshot = snapshot_plan(session, plan)
+        new_paces = get_training_paces_seconds(47.0)
+
+        apply_recalibration(
+            snapshot,
+            current_vdot=45.0,
+            new_vdot=47.0,
+            effective_from_date=WEEK_1_START,
+        )
+        session.commit()
+        session.expire_all()
+
+        blocks = {
+            block.block_type: block
+            for block in session.exec(
+                select(WorkoutBlock).where(WorkoutBlock.workout_id == workout.id)
+            ).all()
+        }
+        assert (
+            blocks["main"].pace_seconds_per_km,
+            blocks["main"].pace_range_end_seconds_per_km,
+        ) == (new_paces["threshold"], None)
+        assert blocks["warmup"].pace_seconds_per_km == new_paces["easy_min"]
+        assert blocks["cooldown"].pace_seconds_per_km == new_paces["easy_max"]
+
+
+def test_edited_plan_distance_never_flips_a_stored_marathon_long_run():
+    """Triangulation: a stored marathon long run stays marathon when the plan's
+    `distance_km` is edited down to 21.1."""
+    with _session() as session:
+        plan, workout = _persist_goal_pace_long_run_plan(
+            session, stored_target_km=42.2, edited_distance_km=21.1
+        )
+        snapshot = snapshot_plan(session, plan)
+        new_paces = get_training_paces_seconds(47.0)
+
+        apply_recalibration(
+            snapshot,
+            current_vdot=45.0,
+            new_vdot=47.0,
+            effective_from_date=WEEK_1_START,
+        )
+        session.commit()
+        session.expire_all()
+
+        main = session.exec(
+            select(WorkoutBlock).where(
+                WorkoutBlock.workout_id == workout.id,
+                WorkoutBlock.block_type == "main",
+            )
+        ).one()
+        assert (
+            main.pace_seconds_per_km,
+            main.pace_range_end_seconds_per_km,
+        ) == (new_paces["marathon"], None)
+
+
 def test_edited_distance_km_never_flips_the_stored_block_geometry():
     """The stored block geometry is the source of truth for the cruise/continuous
     and R/VO2max rules, not the PATCH-editable `workout.distance_km`."""
@@ -399,7 +545,10 @@ def test_edited_distance_km_never_flips_the_stored_block_geometry():
         new_paces = get_training_paces_seconds(47.0)
 
         apply_recalibration(
-            snapshot, new_vdot=47.0, effective_from_date=WEEK_1_START
+            snapshot,
+            current_vdot=45.0,
+            new_vdot=47.0,
+            effective_from_date=WEEK_1_START,
         )
         session.commit()
         session.expire_all()

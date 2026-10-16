@@ -430,7 +430,10 @@ def test_preview_changes_equal_what_apply_performs():
     }
 
     result = apply_recalibration(
-        snapshot, new_vdot=47.0, effective_from_date=effective_from[1]
+        snapshot,
+        current_vdot=45.0,
+        new_vdot=47.0,
+        effective_from_date=effective_from[1],
     )
 
     moved: set[uuid.UUID] = set()

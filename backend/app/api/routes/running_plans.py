@@ -897,7 +897,10 @@ def apply_plan_recalibration(
         raise _invalid_plan_data(exc) from exc
 
     result = apply_recalibration(
-        snapshot, new_vdot=new_vdot, effective_from_date=effective_from[1]
+        snapshot,
+        current_vdot=current_vdot,
+        new_vdot=new_vdot,
+        effective_from_date=effective_from[1],
     )
     session.flush()
     try:
