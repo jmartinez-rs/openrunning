@@ -669,6 +669,66 @@ def test_all_three_routes_treat_an_absent_baseline_as_no_baseline(
 
 
 # ---------------------------------------------------------------------------
+# B3 — the history 409 is PAGE-scoped by design (documented contract)
+# ---------------------------------------------------------------------------
+
+
+def test_history_validation_is_page_scoped_and_count_stays_the_total(
+    client, db_engine, user
+):
+    """B3 — the chosen contract, pinned.
+
+    The endpoint validates exactly the rows it SERVES: a corrupt audit row that
+    is not on the requested page cannot fail the request, while the page that
+    contains it fails loudly with 409. `count` stays the total number of audit
+    rows (pagination semantics, as in the sibling list routes) and is therefore
+    NOT the number of serialisable rows.
+    """
+    seed = _seed_plan(db_engine, user.id, week_starts=_current_week_then_future())
+    newest = _add_recalibration_row(
+        db_engine,
+        seed["plan_id"],
+        user.id,
+        new_vdot=48.0,
+        created_at=datetime(2026, 10, 13, tzinfo=UTC),
+    )
+    _add_recalibration_row(
+        db_engine,
+        seed["plan_id"],
+        user.id,
+        new_vdot=47.0,
+        created_at=datetime(2026, 10, 12, tzinfo=UTC),
+    )
+    corrupt = _add_recalibration_row(
+        db_engine,
+        seed["plan_id"],
+        user.id,
+        new_vdot=46.0,
+        created_at=datetime(2026, 10, 11, tzinfo=UTC),
+    )
+    _set_recalibration_source(db_engine, corrupt, "bogus")
+    url = f"{BASE}/{seed['plan_id']}/recalibrations"
+
+    # Page 1 (0..1) and page 2 (1..2) are clean: 200, and `count` is the TOTAL.
+    first = client.get(url, params={"skip": 0, "limit": 1})
+    second = client.get(url, params={"skip": 1, "limit": 1})
+    assert first.status_code == 200 and second.status_code == 200
+    assert first.json()["count"] == 3
+    assert len(first.json()["data"]) == 1
+    assert first.json()["data"][0]["id"] == newest
+    assert second.json()["data"][0]["new_vdot"] == 47.0
+
+    # The page that CONTAINS the corrupt row fails loudly, never silently.
+    failing_page = client.get(url, params={"skip": 2, "limit": 1})
+    assert failing_page.status_code == 409
+    assert failing_page.json()["detail"] == "invalid_plan_data"
+
+    # Requesting every row at once fails too: the corruption is never hidden.
+    whole = client.get(url, params={"skip": 0, "limit": 20})
+    assert whole.status_code == 409
+
+
+# ---------------------------------------------------------------------------
 # T12 — preview check precedence (D0 / S7 / E12)
 # ---------------------------------------------------------------------------
 

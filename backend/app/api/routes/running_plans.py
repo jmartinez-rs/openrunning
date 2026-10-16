@@ -1041,7 +1041,15 @@ def read_recalibrations(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
 ) -> PlanRecalibrationsPublic:
-    """Paginated audit history plus the derived current VDOT (R21/R23)."""
+    """Paginated audit history plus the derived current VDOT (R21/R23).
+
+    Page-scoped contract (B3): the endpoint validates exactly the audit rows it
+    serves, so a corrupt row outside the requested page cannot fail the request
+    and the page that contains it fails with 409 instead of leaking a broken row.
+    ``count`` remains the TOTAL number of audit rows (pagination semantics, as in
+    the sibling list routes) and is deliberately NOT the number of serialisable
+    rows. Validating every page on every request would defeat pagination.
+    """
     plan = _get_owned_plan(session, current_user.id, plan_id)
     scope = (
         PlanRecalibration.plan_id == plan.id,
@@ -1067,8 +1075,10 @@ def read_recalibrations(
     # An audit row whose `source`/`kind` is outside the domain (the columns are
     # unconstrained strings) cannot be serialized: map it to 409 rather than
     # letting ONE corrupt row turn the whole history endpoint into a 500 (G1.3).
-    # Failing loudly (instead of skip-and-log) keeps `count` honest and matches
-    # the preview/apply contract, which also maps malformed stored data to 409.
+    # Failing loudly (instead of skip-and-log) keeps the served page honest and
+    # matches the preview/apply contract, which also maps malformed stored data
+    # to 409. The check is page-scoped ON PURPOSE (see the docstring/B3): only
+    # the rows in `rows` are validated.
     try:
         data = [PlanRecalibrationPublic.model_validate(row) for row in rows]
     except ValidationError as exc:
