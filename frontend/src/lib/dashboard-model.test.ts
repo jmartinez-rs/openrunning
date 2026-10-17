@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest"
 import {
   type ActivePlanCandidate,
+  buildActivityDates,
+  buildWeekDayItems,
+  isRunActivity,
   isWorkoutCompleted,
   resolveHeroState,
   selectActivePlan,
+  type TimelineDayCandidate,
 } from "./dashboard-model"
 
 const WEEK_MONDAY = "2026-03-09"
@@ -171,5 +175,172 @@ describe("resolveHeroState", () => {
     expect(
       resolveHeroState({ workout: { cancelled: true }, isLoading: true }),
     ).toBe("loading")
+  })
+})
+
+// R7 (amended) — exclusion predicate. Unknown and null `sport_type` MUST mark,
+// the enumerated non-run sports MUST NOT, and `distance_meters` is never read.
+describe("isRunActivity", () => {
+  it("marks a null or missing sport_type (GPX/FIT uploads)", () => {
+    expect(isRunActivity({ sport_type: null })).toBe(true)
+    expect(isRunActivity({})).toBe(true)
+  })
+
+  it("marks the canonical running family", () => {
+    for (const sport_type of ["Run", "TrailRun", "VirtualRun"]) {
+      expect(isRunActivity({ sport_type })).toBe(true)
+    }
+  })
+
+  it("rejects the explicitly non-running sports (S11)", () => {
+    for (const sport_type of ["Ride", "Walk", "Swim", "Hike", "VirtualRide"]) {
+      expect(isRunActivity({ sport_type })).toBe(false)
+    }
+  })
+
+  it("rejects the enumerated other non-run Strava types", () => {
+    for (const sport_type of [
+      "MountainBikeRide",
+      "GravelRide",
+      "Rowing",
+      "Kayaking",
+      "WeightTraining",
+      "Yoga",
+      "Soccer",
+    ]) {
+      expect(isRunActivity({ sport_type })).toBe(false)
+    }
+  })
+
+  it("marks an unrecognized type instead of dropping the run", () => {
+    expect(isRunActivity({ sport_type: "FutureRunType" })).toBe(true)
+  })
+
+  it("never consults distance_meters (S12/E8)", () => {
+    expect(isRunActivity({ sport_type: "Run", distance_meters: null })).toBe(
+      true,
+    )
+    expect(isRunActivity({ sport_type: null, distance_meters: 0 })).toBe(true)
+    expect(isRunActivity({ sport_type: "Ride", distance_meters: 42_000 })).toBe(
+      false,
+    )
+  })
+})
+
+function activityDay(
+  date: string,
+  sportTypes: Array<string | null>,
+): TimelineDayCandidate {
+  return {
+    date,
+    activities: sportTypes.map((sport_type, index) => ({
+      id: `${date}-${index}`,
+      sport_type,
+      distance_meters: 5000,
+    })),
+  }
+}
+
+describe("buildActivityDates", () => {
+  it("marks every day with at least one qualifying activity (R5/S8)", () => {
+    const dates = buildActivityDates([
+      activityDay("2026-03-10", ["Run"]),
+      activityDay("2026-03-11", ["Ride"]),
+      activityDay("2026-03-12", [null]),
+    ])
+
+    expect([...dates].sort()).toEqual(["2026-03-10", "2026-03-12"])
+  })
+
+  it("marks a free run on an otherwise rest day (S8)", () => {
+    expect(
+      buildActivityDates([activityDay("2026-03-14", [null])]).has("2026-03-14"),
+    ).toBe(true)
+  })
+
+  it("reads only the timeline it is given, so week nav stays honest (S9)", () => {
+    const previousWeek = [activityDay("2026-03-03", ["Run"])]
+    const dates = buildActivityDates(previousWeek)
+
+    expect(dates.has("2026-03-03")).toBe(true)
+    expect(dates.has("2026-03-10")).toBe(false)
+  })
+
+  it("returns an empty set for an empty or absent timeline (E8)", () => {
+    expect(buildActivityDates([]).size).toBe(0)
+    expect(buildActivityDates(undefined).size).toBe(0)
+    expect(buildActivityDates(null).size).toBe(0)
+    expect(
+      buildActivityDates([{ date: "2026-03-10", activities: [] }]).size,
+    ).toBe(0)
+  })
+
+  it("keeps the backend day key at a week boundary (E9)", () => {
+    const dates = buildActivityDates([activityDay("2026-03-15", ["Run"])])
+
+    expect(dates.has("2026-03-15")).toBe(true)
+    expect(dates.has("2026-03-16")).toBe(false)
+  })
+})
+
+function completedWorkout(status = "completed") {
+  return { id: "wo-1", status }
+}
+
+describe("buildWeekDayItems", () => {
+  it("keeps hasActivity distinct from hasWorkout (S10)", () => {
+    const workouts = new Map([["2026-03-10", completedWorkout()]])
+    const activityDates = new Set(["2026-03-10", "2026-03-12"])
+
+    const items = buildWeekDayItems(
+      ["2026-03-10", "2026-03-11", "2026-03-12"],
+      workouts,
+      activityDates,
+    )
+
+    expect(items[0]).toEqual({
+      dateIso: "2026-03-10",
+      hasWorkout: true,
+      isCompleted: true,
+      hasActivity: true,
+    })
+    expect(items[1]).toEqual({
+      dateIso: "2026-03-11",
+      hasWorkout: false,
+      isCompleted: false,
+      hasActivity: false,
+    })
+    expect(items[2]).toEqual({
+      dateIso: "2026-03-12",
+      hasWorkout: false,
+      isCompleted: false,
+      hasActivity: true,
+    })
+  })
+
+  it("shows plan dots only when the timeline is empty (E8)", () => {
+    const items = buildWeekDayItems(
+      ["2026-03-10"],
+      new Map([["2026-03-10", completedWorkout("planned")]]),
+      new Set(),
+    )
+
+    expect(items[0]).toEqual({
+      dateIso: "2026-03-10",
+      hasWorkout: true,
+      isCompleted: false,
+      hasActivity: false,
+    })
+  })
+
+  it("marks the correct boundary key and tolerates missing maps (E9)", () => {
+    const items = buildWeekDayItems(
+      ["2026-03-14", "2026-03-15"],
+      undefined,
+      new Set(["2026-03-15"]),
+    )
+
+    expect(items.map((item) => item.hasActivity)).toEqual([false, true])
+    expect(items.every((item) => !item.hasWorkout)).toBe(true)
   })
 })
