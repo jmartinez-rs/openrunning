@@ -28,7 +28,12 @@ import {
   mondayIso,
   weekIsoKeys,
 } from "@/lib/dashboard-dates"
-import { isWorkoutCompleted, selectActivePlan } from "@/lib/dashboard-model"
+import {
+  buildActivityDates,
+  buildWeekDayItems,
+  isWorkoutCompleted,
+  selectActivePlan,
+} from "@/lib/dashboard-model"
 import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/_layout/")({
@@ -75,6 +80,13 @@ function OpenRunningDashboard() {
     queryFn: () => AnalyticsService.readDashboard({ weekStart: weekStartIso }),
   })
   const dashboard = dashboardQuery.data
+
+  // Días locales con al menos una actividad de running real (R5). El timeline
+  // ya viene bucketizado por RUNNING_TIMEZONE desde el backend.
+  const activityDates = useMemo(
+    () => buildActivityDates(dashboard?.timeline),
+    [dashboard?.timeline],
+  )
 
   // Planes de running
   const plansQuery = useQuery({
@@ -195,21 +207,22 @@ function OpenRunningDashboard() {
 
   // 7 Días de la semana para el WeekStrip interactivo de Runna
   const weekDays: RunnaDayItem[] = useMemo(() => {
-    return weekIsoKeys(weekStartIso).map((iso, i) => {
-      const wo = workoutsByDate.get(iso)
-
-      return {
-        dateIso: iso,
-        dayName: RUNNA_DAYS_SHORT[i],
-        dayNumber: dayOfMonthIso(iso),
-        isToday: iso === todayIso,
-        isSelected: iso === selectedDateIso,
-        hasWorkout: Boolean(wo),
-        workoutType: wo?.type || null,
-        isCompleted: wo ? isWorkoutCompleted(wo) : false,
-      }
-    })
-  }, [weekStartIso, todayIso, selectedDateIso, workoutsByDate])
+    return buildWeekDayItems(
+      weekIsoKeys(weekStartIso),
+      workoutsByDate,
+      activityDates,
+    ).map((item, i) => ({
+      dateIso: item.dateIso,
+      dayName: RUNNA_DAYS_SHORT[i],
+      dayNumber: dayOfMonthIso(item.dateIso),
+      isToday: item.dateIso === todayIso,
+      isSelected: item.dateIso === selectedDateIso,
+      hasWorkout: item.hasWorkout,
+      workoutType: workoutsByDate.get(item.dateIso)?.type || null,
+      isCompleted: item.isCompleted,
+      hasActivity: item.hasActivity,
+    }))
+  }, [weekStartIso, todayIso, selectedDateIso, workoutsByDate, activityDates])
 
   // Entrenamiento correspondiente a la fecha seleccionada
   const selectedWorkout = useMemo(() => {
@@ -325,6 +338,7 @@ function OpenRunningDashboard() {
         days={weekDays}
         selectedDateIso={selectedDateIso}
         workoutsByDate={workoutsByDate}
+        activityDates={activityDates}
         onSelectDay={(dateIso) => setSelectedDateIso(dateIso)}
       />
 
