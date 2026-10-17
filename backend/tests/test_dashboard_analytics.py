@@ -1,16 +1,18 @@
-"""Dashboard analytics: local-day bucketing (RUNNING_TIMEZONE) + sport_type DTO.
+"""Dashboard analytics: local-week window + day bucketing (RUNNING_TIMEZONE).
 
-Covers R2/S3 plus the invariants this slice must not break while moving the
-weekly bucket from UTC to the pinned local timezone (America/Argentina/
-Buenos_Aires, UTC-3).
+Covers R2/S3 plus the host-independence invariant of this slice: the weekly
+window and the per-day bucket must both be derived from the pinned
+``RUNNING_TIMEZONE`` (America/Argentina/Buenos_Aires, UTC-3) regardless of the
+host clock. SQLite drops ``tzinfo`` on round-trip, so a naive timestamp is
+treated as UTC before conversion (mirroring ``services.fitness._local_date``).
 
-Timestamps are seeded with the pinned ``RUNNING_TIMEZONE`` offset. SQLite drops
-``tzinfo`` on round-trip, so the wall clock written is the local wall clock; the
-timezone-aware construction documents intent and keeps the assertions readable.
+The whole module must pass identically under ``TZ=UTC``,
+``TZ=America/New_York`` and ``TZ=America/Argentina/Buenos_Aires``: no assertion
+below depends on the host timezone.
 """
 
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy.engine import Engine
@@ -20,8 +22,10 @@ from app.models import Activity, ActivityCardio
 from app.services.running import RUNNING_TIMEZONE
 
 DASHBOARD_URL = "/api/v1/analytics/dashboard"
-# Monday starting the 2026-03-10 week (local calendar).
+# Monday starting the 2026-03-10 local week (local calendar, UTC-3).
 WEEK_START = date(2026, 3, 9)
+# Local Sunday that closes that week (week_start + 6 days).
+WEEK_END = date(2026, 3, 15)
 
 
 def _seed_activity(
@@ -58,8 +62,17 @@ def _seed_activity(
 
 
 def _local(year: int, month: int, day: int, hour: int, minute: int) -> datetime:
-    """A wall-clock instant expressed in the pinned running timezone."""
-    return datetime(year, month, day, hour, minute, tzinfo=RUNNING_TIMEZONE)
+    """The UTC instant of a wall-clock time in the pinned running timezone.
+
+    SQLite drops ``tzinfo`` on round-trip, so seeding an aware datetime stores
+    its wall clock verbatim. Converting to UTC first means the stored naive
+    value is the real instant — exactly what production persists in a
+    ``timestamptz`` column and what the route assumes for naive input. This
+    keeps every seeded row host-independent.
+    """
+    return datetime(
+        year, month, day, hour, minute, tzinfo=RUNNING_TIMEZONE
+    ).astimezone(UTC)
 
 
 def _activities_on(payload: dict[str, Any], iso_day: str) -> list[dict[str, Any]]:
@@ -77,7 +90,9 @@ def _all_activities(payload: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
-def _get_dashboard(client, week_start: date = WEEK_START) -> dict[str, Any]:
+def _get_dashboard(
+    client: Any, week_start: date = WEEK_START
+) -> dict[str, Any]:
     response = client.get(
         DASHBOARD_URL, params={"week_start": week_start.isoformat()}
     )
@@ -100,7 +115,11 @@ def test_late_local_evening_activity_buckets_to_local_day(db_engine, user, clien
 
 
 def test_sunday_late_local_activity_stays_in_local_week(db_engine, user, client):
-    """Sunday 21:00 local is still Sunday: HTTP 200, in-week, not double-counted."""
+    """Local Sunday 21:00 (Mon 00:00 UTC) still belongs to the local week.
+
+    Discriminator: a UTC-anchored window would exclude it (the instant is after
+    the local week's UTC end); the local-anchored window must include it.
+    """
     activity_id = _seed_activity(
         db_engine, user.id, timestamp=_local(2026, 3, 15, 21, 0)
     )
@@ -115,6 +134,14 @@ def test_sunday_late_local_activity_stays_in_local_week(db_engine, user, client)
     assert body["kpis"]["active_days"] == 1
 
 
+def test_week_end_is_the_local_sunday_after_week_start(db_engine, user, client):
+    """The window echoes the requested Monday and its closing local Sunday."""
+    body = _get_dashboard(client)
+
+    assert body["week_start"] == WEEK_START.isoformat()
+    assert body["week_end"] == WEEK_END.isoformat()
+
+
 def test_activity_outside_local_week_is_excluded(db_engine, user, client):
     """Local Sunday-before and next-Monday-midnight fall outside the week."""
     _seed_activity(db_engine, user.id, timestamp=_local(2026, 3, 8, 23, 30))
@@ -125,6 +152,27 @@ def test_activity_outside_local_week_is_excluded(db_engine, user, client):
     assert _all_activities(body) == []
     assert body["kpis"]["sessions"] == 0
     assert body["kpis"]["active_days"] == 0
+
+
+def test_previous_local_sunday_activity_lands_in_previous_week(
+    db_engine, user, client
+):
+    """A local Sunday-before belongs to the previous week, not the current one.
+
+    Exercises the previous-week computation path (``week_start - 7d``) and its
+    own bucket keys: a UTC-anchored window would misplace this instant into the
+    requested week (and, west of UTC-3, key it outside the buckets entirely).
+    """
+    _seed_activity(db_engine, user.id, timestamp=_local(2026, 3, 8, 22, 30))
+
+    body = _get_dashboard(client)
+
+    assert _all_activities(body) == []
+    assert body["kpis"]["sessions"] == 0
+    previous = body["previous_kpis"]
+    assert previous is not None
+    assert previous["sessions"] == 1
+    assert previous["active_days"] == 1
 
 
 def test_sport_type_is_echoed_null_and_run(db_engine, user, client):
