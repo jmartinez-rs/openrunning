@@ -4,8 +4,8 @@ import { useMemo, useState } from "react"
 import {
   AnalyticsService,
   RunningPlansService,
-  SyncService,
   type RunningWorkoutPublic,
+  SyncService,
 } from "@/client"
 import { RunnaDashboardHeader } from "@/components/Dashboard/RunnaDashboardHeader"
 import { RunnaHeroWorkoutCard } from "@/components/Dashboard/RunnaHeroWorkoutCard"
@@ -20,6 +20,14 @@ import { VolumeCard } from "@/components/Dashboard/VolumeCard"
 import { PaccerWorkoutSheet } from "@/components/RunningPlans/PaccerWorkoutSheet"
 import { ManualRunSheet } from "@/components/Sheets/ManualRunSheet"
 import useCustomToast from "@/hooks/useCustomToast"
+import {
+  addDaysIso,
+  formatDayKey,
+  formatShortDayMonth,
+  mondayIso,
+  weekIsoKeys,
+} from "@/lib/dashboard-dates"
+import { isWorkoutCompleted, selectActivePlan } from "@/lib/dashboard-model"
 import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/_layout/")({
@@ -33,19 +41,6 @@ export const Route = createFileRoute("/_layout/")({
   }),
 })
 
-function getMonday(d: Date): Date {
-  const date = new Date(d)
-  const day = date.getDay()
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1)
-  date.setDate(diff)
-  date.setHours(12, 0, 0, 0)
-  return date
-}
-
-function formatDateIso(d: Date): string {
-  return d.toISOString().split("T")[0]
-}
-
 const RUNNA_DAYS_SHORT = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"]
 
 function OpenRunningDashboard() {
@@ -53,7 +48,7 @@ function OpenRunningDashboard() {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
-  const todayIso = useMemo(() => formatDateIso(new Date()), [])
+  const todayIso = useMemo(() => formatDayKey(new Date()), [])
   const [selectedDateIso, setSelectedDateIso] = useState<string>(todayIso)
   const [isManualSheetOpen, setIsManualSheetOpen] = useState(false)
   const [workoutForSheet, setWorkoutForSheet] =
@@ -61,22 +56,17 @@ function OpenRunningDashboard() {
 
   const [weekOffset, setWeekOffset] = useState(0)
 
-  // Base Monday correspondiente a la semana con offset de navegación
-  const baseMonday = useMemo(() => {
-    const today = new Date()
-    const monday = getMonday(today)
-    monday.setDate(monday.getDate() + weekOffset * 7)
-    return monday
-  }, [weekOffset])
+  // Lunes local de la semana con offset de navegación (autoridad: RUNNING_TIMEZONE)
+  const weekStartIso = useMemo(
+    () => addDaysIso(mondayIso(new Date()), weekOffset * 7),
+    [weekOffset],
+  )
+  const weekEndIso = useMemo(() => addDaysIso(weekStartIso, 6), [weekStartIso])
 
   const weekLabel = useMemo(() => {
     if (weekOffset === 0) return "Esta semana"
-    const sunday = new Date(baseMonday)
-    sunday.setDate(baseMonday.getDate() + 6)
-    return `${baseMonday.getDate()} ${baseMonday.toLocaleDateString("es-AR", { month: "short" })} – ${sunday.getDate()} ${sunday.toLocaleDateString("es-AR", { month: "short" })}`
-  }, [baseMonday, weekOffset])
-
-  const weekStartIso = formatDateIso(baseMonday)
+    return `${formatShortDayMonth(weekStartIso)} – ${formatShortDayMonth(weekEndIso)}`
+  }, [weekStartIso, weekEndIso, weekOffset])
 
   // Query general de analíticas/dashboard
   const dashboardQuery = useQuery({
@@ -90,7 +80,11 @@ function OpenRunningDashboard() {
     queryKey: ["running-plans"],
     queryFn: () => RunningPlansService.readPlans(),
   })
-  const activePlan = plansQuery.data?.data.find((p) => p.status === "active")
+  const activePlan = selectActivePlan(
+    plansQuery.data?.data,
+    weekStartIso,
+    weekEndIso,
+  )
 
   // Detalle del plan activo (fases, semanas, sesiones estructuradas)
   const planDetailQuery = useQuery({
@@ -200,34 +194,21 @@ function OpenRunningDashboard() {
 
   // 7 Días de la semana para el WeekStrip interactivo de Runna
   const weekDays: RunnaDayItem[] = useMemo(() => {
-    const result: RunnaDayItem[] = []
-
-    for (let i = 0; i < 7; i++) {
-      const current = new Date(baseMonday)
-      current.setDate(baseMonday.getDate() + i)
-      const iso = formatDateIso(current)
-      const isToday = iso === todayIso
-      const isSelected = iso === selectedDateIso
-
+    return weekIsoKeys(weekStartIso).map((iso, i) => {
       const wo = workoutsByDate.get(iso)
-      const hasWorkout = Boolean(wo)
-      const isCompleted =
-        wo?.status_override === "completed" || Boolean(wo?.matched_activity_id)
 
-      result.push({
+      return {
         dateIso: iso,
         dayName: RUNNA_DAYS_SHORT[i],
-        dayNumber: current.getDate(),
-        isToday,
-        isSelected,
-        hasWorkout,
+        dayNumber: Number(iso.slice(8, 10)),
+        isToday: iso === todayIso,
+        isSelected: iso === selectedDateIso,
+        hasWorkout: Boolean(wo),
         workoutType: wo?.type || null,
-        isCompleted,
-      })
-    }
-
-    return result
-  }, [baseMonday, todayIso, selectedDateIso, workoutsByDate])
+        isCompleted: wo ? isWorkoutCompleted(wo) : false,
+      }
+    })
+  }, [weekStartIso, todayIso, selectedDateIso, workoutsByDate])
 
   // Entrenamiento correspondiente a la fecha seleccionada
   const selectedWorkout = useMemo(() => {
@@ -242,9 +223,8 @@ function OpenRunningDashboard() {
     )
 
     const totalWorkouts = weekWorkouts.length
-    const completedWorkouts = weekWorkouts.filter(
-      (wo) =>
-        wo.status_override === "completed" || Boolean(wo.matched_activity_id),
+    const completedWorkouts = weekWorkouts.filter((wo) =>
+      isWorkoutCompleted(wo),
     ).length
 
     const totalWeekKm = weekWorkouts.reduce(
@@ -252,10 +232,7 @@ function OpenRunningDashboard() {
       0,
     )
     const completedKmCalculated = weekWorkouts
-      .filter(
-        (wo) =>
-          wo.status_override === "completed" || Boolean(wo.matched_activity_id),
-      )
+      .filter((wo) => isWorkoutCompleted(wo))
       .reduce((sum, wo) => sum + (wo.distance_km || 0), 0)
 
     // Si hay km de Strava registrados en la semana y no están linkeados, usar el máximo
@@ -355,6 +332,7 @@ function OpenRunningDashboard() {
         workout={selectedWorkout}
         selectedDateIso={selectedDateIso}
         isToday={selectedDateIso === todayIso}
+        isLoading={plansQuery.isLoading || planDetailQuery.isLoading}
         weatherTemp="18°"
         weatherCondition="cloudy"
         isTogglingComplete={toggleCompleteMutation.isPending}
