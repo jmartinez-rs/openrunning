@@ -26,6 +26,7 @@ from app.models import (
     UpcomingRacePublic,
     WeeklyGoal,
 )
+from app.services.running import RUNNING_TIMEZONE
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -71,7 +72,7 @@ def read_cardio_analytics(
 
 
 def _week_bounds(week_start: date) -> tuple[datetime, datetime]:
-    start = datetime.combine(week_start, time.min, tzinfo=UTC)
+    start = datetime.combine(week_start, time.min, tzinfo=RUNNING_TIMEZONE)
     return start, start + timedelta(days=7)
 
 
@@ -195,7 +196,7 @@ def _compute_week_kpis(
         week_start + timedelta(days=offset): [] for offset in range(7)
     }
     for activity in activities:
-        day = activity.timestamp.astimezone(UTC).date()
+        day = activity.timestamp.astimezone(RUNNING_TIMEZONE).date()
         cardio = cardio_by_activity.get(activity.id)
         timeline_by_day[day].append(
             DashboardActivity(
@@ -203,6 +204,7 @@ def _compute_week_kpis(
                 timestamp=activity.timestamp,
                 name=activity.name,
                 source_type=activity.source_type,
+                sport_type=activity.sport_type,
                 duration_seconds=activity.duration_seconds,
                 distance_meters=cardio.distance_meters if cardio else None,
             )
