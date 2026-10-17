@@ -939,6 +939,17 @@ export const DashboardActivitySchema = {
             type: 'string',
             title: 'Source Type'
         },
+        sport_type: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Sport Type'
+        },
         duration_seconds: {
             type: 'integer',
             title: 'Duration Seconds'
