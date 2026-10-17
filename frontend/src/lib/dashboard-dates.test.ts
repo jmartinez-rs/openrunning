@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest"
 import {
   addDaysIso,
+  dayOfMonthIso,
   formatDayKey,
+  formatShortDayMonth,
+  formatWeekdayDayMonth,
   mondayIso,
   RUNNING_TIMEZONE,
   weekdayOfIso,
@@ -55,6 +58,14 @@ describe("dashboard-dates", () => {
     expect(weekdayOfIso("2026-03-14")).toBe(6)
   })
 
+  it("reads the day of month from the day key, not by slicing the string", () => {
+    expect(dayOfMonthIso("2026-03-10")).toBe(10)
+    expect(dayOfMonthIso("2026-01-01")).toBe(1)
+    expect(dayOfMonthIso("2026-12-31")).toBe(31)
+    // A malformed key must fail loudly instead of silently yielding NaN.
+    expect(() => dayOfMonthIso("2026-3-1")).toThrow(/Invalid ISO day key/)
+  })
+
   // E2 — the local Monday of the week containing the instant.
   it("resolves the local Monday for any instant in the week (E2)", () => {
     expect(mondayIso(new Date("2026-03-09T12:00:00Z"))).toBe("2026-03-09")
@@ -81,5 +92,24 @@ describe("dashboard-dates", () => {
       "2026-03-14",
       "2026-03-15",
     ])
+  })
+
+  it("formats the short day-month label in the pinned zone", () => {
+    expect(formatShortDayMonth("2026-03-10")).toBe("10 mar")
+    expect(formatShortDayMonth("2026-01-01")).toBe("1 ene")
+  })
+
+  // E1 — the weekday label is built in RUNNING_TIMEZONE, so it cannot shift with
+  // the host zone as the old host-local `new Date(`${iso}T12:00:00`)` did.
+  it("formats the weekday label in the pinned zone (E1)", () => {
+    expect(formatWeekdayDayMonth("2026-03-10")).toBe("martes, 10 mar")
+    expect(formatWeekdayDayMonth("2026-10-22")).toBe("jueves, 22 oct")
+    expect(formatWeekdayDayMonth("2026-01-01")).toBe("jueves, 1 ene")
+  })
+
+  it("rejects malformed day keys in the label helper", () => {
+    expect(() => formatWeekdayDayMonth("22/10/2026")).toThrow(
+      /Invalid ISO day key/,
+    )
   })
 })

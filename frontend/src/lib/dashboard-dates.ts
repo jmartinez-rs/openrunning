@@ -23,6 +23,13 @@ const SHORT_DAY_MONTH_FORMATTER = new Intl.DateTimeFormat("es-AR", {
   month: "short",
 })
 
+const WEEKDAY_DAY_MONTH_FORMATTER = new Intl.DateTimeFormat("es-AR", {
+  timeZone: RUNNING_TIMEZONE,
+  weekday: "long",
+  day: "numeric",
+  month: "short",
+})
+
 const ISO_DAY_KEY = /^(\d{4})-(\d{2})-(\d{2})$/
 
 interface IsoParts {
@@ -79,6 +86,11 @@ export function weekdayOfIso(iso: string): number {
   return new Date(Date.UTC(year, month - 1, day)).getUTCDay()
 }
 
+/** Day of month (1–31) of a day key, parsed by the day-key module. */
+export function dayOfMonthIso(iso: string): number {
+  return parseIsoDayKey(iso).day
+}
+
 /** Local Monday of the week containing `date`. */
 export function mondayIso(date: Date): string {
   const iso = formatDayKey(date)
@@ -100,4 +112,16 @@ export function formatShortDayMonth(iso: string): string {
   return SHORT_DAY_MONTH_FORMATTER.format(
     new Date(Date.UTC(year, month - 1, day, 12)),
   ).replace(".", "")
+}
+
+/** Display-only label ("jueves, 22 oct") for a day key, formatted in the pinned zone. */
+export function formatWeekdayDayMonth(iso: string): string {
+  const { year, month, day } = parseIsoDayKey(iso)
+  // Noon UTC keeps the calendar day stable inside the pinned timezone, so the
+  // label never shifts with the browser's host timezone.
+  return WEEKDAY_DAY_MONTH_FORMATTER.format(
+    new Date(Date.UTC(year, month - 1, day, 12)),
+  )
+    .replace(".", "")
+    .trim()
 }

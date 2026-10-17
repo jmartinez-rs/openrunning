@@ -22,6 +22,7 @@ import { ManualRunSheet } from "@/components/Sheets/ManualRunSheet"
 import useCustomToast from "@/hooks/useCustomToast"
 import {
   addDaysIso,
+  dayOfMonthIso,
   formatDayKey,
   formatShortDayMonth,
   mondayIso,
@@ -80,10 +81,10 @@ function OpenRunningDashboard() {
     queryKey: ["running-plans"],
     queryFn: () => RunningPlansService.readPlans(),
   })
-  const activePlan = selectActivePlan(
-    plansQuery.data?.data,
-    weekStartIso,
-    weekEndIso,
+  // Plan que respalda la semana mostrada: derivación cara, memoizada como sus pares
+  const activePlan = useMemo(
+    () => selectActivePlan(plansQuery.data?.data, weekStartIso, weekEndIso),
+    [plansQuery.data, weekStartIso, weekEndIso],
   )
 
   // Detalle del plan activo (fases, semanas, sesiones estructuradas)
@@ -200,7 +201,7 @@ function OpenRunningDashboard() {
       return {
         dateIso: iso,
         dayName: RUNNA_DAYS_SHORT[i],
-        dayNumber: Number(iso.slice(8, 10)),
+        dayNumber: dayOfMonthIso(iso),
         isToday: iso === todayIso,
         isSelected: iso === selectedDateIso,
         hasWorkout: Boolean(wo),

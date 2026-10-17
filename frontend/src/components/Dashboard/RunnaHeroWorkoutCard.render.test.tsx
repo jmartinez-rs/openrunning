@@ -69,6 +69,18 @@ describe("RunnaHeroWorkoutCard", () => {
     expect(html).not.toContain("Día de descanso")
   })
 
+  // E1 — the hero date label comes from the pinned day-key module, so it never
+  // shifts with the browser's host timezone.
+  it("formats the hero day label in the pinned running zone (E1)", () => {
+    const html = renderHero({
+      workout: workoutFixture({ date: "2026-10-22" }),
+      selectedDateIso: "2026-10-22",
+      isToday: false,
+    })
+
+    expect(html).toContain("jueves, 22 oct")
+  })
+
   it("marks completion from the resolved backend status, not the legacy heuristic (S13/S14)", () => {
     const noop = () => {}
 

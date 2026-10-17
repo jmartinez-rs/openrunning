@@ -14,6 +14,7 @@ import {
   WORKOUT_TYPE_META,
   type WorkoutType,
 } from "@/components/RunningPlans/running-utils"
+import { formatWeekdayDayMonth } from "@/lib/dashboard-dates"
 import { isWorkoutCompleted, resolveHeroState } from "@/lib/dashboard-model"
 
 interface RunnaHeroWorkoutCardProps {
@@ -51,21 +52,6 @@ const HeroHeader: React.FC<{
   </div>
 )
 
-/** Formatea fecha estilo Runna: "jueves, 22 oct" */
-function formatRunnaCardDate(iso: string): string {
-  const d = new Date(`${iso}T12:00:00`)
-  if (Number.isNaN(d.getTime())) return iso
-  const weekday = new Intl.DateTimeFormat("es-AR", { weekday: "long" }).format(
-    d,
-  )
-  const day = d.getDate()
-  const month = new Intl.DateTimeFormat("es-AR", { month: "short" })
-    .format(d)
-    .replace(".", "")
-    .trim()
-  return `${weekday}, ${day} ${month}`
-}
-
 /** Formatea duración estimada estilo Runna: "40m - 45m" o "50m" */
 function formatRunnaDuration(
   seconds?: number | null,
@@ -97,15 +83,19 @@ export const RunnaHeroWorkoutCard: React.FC<RunnaHeroWorkoutCardProps> = ({
   onOpenManualRun,
   isLoading = false,
 }) => {
-  const dateFormatted = formatRunnaCardDate(selectedDateIso)
+  // Etiqueta de fecha en la zona fijada (RUNNING_TIMEZONE): "jueves, 22 oct"
+  const dateFormatted = formatWeekdayDayMonth(selectedDateIso)
 
   // Título de la sección
   const sectionTitle = isToday
     ? "Entrenamientos de hoy"
     : `Entrenamientos · ${dateFormatted}`
 
+  // Estado del hero resuelto una sola vez: fuente única para las tres ramas (E7)
+  const heroState = resolveHeroState({ workout, isLoading })
+
   // El detalle del plan todavía está cargando: skeleton, nunca "Día de descanso" (E7)
-  if (resolveHeroState({ workout, isLoading }) === "loading") {
+  if (heroState === "loading") {
     return (
       <section
         aria-label="Entrenamientos"
@@ -132,8 +122,10 @@ export const RunnaHeroWorkoutCard: React.FC<RunnaHeroWorkoutCardProps> = ({
     )
   }
 
-  // 1. Día de Descanso (sin sesión en este día)
-  if (!workout || workout.cancelled) {
+  // 1. Día de Descanso (sin sesión en este día). `heroState` es la decisión
+  // única; la comprobación `null` es sólo el estrechamiento de tipos hacia la
+  // rama de sesión (`resolveHeroState` ya clasifica un workout nulo como "rest").
+  if (heroState === "rest" || workout === null) {
     return (
       <section aria-label="Entrenamientos" className="space-y-3">
         <HeroHeader
