@@ -515,7 +515,7 @@ def read_activities_summary(
     calendar_by_day: dict[str, list[str]] = {}
     for activity, cardio in rows:
         sport_type = activity.sport_type or "Other"
-        day = activity.timestamp.astimezone(UTC).strftime("%Y-%m-%d")
+        day = _as_local_date(activity.timestamp).isoformat()
         calendar_by_day.setdefault(day, [])
         if sport_type not in calendar_by_day[day]:
             calendar_by_day[day].append(sport_type)
@@ -528,10 +528,7 @@ def read_activities_summary(
         duration = sum(activity.duration_seconds for activity, _ in items)
         elevation = sum(cardio.elevation_gain_meters for _, cardio in items)
         dot_days = sorted(
-            {
-                activity.timestamp.astimezone(UTC).strftime("%Y-%m-%d")
-                for activity, _ in items
-            }
+            {_as_local_date(activity.timestamp).isoformat() for activity, _ in items}
         )
         by_type.append(
             ActivityTypeSummary(
