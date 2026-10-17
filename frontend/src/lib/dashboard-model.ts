@@ -59,10 +59,142 @@ export function selectActivePlan<T extends ActivePlanCandidate>(
 /**
  * Completion comes exclusively from the backend-resolved status (R8), which
  * already folds in Strava auto-match and `status_override`. The legacy
- * `status_override || matched_activity_id` heuristic must never be used again.
+ * override/matched-activity heuristic must never be used again.
  */
 export function isWorkoutCompleted(workout: { status: string }): boolean {
   return workout.status === "completed"
+}
+
+/** Minimal activity shape required by the run predicate (R7). */
+export interface RunActivityCandidate {
+  sport_type?: string | null
+  distance_meters?: number | null
+}
+
+/** Minimal timeline day required by the activity-date builder (R5). */
+export interface TimelineDayCandidate {
+  date: string
+  activities?: readonly RunActivityCandidate[] | null
+}
+
+/** Canonical positive set: the running-family Strava types. */
+export const RUN_SPORTS: ReadonlySet<string> = new Set([
+  "Run",
+  "TrailRun",
+  "VirtualRun",
+])
+
+/**
+ * Explicitly non-running Strava sport types (R7, amended). Anything else —
+ * including `null` (GPX/FIT uploads never carry a `sport_type`) and types this
+ * build does not know yet — counts as a run.
+ */
+export const NON_RUN_SPORTS: ReadonlySet<string> = new Set([
+  "Ride",
+  "VirtualRide",
+  "EBikeRide",
+  "MountainBikeRide",
+  "EMountainBikeRide",
+  "GravelRide",
+  "Handcycle",
+  "Velomobile",
+  "Walk",
+  "Hike",
+  "Swim",
+  "AlpineSki",
+  "BackcountrySki",
+  "NordicSki",
+  "RollerSki",
+  "Snowboard",
+  "Snowshoe",
+  "IceSkate",
+  "InlineSkate",
+  "Skateboard",
+  "Surfing",
+  "Windsurf",
+  "Kitesurf",
+  "Sail",
+  "Kayaking",
+  "Canoeing",
+  "Rowing",
+  "VirtualRow",
+  "StandUpPaddling",
+  "RockClimbing",
+  "Golf",
+  "Soccer",
+  "Tennis",
+  "TableTennis",
+  "Badminton",
+  "Racquetball",
+  "Squash",
+  "Pickleball",
+  "Basketball",
+  "Volleyball",
+  "Cricket",
+  "WeightTraining",
+  "Workout",
+  "Yoga",
+  "Pilates",
+  "Crossfit",
+  "Elliptical",
+  "StairStepper",
+  "HighIntensityIntervalTraining",
+  "Wheelchair",
+])
+
+/**
+ * Whether an activity qualifies as a run (R7, amended): an exclusion rule, so
+ * `null` (GPX/FIT uploads, no `sport_type`) and unrecognized types mark too.
+ * `source_type` and `distance_meters` are deliberately never consulted.
+ */
+export function isRunActivity(activity: RunActivityCandidate): boolean {
+  return activity.sport_type == null || !NON_RUN_SPORTS.has(activity.sport_type)
+}
+
+/**
+ * Local day keys that carry at least one qualifying run (R5). Keys come from
+ * the backend timeline, which already buckets by `RUNNING_TIMEZONE`, so this is
+ * clock-free and safe to share between the week strip and the month grid.
+ */
+export function buildActivityDates(
+  timeline: readonly TimelineDayCandidate[] | null | undefined,
+): Set<string> {
+  const dates = new Set<string>()
+  for (const day of timeline ?? []) {
+    if (day.activities?.some((activity) => isRunActivity(activity))) {
+      dates.add(day.date)
+    }
+  }
+  return dates
+}
+
+/** Per-day plan + activity state for the week strip. */
+export interface WeekDayActivityState {
+  dateIso: string
+  hasWorkout: boolean
+  isCompleted: boolean
+  hasActivity: boolean
+}
+
+/**
+ * Builds the week strip's day flags so the plan dot (`hasWorkout`/`isCompleted`)
+ * and the activity mark (`hasActivity`) cannot drift apart: an unplanned free
+ * run marks a day without ever faking a plan dot (R5/R6, S8/S10).
+ */
+export function buildWeekDayItems<T extends { status: string }>(
+  weekKeys: readonly string[],
+  workoutsByDate: ReadonlyMap<string, T> | null | undefined,
+  activityDates: ReadonlySet<string> | null | undefined,
+): WeekDayActivityState[] {
+  return weekKeys.map((dateIso) => {
+    const workout = workoutsByDate?.get(dateIso)
+    return {
+      dateIso,
+      hasWorkout: Boolean(workout),
+      isCompleted: workout ? isWorkoutCompleted(workout) : false,
+      hasActivity: Boolean(activityDates?.has(dateIso)),
+    }
+  })
 }
 
 /** Picks the hero branch for the selected day. Loading is checked first (E7). */
