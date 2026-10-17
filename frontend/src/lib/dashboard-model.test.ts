@@ -5,6 +5,8 @@ import {
   buildWeekDayItems,
   isRunActivity,
   isWorkoutCompleted,
+  type MonthActivitySummaryCandidate,
+  monthActivityDates,
   resolveHeroState,
   selectActivePlan,
   type TimelineDayCandidate,
@@ -342,5 +344,74 @@ describe("buildWeekDayItems", () => {
 
     expect(items.map((item) => item.hasActivity)).toEqual([false, true])
     expect(items.every((item) => !item.hasWorkout)).toBe(true)
+  })
+})
+
+// R9 — the expanded month grid consumes the month summary's day keys. The
+// helper reuses `isRunActivity` so the run criterion cannot drift between the
+// week strip and the month grid.
+function monthSummary(
+  entries: Array<{ type: string; dot_days?: string[] }>,
+): MonthActivitySummaryCandidate {
+  return { by_type: entries }
+}
+
+describe("monthActivityDates", () => {
+  it("marks every dot day of a qualifying run type (R9)", () => {
+    const dates = monthActivityDates(
+      monthSummary([
+        { type: "Run", dot_days: ["2026-03-02", "2026-03-10"] },
+        { type: "TrailRun", dot_days: ["2026-03-15"] },
+      ]),
+    )
+
+    expect([...dates].sort()).toEqual([
+      "2026-03-02",
+      "2026-03-10",
+      "2026-03-15",
+    ])
+  })
+
+  it("ignores the explicitly non-running types (S11)", () => {
+    const dates = monthActivityDates(
+      monthSummary([
+        { type: "Ride", dot_days: ["2026-03-02"] },
+        { type: "Walk", dot_days: ["2026-03-03"] },
+        { type: "Swim", dot_days: ["2026-03-04"] },
+      ]),
+    )
+
+    expect(dates.size).toBe(0)
+  })
+
+  it("keeps run days from a mixed summary and drops the non-run ones (S10)", () => {
+    const dates = monthActivityDates(
+      monthSummary([
+        { type: "Run", dot_days: ["2026-03-10"] },
+        { type: "Ride", dot_days: ["2026-03-10", "2026-03-20"] },
+      ]),
+    )
+
+    expect([...dates]).toEqual(["2026-03-10"])
+  })
+
+  // The backend groups null-sport_type uploads under "Other"; R7 says those are
+  // runs, so they must still mark the month grid.
+  it("treats the unclassified `Other` bucket as a run (R7)", () => {
+    const dates = monthActivityDates(
+      monthSummary([{ type: "Other", dot_days: ["2026-03-12"] }]),
+    )
+
+    expect(dates.has("2026-03-12")).toBe(true)
+  })
+
+  it("returns an empty set for an empty or absent summary (E8)", () => {
+    expect(monthActivityDates(undefined).size).toBe(0)
+    expect(monthActivityDates(null).size).toBe(0)
+    expect(monthActivityDates(monthSummary([])).size).toBe(0)
+    expect(monthActivityDates(monthSummary([{ type: "Run" }])).size).toBe(0)
+    expect(
+      monthActivityDates(monthSummary([{ type: "Run", dot_days: [] }])).size,
+    ).toBe(0)
   })
 })

@@ -168,6 +168,34 @@ export function buildActivityDates(
   return dates
 }
 
+/** Minimal month-summary shape required by the month-grid builder (R9). */
+export interface MonthActivitySummaryCandidate {
+  by_type?: ReadonlyArray<{
+    type: string
+    dot_days?: readonly string[] | null
+  }> | null
+}
+
+/**
+ * Local day keys of the whole displayed month that carry at least one
+ * qualifying run (R9). Reads the backend month summary
+ * (`AnalyticsService.readActivitiesSummary`), whose `dot_days` are already
+ * local (`RUNNING_TIMEZONE`) keys, so this stays clock-free. Each `by_type`
+ * bucket is filtered through the shared `isRunActivity` predicate — including
+ * the `"Other"` bucket the backend uses for null-`sport_type` runs — so the run
+ * criterion cannot drift from the week strip.
+ */
+export function monthActivityDates(
+  summary: MonthActivitySummaryCandidate | null | undefined,
+): Set<string> {
+  const dates = new Set<string>()
+  for (const entry of summary?.by_type ?? []) {
+    if (!isRunActivity({ sport_type: entry.type })) continue
+    for (const day of entry.dot_days ?? []) dates.add(day)
+  }
+  return dates
+}
+
 /** Per-day plan + activity state for the week strip. */
 export interface WeekDayActivityState {
   dateIso: string
