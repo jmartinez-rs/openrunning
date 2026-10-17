@@ -840,6 +840,12 @@ class RunningPlanUpdate(RunningPlanCreate):
     """Reemplazo completo del plan: usa los mismos campos que la creación."""
 
 
+class RunningPlanStatusUpdate(SQLModel):
+    """Actualización de estado de un plan (PATCH)."""
+
+    status: PlanStatus
+
+
 class PlanDraftResponse(SQLModel):
     draft: RunningPlanCreate
     warnings: list[PlanValidationIssue] = Field(default_factory=list)

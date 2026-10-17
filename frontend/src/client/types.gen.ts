@@ -248,12 +248,25 @@ export type PhaseIn = {
     weeks?: Array<WeekIn>;
 };
 
+export type PlanDraftResponse = {
+    draft: RunningPlanCreate;
+    warnings?: Array<PlanValidationIssue>;
+    meta?: {
+        [key: string]: unknown;
+    };
+};
+
 export type PlanGeneratorConfig = {
     /**
      * Tipo de plan, ej: 'race', 'fitness'
      */
     plan_type?: string;
+    /**
+     * Objetivo principal: completar, tiempo o rendimiento
+     */
+    goal_type?: 'finish' | 'time' | 'performance';
     target_km: number;
+    target_time_seconds?: (number | null);
     num_weeks: number;
     start_date: string;
     week_start_day?: number;
@@ -261,7 +274,75 @@ export type PlanGeneratorConfig = {
     long_run_day?: number;
     race_id?: (string | null);
     baseline: AthleteBaseline;
+    /**
+     * Confianza global o override
+     */
+    confidence?: ('measured' | 'declared' | 'estimated' | null);
+    /**
+     * Modo conservador por prevención/inactividad
+     */
+    conservative_mode?: boolean;
+    /**
+     * Versión del motor algorítmico
+     */
+    engine_version?: string;
 };
+
+/**
+ * Objetivo principal: completar, tiempo o rendimiento
+ */
+export type goal_type = 'finish' | 'time' | 'performance';
+
+export type PlanRecalibrationPublic = {
+    id: string;
+    plan_id: string;
+    user_id: string;
+    source: 'test' | 'activity' | 'manual';
+    source_ref?: ({
+    [key: string]: unknown;
+} | null);
+    old_vdot: number;
+    new_vdot: number;
+    delta_vdot: number;
+    old_paces: {
+        [key: string]: (number);
+    };
+    new_paces: {
+        [key: string]: (number);
+    };
+    kind: 'improve' | 'decline';
+    suspicious: boolean;
+    effective_from_week: number;
+    effective_from_date: string;
+    affected_workouts: number;
+    affected_blocks: number;
+    engine_version: string;
+    applied: boolean;
+    created_at?: (string | null);
+};
+
+export type source = 'test' | 'activity' | 'manual';
+
+export type kind = 'improve' | 'decline';
+
+export type PlanRecalibrationsPublic = {
+    data: Array<PlanRecalibrationPublic>;
+    count: number;
+    current_vdot?: (number | null);
+    current_vdot_source?: (string | null);
+    current_vdot_date?: (string | null);
+};
+
+export type PlanValidationIssue = {
+    code: string;
+    severity: 'error' | 'warning' | 'info';
+    message: string;
+    details?: ({
+    [key: string]: unknown;
+} | null);
+};
+
+export type severity = 'error' | 'warning' | 'info';
 
 export type PrivateUserCreate = {
     email: string;
@@ -340,6 +421,91 @@ export type RaceUpdate = {
     shoe_id?: (string | null);
 };
 
+export type RecalibrationApplyPublic = {
+    vdot?: (number | null);
+    recommend_fitness_test?: boolean;
+    old_vdot?: (number | null);
+    new_vdot?: (number | null);
+    delta_vdot?: (number | null);
+    kind?: ('improve' | 'decline' | null);
+    suspicious?: boolean;
+    source?: ('test' | 'activity' | 'manual' | null);
+    evidence?: ({
+    [key: string]: unknown;
+} | null);
+    old_paces?: ({
+    [key: string]: (number);
+} | null);
+    new_paces?: ({
+    [key: string]: (number);
+} | null);
+    effective_from_week?: (number | null);
+    effective_from_date?: (string | null);
+    affected_weeks?: Array<(number)>;
+    changes?: Array<RecalibrationChangePublic>;
+    current_vdot?: (number | null);
+    current_vdot_source?: (string | null);
+    current_vdot_date?: (string | null);
+    recalibration: PlanRecalibrationPublic;
+};
+
+/**
+ * `confirm` is required on every apply; `acknowledge_risk` on risky ones.
+ */
+export type RecalibrationApplyRequest = {
+    new_vdot?: (number | null);
+    confirm?: boolean;
+    acknowledge_risk?: boolean;
+};
+
+export type RecalibrationChangePublic = {
+    workout_id: string;
+    date: string;
+    type: 'easy_run' | 'regeneration' | 'intervals' | 'tempo' | 'long_run' | 'test' | 'activation' | 'race';
+    old_pace?: (number | null);
+    new_pace?: (number | null);
+};
+
+export type type = 'easy_run' | 'regeneration' | 'intervals' | 'tempo' | 'long_run' | 'test' | 'activation' | 'race';
+
+export type RecalibrationPreviewPublic = {
+    vdot?: (number | null);
+    recommend_fitness_test?: boolean;
+    old_vdot?: (number | null);
+    new_vdot?: (number | null);
+    delta_vdot?: (number | null);
+    kind?: ('improve' | 'decline' | null);
+    suspicious?: boolean;
+    source?: ('test' | 'activity' | 'manual' | null);
+    evidence?: ({
+    [key: string]: unknown;
+} | null);
+    old_paces?: ({
+    [key: string]: (number);
+} | null);
+    new_paces?: ({
+    [key: string]: (number);
+} | null);
+    effective_from_week?: (number | null);
+    effective_from_date?: (string | null);
+    affected_weeks?: Array<(number)>;
+    changes?: Array<RecalibrationChangePublic>;
+    current_vdot?: (number | null);
+    current_vdot_source?: (string | null);
+    current_vdot_date?: (string | null);
+};
+
+/**
+ * Optional body carrying an explicit `new_vdot`.
+ *
+ * The persisted `source` is always server-resolved (test / activity / manual);
+ * the request deliberately does NOT accept a `source` field so the API does not
+ * advertise a value that would be ignored.
+ */
+export type RecalibrationPreviewRequest = {
+    new_vdot?: (number | null);
+};
+
 export type RunningPhasePublic = {
     id: string;
     position: number;
@@ -363,6 +529,13 @@ export type RunningPlanCreate = {
     end_date?: (string | null);
     week_start_day?: number;
     notes?: (string | null);
+    engine_version?: string;
+    baseline?: ({
+    [key: string]: unknown;
+} | null);
+    generation_params?: ({
+    [key: string]: unknown;
+} | null);
     status?: 'planned' | 'active' | 'completed';
     race_id?: (string | null);
     phases?: Array<PhaseIn>;
@@ -395,6 +568,13 @@ export type RunningPlanPublic = {
 export type RunningPlansPublic = {
     data: Array<RunningPlanSummaryPublic>;
     count: number;
+};
+
+/**
+ * Actualización de estado de un plan (PATCH).
+ */
+export type RunningPlanStatusUpdate = {
+    status: 'planned' | 'active' | 'completed';
 };
 
 export type RunningPlanSummaryPublic = {
@@ -430,6 +610,13 @@ export type RunningPlanUpdate = {
     end_date?: (string | null);
     week_start_day?: number;
     notes?: (string | null);
+    engine_version?: string;
+    baseline?: ({
+    [key: string]: unknown;
+} | null);
+    generation_params?: ({
+    [key: string]: unknown;
+} | null);
     status?: 'planned' | 'active' | 'completed';
     race_id?: (string | null);
     phases?: Array<PhaseIn>;
@@ -467,8 +654,6 @@ export type RunningWorkoutPublic = {
 } | null);
     blocks?: Array<WorkoutBlockPublic>;
 };
-
-export type type = 'easy_run' | 'regeneration' | 'intervals' | 'tempo' | 'long_run' | 'test' | 'activation' | 'race';
 
 export type intensity = 'easy' | 'moderate' | 'hard';
 
@@ -963,7 +1148,7 @@ export type RunningPlansGenerateDraftData = {
     requestBody: PlanGeneratorConfig;
 };
 
-export type RunningPlansGenerateDraftResponse = (RunningPlanCreate);
+export type RunningPlansGenerateDraftResponse = (PlanDraftResponse);
 
 export type RunningPlansReadPlanData = {
     planId: string;
@@ -986,6 +1171,13 @@ export type RunningPlansDeletePlanResponse = ({
     [key: string]: (string);
 });
 
+export type RunningPlansUpdatePlanData = {
+    planId: string;
+    requestBody: RunningPlanStatusUpdate;
+};
+
+export type RunningPlansUpdatePlanResponse = (RunningPlanPublic);
+
 export type RunningPlansUpdateWorkoutData = {
     planId: string;
     requestBody: RunningWorkoutUpdate;
@@ -1001,6 +1193,28 @@ export type RunningPlansDuplicateWorkoutData = {
 };
 
 export type RunningPlansDuplicateWorkoutResponse = (RunningWorkoutPublic);
+
+export type RunningPlansPreviewRecalibrationData = {
+    planId: string;
+    requestBody?: (RecalibrationPreviewRequest | null);
+};
+
+export type RunningPlansPreviewRecalibrationResponse = (RecalibrationPreviewPublic);
+
+export type RunningPlansApplyPlanRecalibrationData = {
+    planId: string;
+    requestBody?: (RecalibrationApplyRequest | null);
+};
+
+export type RunningPlansApplyPlanRecalibrationResponse = (RecalibrationApplyPublic);
+
+export type RunningPlansReadRecalibrationsData = {
+    limit?: number;
+    planId: string;
+    skip?: number;
+};
+
+export type RunningPlansReadRecalibrationsResponse = (PlanRecalibrationsPublic);
 
 export type SettingsReadSettingsResponse = (SettingsPublic);
 

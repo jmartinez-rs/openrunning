@@ -1,12 +1,14 @@
 import { useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import {
+  CheckCircle2,
   ClipboardList,
   Download,
   FileDown,
   FileText,
   LayoutGrid,
   Pencil,
+  Play,
   Trash2,
   Watch,
 } from "lucide-react"
@@ -33,6 +35,7 @@ interface RunnaPlanQuickActionsProps {
   onSelectWeek: (weekNumber: number) => void
   onExportMarkdown: () => void
   onDeletePlan: () => void
+  onStatusChange?: (newStatus: "planned" | "active" | "completed") => void
   className?: string
 }
 
@@ -49,6 +52,7 @@ export function RunnaPlanQuickActions({
   onSelectWeek,
   onExportMarkdown,
   onDeletePlan,
+  onStatusChange,
   className,
 }: RunnaPlanQuickActionsProps) {
   const navigate = useNavigate()
@@ -255,10 +259,39 @@ export function RunnaPlanQuickActions({
           </DialogHeader>
 
           <div className="mt-4 space-y-2.5">
+            {onStatusChange &&
+              (plan.status === "active" ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start rounded-2xl border-amber-500/20 bg-amber-500/10 py-5 text-xs font-bold hover:bg-amber-500/20 text-amber-400 cursor-pointer"
+                  onClick={() => {
+                    setShowManageModal(false)
+                    onStatusChange("completed")
+                  }}
+                >
+                  <CheckCircle2 className="mr-3 size-4 text-amber-400" />
+                  Finalizar plan antes de tiempo
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start rounded-2xl border-primary/20 bg-primary/10 py-5 text-xs font-bold hover:bg-primary/20 text-primary cursor-pointer"
+                  onClick={() => {
+                    setShowManageModal(false)
+                    onStatusChange("active")
+                  }}
+                >
+                  <Play className="mr-3 size-4 text-primary fill-current" />
+                  Activar como mi plan actual
+                </Button>
+              ))}
+
             <Button
               type="button"
               variant="outline"
-              className="w-full justify-start rounded-2xl border-white/10 py-5 text-xs font-bold hover:bg-white/10 text-white"
+              className="w-full justify-start rounded-2xl border-white/10 py-5 text-xs font-bold hover:bg-white/10 text-white cursor-pointer"
               onClick={() => {
                 setShowManageModal(false)
                 navigate({

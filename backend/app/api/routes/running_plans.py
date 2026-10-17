@@ -32,6 +32,7 @@ from app.models import (
     RunningPlansPublic,
     RunningPlanSummaryPublic,
     RunningPlanUpdate,
+    RunningPlanStatusUpdate,
     RunningWeek,
     RunningWorkout,
     RunningWorkoutPublic,
@@ -95,6 +96,28 @@ def _get_owned_workout(
     if not workout:
         raise HTTPException(status_code=404, detail="Sesión no encontrada")
     return workout
+
+
+def _ensure_single_active_plan(
+    session: SessionDep, user_id: uuid.UUID, active_plan_id: uuid.UUID | None = None
+) -> None:
+    """Garantiza que el usuario tenga un solo plan activo a la vez.
+
+    Si se crea o activa un plan, cualquier otro plan activo del usuario se pasa a 'completed'.
+    """
+    stmt = select(RunningPlan).where(
+        RunningPlan.user_id == user_id,
+        RunningPlan.status == "active",
+    )
+    if active_plan_id is not None:
+        stmt = stmt.where(RunningPlan.id != active_plan_id)
+    other_active = session.exec(stmt).all()
+    now = datetime.now(UTC)
+    for other in other_active:
+        other.status = "completed"
+        other.updated_at = now
+        session.add(other)
+    session.flush()
 
 
 def _validate_plan_input(
@@ -355,6 +378,15 @@ def read_plans(
         .where(RunningPlan.user_id == current_user.id)
         .order_by(col(RunningPlan.updated_at).desc())
     ).all()
+    # Garantizar un solo plan activo en caso de datos históricos inconsistentes
+    active_plans = [p for p in plans if p.status == "active"]
+    if len(active_plans) > 1:
+        now = datetime.now(UTC)
+        for older in active_plans[1:]:
+            older.status = "completed"
+            older.updated_at = now
+            session.add(older)
+        session.commit()
     return RunningPlansPublic(
         data=[
             _plan_summary(session, current_user.id, plan) for plan in plans
@@ -401,6 +433,8 @@ def create_plan(
     )
     session.add(plan)
     session.flush()
+    if plan.status == "active":
+        _ensure_single_active_plan(session, current_user.id, plan.id)
     _create_structure(session, plan.id, plan_in)
     session.commit()
     return _plan_public(session, current_user.id, plan.id)
@@ -445,6 +479,8 @@ def replace_plan(
     if "generation_params" in plan_in.model_fields_set:
         plan.generation_params = plan_in.generation_params
     plan.updated_at = datetime.now(UTC)
+    if plan.status == "active":
+        _ensure_single_active_plan(session, current_user.id, plan.id)
     session.add(plan)
     session.flush()
     _create_structure(session, plan.id, plan_in)
@@ -460,6 +496,24 @@ def delete_plan(
     session.delete(plan)
     session.commit()
     return {"message": "Plan de running eliminado"}
+
+
+@router.patch("/{plan_id}", response_model=RunningPlanPublic)
+def update_plan(
+    session: SessionDep,
+    current_user: CurrentUser,
+    plan_id: uuid.UUID,
+    status_in: RunningPlanStatusUpdate,
+) -> RunningPlanPublic:
+    """Actualiza el estado de un plan (ej. 'completed' para finalizarlo antes o 'active' para activarlo)."""
+    plan = _get_owned_plan(session, current_user.id, plan_id)
+    if status_in.status == "active":
+        _ensure_single_active_plan(session, current_user.id, plan.id)
+    plan.status = status_in.status
+    plan.updated_at = datetime.now(UTC)
+    session.add(plan)
+    session.commit()
+    return _plan_public(session, current_user.id, plan.id)
 
 
 @router.patch(

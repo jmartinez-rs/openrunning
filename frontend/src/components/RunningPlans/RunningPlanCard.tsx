@@ -1,9 +1,17 @@
+import { useState } from "react"
 import { Link } from "@tanstack/react-router"
-import { ArrowRight, Pencil, Trash2 } from "lucide-react"
+import { ArrowRight, CheckCircle2, Pencil, Play, Trash2 } from "lucide-react"
 
 import type { RunningPlanSummaryPublic } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import {
   computeProgress,
@@ -17,6 +25,8 @@ interface RunningPlanCardProps {
   isActiveFeatured?: boolean
   onEdit?: () => void
   onDelete?: () => void
+  onStatusChange?: (newStatus: "planned" | "active" | "completed") => void
+  changingStatus?: boolean
   deleting?: boolean
   className?: string
 }
@@ -26,9 +36,14 @@ export function RunningPlanCard({
   isActiveFeatured = false,
   onEdit,
   onDelete,
+  onStatusChange,
+  changingStatus = false,
   deleting = false,
   className,
 }: RunningPlanCardProps) {
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false)
+  const [activateDialogOpen, setActivateDialogOpen] = useState(false)
+
   const status = PLAN_STATUS_META[plan.status]
   const progress = computeProgress(plan)
 
@@ -187,7 +202,7 @@ export function RunningPlanCard({
             )}
 
             {/* Botones de acción */}
-            {(onEdit || onDelete) && (
+            {(onEdit || onDelete || onStatusChange) && (
               <div
                 className="flex items-center gap-1 ml-2 pl-2 border-l border-border/50"
                 onClick={(e) => {
@@ -195,13 +210,51 @@ export function RunningPlanCard({
                   e.stopPropagation()
                 }}
               >
+                {onStatusChange &&
+                  (plan.status === "active" ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      title="Finalizar plan antes de tiempo"
+                      aria-label="Finalizar plan antes de tiempo"
+                      disabled={changingStatus}
+                      className="h-7 px-2 rounded-lg text-xs font-semibold text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 gap-1 cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setFinishDialogOpen(true)
+                      }}
+                    >
+                      <CheckCircle2 className="size-3.5" />
+                      <span className="text-[11px] hidden sm:inline">Finalizar</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      title="Activar este plan"
+                      aria-label="Activar este plan"
+                      disabled={changingStatus}
+                      className="h-7 px-2 rounded-lg text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10 gap-1 cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setActivateDialogOpen(true)
+                      }}
+                    >
+                      <Play className="size-3.5 fill-current" />
+                      <span className="text-[11px] hidden sm:inline">Activar</span>
+                    </Button>
+                  ))}
                 {onEdit && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     aria-label="Editar plan"
-                    className="size-7 rounded-lg text-muted-foreground hover:text-white hover:bg-white/10"
+                    className="size-7 rounded-lg text-muted-foreground hover:text-white hover:bg-white/10 cursor-pointer"
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
@@ -218,7 +271,7 @@ export function RunningPlanCard({
                     size="icon"
                     aria-label="Eliminar plan"
                     disabled={deleting}
-                    className="size-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    className="size-7 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
@@ -233,6 +286,80 @@ export function RunningPlanCard({
           </div>
         </div>
       </div>
+
+      {/* Dialog para Finalizar Plan antes de tiempo */}
+      <Dialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}>
+        <DialogContent
+          className="max-w-md rounded-3xl bg-[#12151a] border-white/10 text-white p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black font-display text-white">
+              ¿Finalizar plan de entrenamiento?
+            </DialogTitle>
+            <DialogDescription className="text-xs text-zinc-400">
+              El plan &ldquo;{plan.name}&rdquo; pasará al estado Finalizado. Podrás seguir consultando sus métricas y sesiones en tu historial de planes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-xs font-semibold text-muted-foreground hover:text-white rounded-full cursor-pointer"
+              onClick={() => setFinishDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs cursor-pointer"
+              onClick={() => {
+                setFinishDialogOpen(false)
+                onStatusChange?.("completed")
+              }}
+            >
+              Sí, finalizar plan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para Activar Plan */}
+      <Dialog open={activateDialogOpen} onOpenChange={setActivateDialogOpen}>
+        <DialogContent
+          className="max-w-md rounded-3xl bg-[#12151a] border-white/10 text-white p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black font-display text-white">
+              ¿Activar este plan?
+            </DialogTitle>
+            <DialogDescription className="text-xs text-zinc-400">
+              &ldquo;{plan.name}&rdquo; pasará a ser tu plan activo actual. Si ya tenés otro plan en curso, pasará automáticamente a estar finalizado ya que solo se permite un plan activo a la vez.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-xs font-semibold text-muted-foreground hover:text-white rounded-full cursor-pointer"
+              onClick={() => setActivateDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-glow cursor-pointer"
+              onClick={() => {
+                setActivateDialogOpen(false)
+                onStatusChange?.("active")
+              }}
+            >
+              Activar plan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Link>
   )
 }

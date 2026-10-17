@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, Bell } from "lucide-react"
+import { ArrowLeft, Bell, CheckCircle2, Play } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
 import {
@@ -196,6 +196,27 @@ export function RunningPlanDetail({
     onError: handleError.bind(showErrorToast),
   })
 
+  const updatePlanStatus = useMutation({
+    mutationFn: (status: "planned" | "active" | "completed") =>
+      RunningPlansService.updatePlan({
+        planId,
+        requestBody: { status },
+      }),
+    onSuccess: (_, newStatus) => {
+      const msg =
+        newStatus === "completed"
+          ? "Plan finalizado exitosamente"
+          : newStatus === "active"
+            ? "Plan activado como tu plan principal"
+            : "Estado del plan actualizado"
+      showSuccessToast(msg)
+      queryClient.invalidateQueries({ queryKey: ["running-plan", planId] })
+      queryClient.invalidateQueries({ queryKey: ["running-plans"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+    },
+    onError: handleError.bind(showErrorToast),
+  })
+
   const handleDelete = () => {
     if (!plan) return
     if (
@@ -289,6 +310,49 @@ export function RunningPlanDetail({
           >
             {planStatus.label}
           </Badge>
+
+          {plan.status === "active" ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={updatePlanStatus.isPending}
+              className="h-9 rounded-full border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 text-xs font-bold px-3 gap-1.5 cursor-pointer"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `¿Deseás finalizar el plan "${plan.name}" antes de tiempo? Pasará a estar completado.`,
+                  )
+                ) {
+                  updatePlanStatus.mutate("completed")
+                }
+              }}
+            >
+              <CheckCircle2 className="size-3.5" />
+              <span>Finalizar plan</span>
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={updatePlanStatus.isPending}
+              className="h-9 rounded-full border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold px-3 gap-1.5 cursor-pointer shadow-glow"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `¿Activar "${plan.name}"? Se establecerá como tu plan activo principal y cualquier otro plan activo se marcará como finalizado.`,
+                  )
+                ) {
+                  updatePlanStatus.mutate("active")
+                }
+              }}
+            >
+              <Play className="size-3.5 fill-current" />
+              <span>Activar plan</span>
+            </Button>
+          )}
+
           <Button
             type="button"
             variant="ghost"
@@ -318,6 +382,7 @@ export function RunningPlanDetail({
         onSelectWeek={handleSelectWeek}
         onExportMarkdown={() => handleDownloadExport("full")}
         onDeletePlan={handleDelete}
+        onStatusChange={(status) => updatePlanStatus.mutate(status)}
       />
 
       {/* ── 3. Análisis del Ritmo & Tiempos Estimados ── */}

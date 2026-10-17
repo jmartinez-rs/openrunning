@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ActivitiesReadActivitiesData, ActivitiesReadActivitiesResponse, ActivitiesCreateActivityData, ActivitiesCreateActivityResponse, ActivitiesReadCardioMetricsData, ActivitiesReadCardioMetricsResponse, ActivitiesReadActivityData, ActivitiesReadActivityResponse, ActivitiesUpdateActivityData, ActivitiesUpdateActivityResponse, ActivitiesDeleteActivityData, ActivitiesDeleteActivityResponse, ActivitiesAssignActivityShoeData, ActivitiesAssignActivityShoeResponse, ActivitiesUploadActivityFileData, ActivitiesUploadActivityFileResponse, AnalyticsReadCardioAnalyticsData, AnalyticsReadCardioAnalyticsResponse, AnalyticsReadDashboardData, AnalyticsReadDashboardResponse, AnalyticsReadCardioMonthlyData, AnalyticsReadCardioMonthlyResponse, AnalyticsReadCardioBestPacesResponse, AnalyticsReadCardioHrZonesData, AnalyticsReadCardioHrZonesResponse, AnalyticsReadCardioHrTrendData, AnalyticsReadCardioHrTrendResponse, AnalyticsReadActivitiesSummaryData, AnalyticsReadActivitiesSummaryResponse, AuthStartStravaAuthResponse, AuthFinishStravaAuthData, AuthFinishStravaAuthResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, RacesReadRacesData, RacesReadRacesResponse, RacesCreateRaceData, RacesCreateRaceResponse, RacesReadRaceData, RacesReadRaceResponse, RacesUpdateRaceData, RacesUpdateRaceResponse, RacesDeleteRaceData, RacesDeleteRaceResponse, RunningPlansReadPlansResponse, RunningPlansCreatePlanData, RunningPlansCreatePlanResponse, RunningPlansGenerateDraftData, RunningPlansGenerateDraftResponse, RunningPlansReadPlanData, RunningPlansReadPlanResponse, RunningPlansReplacePlanData, RunningPlansReplacePlanResponse, RunningPlansDeletePlanData, RunningPlansDeletePlanResponse, RunningPlansUpdateWorkoutData, RunningPlansUpdateWorkoutResponse, RunningPlansDuplicateWorkoutData, RunningPlansDuplicateWorkoutResponse, SettingsReadSettingsResponse, SettingsReadGoalsResponse, SettingsUpdateGoalsData, SettingsUpdateGoalsResponse, SettingsSaveStravaCredentialsData, SettingsSaveStravaCredentialsResponse, SettingsReadIntegrationStatusData, SettingsReadIntegrationStatusResponse, SettingsDisconnectIntegrationData, SettingsDisconnectIntegrationResponse, SettingsTestIntegrationData, SettingsTestIntegrationResponse, SettingsReadSyncScheduleResponse, SettingsUpdateSyncScheduleData, SettingsUpdateSyncScheduleResponse, ShoesReadShoesData, ShoesReadShoesResponse, ShoesCreateShoeData, ShoesCreateShoeResponse, ShoesImportStravaShoesResponse, ShoesReadShoeData, ShoesReadShoeResponse, ShoesUpdateShoeData, ShoesUpdateShoeResponse, ShoesDeleteShoeData, ShoesDeleteShoeResponse, ShoesReadShoeStatsData, ShoesReadShoeStatsResponse, ShoesReadShoeActivitiesData, ShoesReadShoeActivitiesResponse, StorageUploadFileData, StorageUploadFileResponse, StorageReadFileData, StorageReadFileResponse, SyncTriggerSyncData, SyncTriggerSyncResponse, SyncReadSyncLogsData, SyncReadSyncLogsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, WebhooksVerifyStravaWebhookData, WebhooksVerifyStravaWebhookResponse, WebhooksReceiveStravaWebhookData, WebhooksReceiveStravaWebhookResponse } from './types.gen';
+import type { ActivitiesReadActivitiesData, ActivitiesReadActivitiesResponse, ActivitiesCreateActivityData, ActivitiesCreateActivityResponse, ActivitiesReadCardioMetricsData, ActivitiesReadCardioMetricsResponse, ActivitiesReadActivityData, ActivitiesReadActivityResponse, ActivitiesUpdateActivityData, ActivitiesUpdateActivityResponse, ActivitiesDeleteActivityData, ActivitiesDeleteActivityResponse, ActivitiesAssignActivityShoeData, ActivitiesAssignActivityShoeResponse, ActivitiesUploadActivityFileData, ActivitiesUploadActivityFileResponse, AnalyticsReadCardioAnalyticsData, AnalyticsReadCardioAnalyticsResponse, AnalyticsReadDashboardData, AnalyticsReadDashboardResponse, AnalyticsReadCardioMonthlyData, AnalyticsReadCardioMonthlyResponse, AnalyticsReadCardioBestPacesResponse, AnalyticsReadCardioHrZonesData, AnalyticsReadCardioHrZonesResponse, AnalyticsReadCardioHrTrendData, AnalyticsReadCardioHrTrendResponse, AnalyticsReadActivitiesSummaryData, AnalyticsReadActivitiesSummaryResponse, AuthStartStravaAuthResponse, AuthFinishStravaAuthData, AuthFinishStravaAuthResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, RacesReadRacesData, RacesReadRacesResponse, RacesCreateRaceData, RacesCreateRaceResponse, RacesReadRaceData, RacesReadRaceResponse, RacesUpdateRaceData, RacesUpdateRaceResponse, RacesDeleteRaceData, RacesDeleteRaceResponse, RunningPlansReadPlansResponse, RunningPlansCreatePlanData, RunningPlansCreatePlanResponse, RunningPlansGenerateDraftData, RunningPlansGenerateDraftResponse, RunningPlansReadPlanData, RunningPlansReadPlanResponse, RunningPlansReplacePlanData, RunningPlansReplacePlanResponse, RunningPlansDeletePlanData, RunningPlansDeletePlanResponse, RunningPlansUpdatePlanData, RunningPlansUpdatePlanResponse, RunningPlansUpdateWorkoutData, RunningPlansUpdateWorkoutResponse, RunningPlansDuplicateWorkoutData, RunningPlansDuplicateWorkoutResponse, RunningPlansPreviewRecalibrationData, RunningPlansPreviewRecalibrationResponse, RunningPlansApplyPlanRecalibrationData, RunningPlansApplyPlanRecalibrationResponse, RunningPlansReadRecalibrationsData, RunningPlansReadRecalibrationsResponse, SettingsReadSettingsResponse, SettingsReadGoalsResponse, SettingsUpdateGoalsData, SettingsUpdateGoalsResponse, SettingsSaveStravaCredentialsData, SettingsSaveStravaCredentialsResponse, SettingsReadIntegrationStatusData, SettingsReadIntegrationStatusResponse, SettingsDisconnectIntegrationData, SettingsDisconnectIntegrationResponse, SettingsTestIntegrationData, SettingsTestIntegrationResponse, SettingsReadSyncScheduleResponse, SettingsUpdateSyncScheduleData, SettingsUpdateSyncScheduleResponse, ShoesReadShoesData, ShoesReadShoesResponse, ShoesCreateShoeData, ShoesCreateShoeResponse, ShoesImportStravaShoesResponse, ShoesReadShoeData, ShoesReadShoeResponse, ShoesUpdateShoeData, ShoesUpdateShoeResponse, ShoesDeleteShoeData, ShoesDeleteShoeResponse, ShoesReadShoeStatsData, ShoesReadShoeStatsResponse, ShoesReadShoeActivitiesData, ShoesReadShoeActivitiesResponse, StorageUploadFileData, StorageUploadFileResponse, StorageReadFileData, StorageReadFileResponse, SyncTriggerSyncData, SyncTriggerSyncResponse, SyncReadSyncLogsData, SyncReadSyncLogsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, WebhooksVerifyStravaWebhookData, WebhooksVerifyStravaWebhookResponse, WebhooksReceiveStravaWebhookData, WebhooksReceiveStravaWebhookResponse } from './types.gen';
 
 export class ActivitiesService {
     /**
@@ -635,7 +635,7 @@ export class RunningPlansService {
      * Genera un borrador del plan en base a la configuración y el baseline del atleta.
      * @param data The data for the request.
      * @param data.requestBody
-     * @returns RunningPlanCreate Successful Response
+     * @returns PlanDraftResponse Successful Response
      * @throws ApiError
      */
     public static generateDraft(data: RunningPlansGenerateDraftData): CancelablePromise<RunningPlansGenerateDraftResponse> {
@@ -714,6 +714,30 @@ export class RunningPlansService {
     }
     
     /**
+     * Update Plan
+     * Actualiza el estado de un plan (ej. 'completed' para finalizarlo antes o 'active' para activarlo).
+     * @param data The data for the request.
+     * @param data.planId
+     * @param data.requestBody
+     * @returns RunningPlanPublic Successful Response
+     * @throws ApiError
+     */
+    public static updatePlan(data: RunningPlansUpdatePlanData): CancelablePromise<RunningPlansUpdatePlanResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/running-plans/{plan_id}',
+            path: {
+                plan_id: data.planId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
      * Update Workout
      * @param data The data for the request.
      * @param data.planId
@@ -757,6 +781,88 @@ export class RunningPlansService {
             },
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Preview Recalibration
+     * Read-only preview. D0 precedence: 404 -> 409 -> 409 -> 200 null -> 200.
+     * @param data The data for the request.
+     * @param data.planId
+     * @param data.requestBody
+     * @returns RecalibrationPreviewPublic Successful Response
+     * @throws ApiError
+     */
+    public static previewRecalibration(data: RunningPlansPreviewRecalibrationData): CancelablePromise<RunningPlansPreviewRecalibrationResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/running-plans/{plan_id}/recalibrate/preview',
+            path: {
+                plan_id: data.planId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Apply Plan Recalibration
+     * Apply a recalibration. Normative gate order (R19/R28/R20/T13).
+     * @param data The data for the request.
+     * @param data.planId
+     * @param data.requestBody
+     * @returns RecalibrationApplyPublic Successful Response
+     * @throws ApiError
+     */
+    public static applyPlanRecalibration(data: RunningPlansApplyPlanRecalibrationData): CancelablePromise<RunningPlansApplyPlanRecalibrationResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/running-plans/{plan_id}/recalibrate',
+            path: {
+                plan_id: data.planId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Recalibrations
+     * Paginated audit history plus the derived current VDOT (R21/R23).
+     *
+     * Page-scoped contract (B3): the endpoint validates exactly the audit rows it
+     * serves, so a corrupt row outside the requested page cannot fail the request
+     * and the page that contains it fails with 409 instead of leaking a broken row.
+     * ``count`` remains the TOTAL number of audit rows (pagination semantics, as in
+     * the sibling list routes) and is deliberately NOT the number of serialisable
+     * rows. Validating every page on every request would defeat pagination.
+     * @param data The data for the request.
+     * @param data.planId
+     * @param data.skip
+     * @param data.limit
+     * @returns PlanRecalibrationsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readRecalibrations(data: RunningPlansReadRecalibrationsData): CancelablePromise<RunningPlansReadRecalibrationsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/running-plans/{plan_id}/recalibrations',
+            path: {
+                plan_id: data.planId
+            },
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
             errors: {
                 422: 'Validation Error'
             }

@@ -1291,6 +1291,29 @@ export const PhaseInSchema = {
     title: 'PhaseIn'
 } as const;
 
+export const PlanDraftResponseSchema = {
+    properties: {
+        draft: {
+            '$ref': '#/components/schemas/RunningPlanCreate'
+        },
+        warnings: {
+            items: {
+                '$ref': '#/components/schemas/PlanValidationIssue'
+            },
+            type: 'array',
+            title: 'Warnings'
+        },
+        meta: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Meta'
+        }
+    },
+    type: 'object',
+    required: ['draft'],
+    title: 'PlanDraftResponse'
+} as const;
+
 export const PlanGeneratorConfigSchema = {
     properties: {
         plan_type: {
@@ -1299,10 +1322,29 @@ export const PlanGeneratorConfigSchema = {
             description: "Tipo de plan, ej: 'race', 'fitness'",
             default: 'race'
         },
+        goal_type: {
+            type: 'string',
+            enum: ['finish', 'time', 'performance'],
+            title: 'Goal Type',
+            description: 'Objetivo principal: completar, tiempo o rendimiento',
+            default: 'finish'
+        },
         target_km: {
             type: 'number',
             minimum: 0,
             title: 'Target Km'
+        },
+        target_time_seconds: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    minimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Time Seconds'
         },
         num_weeks: {
             type: 'integer',
@@ -1331,10 +1373,10 @@ export const PlanGeneratorConfigSchema = {
         },
         long_run_day: {
             type: 'integer',
-            maximum: 6,
-            minimum: 0,
+            maximum: 7,
+            minimum: 1,
             title: 'Long Run Day',
-            default: 0
+            default: 7
         },
         race_id: {
             anyOf: [
@@ -1350,11 +1392,234 @@ export const PlanGeneratorConfigSchema = {
         },
         baseline: {
             '$ref': '#/components/schemas/AthleteBaseline'
+        },
+        confidence: {
+            anyOf: [
+                {
+                    type: 'string',
+                    enum: ['measured', 'declared', 'estimated']
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Confidence',
+            description: 'Confianza global o override'
+        },
+        conservative_mode: {
+            type: 'boolean',
+            title: 'Conservative Mode',
+            description: 'Modo conservador por prevención/inactividad',
+            default: false
+        },
+        engine_version: {
+            type: 'string',
+            title: 'Engine Version',
+            description: 'Versión del motor algorítmico',
+            default: 'v2'
         }
     },
     type: 'object',
     required: ['target_km', 'num_weeks', 'start_date', 'baseline'],
     title: 'PlanGeneratorConfig'
+} as const;
+
+export const PlanRecalibrationPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        plan_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Plan Id'
+        },
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        source: {
+            type: 'string',
+            enum: ['test', 'activity', 'manual'],
+            title: 'Source'
+        },
+        source_ref: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source Ref'
+        },
+        old_vdot: {
+            type: 'number',
+            title: 'Old Vdot'
+        },
+        new_vdot: {
+            type: 'number',
+            title: 'New Vdot'
+        },
+        delta_vdot: {
+            type: 'number',
+            title: 'Delta Vdot'
+        },
+        old_paces: {
+            additionalProperties: {
+                type: 'number'
+            },
+            type: 'object',
+            title: 'Old Paces'
+        },
+        new_paces: {
+            additionalProperties: {
+                type: 'number'
+            },
+            type: 'object',
+            title: 'New Paces'
+        },
+        kind: {
+            type: 'string',
+            enum: ['improve', 'decline'],
+            title: 'Kind'
+        },
+        suspicious: {
+            type: 'boolean',
+            title: 'Suspicious'
+        },
+        effective_from_week: {
+            type: 'integer',
+            title: 'Effective From Week'
+        },
+        effective_from_date: {
+            type: 'string',
+            format: 'date',
+            title: 'Effective From Date'
+        },
+        affected_workouts: {
+            type: 'integer',
+            title: 'Affected Workouts'
+        },
+        affected_blocks: {
+            type: 'integer',
+            title: 'Affected Blocks'
+        },
+        engine_version: {
+            type: 'string',
+            title: 'Engine Version'
+        },
+        applied: {
+            type: 'boolean',
+            title: 'Applied'
+        },
+        created_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Created At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'plan_id', 'user_id', 'source', 'old_vdot', 'new_vdot', 'delta_vdot', 'old_paces', 'new_paces', 'kind', 'suspicious', 'effective_from_week', 'effective_from_date', 'affected_workouts', 'affected_blocks', 'engine_version', 'applied'],
+    title: 'PlanRecalibrationPublic'
+} as const;
+
+export const PlanRecalibrationsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/PlanRecalibrationPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        },
+        current_vdot: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Vdot'
+        },
+        current_vdot_source: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Vdot Source'
+        },
+        current_vdot_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Vdot Date'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'PlanRecalibrationsPublic'
+} as const;
+
+export const PlanValidationIssueSchema = {
+    properties: {
+        code: {
+            type: 'string',
+            title: 'Code'
+        },
+        severity: {
+            type: 'string',
+            enum: ['error', 'warning', 'info'],
+            title: 'Severity'
+        },
+        message: {
+            type: 'string',
+            title: 'Message'
+        },
+        details: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Details'
+        }
+    },
+    type: 'object',
+    required: ['code', 'severity', 'message'],
+    title: 'PlanValidationIssue'
 } as const;
 
 export const PrivateUserCreateSchema = {
@@ -1992,6 +2257,503 @@ export const RacesPublicSchema = {
     title: 'RacesPublic'
 } as const;
 
+export const RecalibrationApplyPublicSchema = {
+    properties: {
+        vdot: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Vdot'
+        },
+        recommend_fitness_test: {
+            type: 'boolean',
+            title: 'Recommend Fitness Test',
+            default: false
+        },
+        old_vdot: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Old Vdot'
+        },
+        new_vdot: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'New Vdot'
+        },
+        delta_vdot: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Delta Vdot'
+        },
+        kind: {
+            anyOf: [
+                {
+                    type: 'string',
+                    enum: ['improve', 'decline']
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Kind'
+        },
+        suspicious: {
+            type: 'boolean',
+            title: 'Suspicious',
+            default: false
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string',
+                    enum: ['test', 'activity', 'manual']
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        evidence: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Evidence'
+        },
+        old_paces: {
+            anyOf: [
+                {
+                    additionalProperties: {
+                        type: 'number'
+                    },
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Old Paces'
+        },
+        new_paces: {
+            anyOf: [
+                {
+                    additionalProperties: {
+                        type: 'number'
+                    },
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'New Paces'
+        },
+        effective_from_week: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Effective From Week'
+        },
+        effective_from_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Effective From Date'
+        },
+        affected_weeks: {
+            items: {
+                type: 'integer'
+            },
+            type: 'array',
+            title: 'Affected Weeks'
+        },
+        changes: {
+            items: {
+                '$ref': '#/components/schemas/RecalibrationChangePublic'
+            },
+            type: 'array',
+            title: 'Changes'
+        },
+        current_vdot: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Vdot'
+        },
+        current_vdot_source: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Vdot Source'
+        },
+        current_vdot_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Vdot Date'
+        },
+        recalibration: {
+            '$ref': '#/components/schemas/PlanRecalibrationPublic'
+        }
+    },
+    type: 'object',
+    required: ['recalibration'],
+    title: 'RecalibrationApplyPublic'
+} as const;
+
+export const RecalibrationApplyRequestSchema = {
+    properties: {
+        new_vdot: {
+            anyOf: [
+                {
+                    type: 'number',
+                    maximum: 85,
+                    minimum: 20
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'New Vdot'
+        },
+        confirm: {
+            type: 'boolean',
+            title: 'Confirm',
+            default: false
+        },
+        acknowledge_risk: {
+            type: 'boolean',
+            title: 'Acknowledge Risk',
+            default: false
+        }
+    },
+    type: 'object',
+    title: 'RecalibrationApplyRequest',
+    description: `\`confirm\` is required on every apply; \`acknowledge_risk\` on risky ones.`
+} as const;
+
+export const RecalibrationChangePublicSchema = {
+    properties: {
+        workout_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Workout Id'
+        },
+        date: {
+            type: 'string',
+            format: 'date',
+            title: 'Date'
+        },
+        type: {
+            type: 'string',
+            enum: ['easy_run', 'regeneration', 'intervals', 'tempo', 'long_run', 'test', 'activation', 'race'],
+            title: 'Type'
+        },
+        old_pace: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Old Pace'
+        },
+        new_pace: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'New Pace'
+        }
+    },
+    type: 'object',
+    required: ['workout_id', 'date', 'type'],
+    title: 'RecalibrationChangePublic'
+} as const;
+
+export const RecalibrationPreviewPublicSchema = {
+    properties: {
+        vdot: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Vdot'
+        },
+        recommend_fitness_test: {
+            type: 'boolean',
+            title: 'Recommend Fitness Test',
+            default: false
+        },
+        old_vdot: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Old Vdot'
+        },
+        new_vdot: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'New Vdot'
+        },
+        delta_vdot: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Delta Vdot'
+        },
+        kind: {
+            anyOf: [
+                {
+                    type: 'string',
+                    enum: ['improve', 'decline']
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Kind'
+        },
+        suspicious: {
+            type: 'boolean',
+            title: 'Suspicious',
+            default: false
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string',
+                    enum: ['test', 'activity', 'manual']
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        evidence: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Evidence'
+        },
+        old_paces: {
+            anyOf: [
+                {
+                    additionalProperties: {
+                        type: 'number'
+                    },
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Old Paces'
+        },
+        new_paces: {
+            anyOf: [
+                {
+                    additionalProperties: {
+                        type: 'number'
+                    },
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'New Paces'
+        },
+        effective_from_week: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Effective From Week'
+        },
+        effective_from_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Effective From Date'
+        },
+        affected_weeks: {
+            items: {
+                type: 'integer'
+            },
+            type: 'array',
+            title: 'Affected Weeks'
+        },
+        changes: {
+            items: {
+                '$ref': '#/components/schemas/RecalibrationChangePublic'
+            },
+            type: 'array',
+            title: 'Changes'
+        },
+        current_vdot: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Vdot'
+        },
+        current_vdot_source: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Vdot Source'
+        },
+        current_vdot_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Vdot Date'
+        }
+    },
+    type: 'object',
+    title: 'RecalibrationPreviewPublic'
+} as const;
+
+export const RecalibrationPreviewRequestSchema = {
+    properties: {
+        new_vdot: {
+            anyOf: [
+                {
+                    type: 'number',
+                    maximum: 85,
+                    minimum: 20
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'New Vdot'
+        }
+    },
+    type: 'object',
+    title: 'RecalibrationPreviewRequest',
+    description: `Optional body carrying an explicit \`new_vdot\`.
+
+The persisted \`source\` is always server-resolved (test / activity / manual);
+the request deliberately does NOT accept a \`source\` field so the API does not
+advertise a value that would be ignored.`
+} as const;
+
 export const RunningPhasePublicSchema = {
     properties: {
         id: {
@@ -2151,6 +2913,36 @@ export const RunningPlanCreateSchema = {
                 }
             ],
             title: 'Notes'
+        },
+        engine_version: {
+            type: 'string',
+            maxLength: 16,
+            title: 'Engine Version',
+            default: 'v1'
+        },
+        baseline: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Baseline'
+        },
+        generation_params: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Generation Params'
         },
         status: {
             type: 'string',
@@ -2317,6 +3109,20 @@ export const RunningPlanPublicSchema = {
     type: 'object',
     required: ['id', 'user_id', 'race_id', 'name', 'goal', 'distance_km', 'distance_unit', 'target_time_seconds', 'target_pace_seconds_per_km', 'start_date', 'end_date', 'week_start_day', 'status', 'notes', 'created_at', 'updated_at'],
     title: 'RunningPlanPublic'
+} as const;
+
+export const RunningPlanStatusUpdateSchema = {
+    properties: {
+        status: {
+            type: 'string',
+            enum: ['planned', 'active', 'completed'],
+            title: 'Status'
+        }
+    },
+    type: 'object',
+    required: ['status'],
+    title: 'RunningPlanStatusUpdate',
+    description: 'Actualización de estado de un plan (PATCH).'
 } as const;
 
 export const RunningPlanSummaryPublicSchema = {
@@ -2522,6 +3328,36 @@ export const RunningPlanUpdateSchema = {
                 }
             ],
             title: 'Notes'
+        },
+        engine_version: {
+            type: 'string',
+            maxLength: 16,
+            title: 'Engine Version',
+            default: 'v1'
+        },
+        baseline: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Baseline'
+        },
+        generation_params: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Generation Params'
         },
         status: {
             type: 'string',
