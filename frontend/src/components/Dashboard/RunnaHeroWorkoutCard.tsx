@@ -1,4 +1,11 @@
-import { Check, ChevronRight, Cloud, Coffee, Lightbulb, Sun } from "lucide-react"
+import {
+  Check,
+  ChevronRight,
+  Cloud,
+  Coffee,
+  Lightbulb,
+  Sun,
+} from "lucide-react"
 import type React from "react"
 import type { RunningWorkoutPublic } from "@/client"
 import {
@@ -7,6 +14,7 @@ import {
   WORKOUT_TYPE_META,
   type WorkoutType,
 } from "@/components/RunningPlans/running-utils"
+import { isWorkoutCompleted, resolveHeroState } from "@/lib/dashboard-model"
 
 interface RunnaHeroWorkoutCardProps {
   workout: RunningWorkoutPublic | null
@@ -18,13 +26,38 @@ interface RunnaHeroWorkoutCardProps {
   isTogglingComplete?: boolean
   onViewDetails?: () => void
   onOpenManualRun?: () => void
+  /** Plan detail still loading: render the skeleton instead of "Día de descanso" (E7). */
+  isLoading?: boolean
 }
+
+/** Cabecera compartida por las tres ramas (carga, descanso y sesión). */
+const HeroHeader: React.FC<{
+  sectionTitle: string
+  weatherTemp: string
+  weatherCondition: "sunny" | "cloudy"
+}> = ({ sectionTitle, weatherTemp, weatherCondition }) => (
+  <div className="flex items-center justify-between px-1">
+    <h2 className="text-base font-display font-black text-white tracking-tight">
+      {sectionTitle}
+    </h2>
+    <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400">
+      {weatherCondition === "sunny" ? (
+        <Sun className="size-4 text-amber-400" />
+      ) : (
+        <Cloud className="size-4 text-zinc-400" />
+      )}
+      <span>{weatherTemp}</span>
+    </div>
+  </div>
+)
 
 /** Formatea fecha estilo Runna: "jueves, 22 oct" */
 function formatRunnaCardDate(iso: string): string {
   const d = new Date(`${iso}T12:00:00`)
   if (Number.isNaN(d.getTime())) return iso
-  const weekday = new Intl.DateTimeFormat("es-AR", { weekday: "long" }).format(d)
+  const weekday = new Intl.DateTimeFormat("es-AR", { weekday: "long" }).format(
+    d,
+  )
   const day = d.getDate()
   const month = new Intl.DateTimeFormat("es-AR", { month: "short" })
     .format(d)
@@ -34,7 +67,10 @@ function formatRunnaCardDate(iso: string): string {
 }
 
 /** Formatea duración estimada estilo Runna: "40m - 45m" o "50m" */
-function formatRunnaDuration(seconds?: number | null, distanceKm?: number | null): string {
+function formatRunnaDuration(
+  seconds?: number | null,
+  distanceKm?: number | null,
+): string {
   if (seconds && seconds > 0) {
     const min = Math.round(seconds / 60)
     const lower = Math.max(10, min - 5)
@@ -59,6 +95,7 @@ export const RunnaHeroWorkoutCard: React.FC<RunnaHeroWorkoutCardProps> = ({
   isTogglingComplete = false,
   onViewDetails,
   onOpenManualRun,
+  isLoading = false,
 }) => {
   const dateFormatted = formatRunnaCardDate(selectedDateIso)
 
@@ -67,24 +104,43 @@ export const RunnaHeroWorkoutCard: React.FC<RunnaHeroWorkoutCardProps> = ({
     ? "Entrenamientos de hoy"
     : `Entrenamientos · ${dateFormatted}`
 
+  // El detalle del plan todavía está cargando: skeleton, nunca "Día de descanso" (E7)
+  if (resolveHeroState({ workout, isLoading }) === "loading") {
+    return (
+      <section
+        aria-label="Entrenamientos"
+        aria-busy="true"
+        data-testid="hero-skeleton"
+        className="space-y-3"
+      >
+        <HeroHeader
+          sectionTitle={sectionTitle}
+          weatherTemp={weatherTemp}
+          weatherCondition={weatherCondition}
+        />
+
+        <div className="relative overflow-hidden rounded-3xl bg-[#17171a] border border-white/10 p-5 sm:p-6 shadow-card">
+          <div className="absolute left-0 top-0 bottom-0 w-2.5 rounded-l-3xl bg-white/10 animate-pulse" />
+          <div className="pl-2 animate-pulse space-y-3">
+            <div className="h-6 w-2/3 rounded-lg bg-white/10" />
+            <div className="h-3 w-1/3 rounded bg-white/5" />
+            <div className="h-3 w-1/2 rounded bg-white/5" />
+            <div className="mt-5 h-11 rounded-2xl bg-white/5" />
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   // 1. Día de Descanso (sin sesión en este día)
   if (!workout || workout.cancelled) {
     return (
       <section aria-label="Entrenamientos" className="space-y-3">
-        {/* Cabecera con clima */}
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-base font-display font-black text-white tracking-tight">
-            {sectionTitle}
-          </h2>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400">
-            {weatherCondition === "sunny" ? (
-              <Sun className="size-4 text-amber-400" />
-            ) : (
-              <Cloud className="size-4 text-zinc-400" />
-            )}
-            <span>{weatherTemp}</span>
-          </div>
-        </div>
+        <HeroHeader
+          sectionTitle={sectionTitle}
+          weatherTemp={weatherTemp}
+          weatherCondition={weatherCondition}
+        />
 
         {/* Tarjeta de Día de Descanso */}
         <div className="relative overflow-hidden rounded-3xl bg-[#17171a] border border-white/5 p-6 shadow-card text-center">
@@ -122,9 +178,8 @@ export const RunnaHeroWorkoutCard: React.FC<RunnaHeroWorkoutCardProps> = ({
     (workout.blocks ? blocksDistanceKm(workout.blocks) : null)
   const durationText = formatRunnaDuration(workout.duration_seconds, distanceKm)
 
-  // Determinar si está completada
-  const isCompleted =
-    workout.status_override === "completed" || Boolean(workout.matched_activity_id)
+  // Determinar si está completada (R8: solo el status resuelto por el backend)
+  const isCompleted = isWorkoutCompleted(workout)
 
   // Barra de color lateral y categoría estilo Runna
   let leftBarGradient = "from-lime-400 to-emerald-500"
@@ -158,20 +213,11 @@ export const RunnaHeroWorkoutCard: React.FC<RunnaHeroWorkoutCardProps> = ({
 
   return (
     <section aria-label="Entrenamientos" className="space-y-3">
-      {/* Cabecera con clima */}
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-base font-display font-black text-white tracking-tight">
-          {sectionTitle}
-        </h2>
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400">
-          {weatherCondition === "sunny" ? (
-            <Sun className="size-4 text-amber-400" />
-          ) : (
-            <Cloud className="size-4 text-zinc-400" />
-          )}
-          <span>{weatherTemp}</span>
-        </div>
-      </div>
+      <HeroHeader
+        sectionTitle={sectionTitle}
+        weatherTemp={weatherTemp}
+        weatherCondition={weatherCondition}
+      />
 
       {/* Tarjeta Hero estilo Runna */}
       <div className="relative overflow-hidden rounded-3xl bg-[#17171a] border border-white/10 p-5 sm:p-6 shadow-card hover:border-white/20 transition-all">
@@ -214,10 +260,16 @@ export const RunnaHeroWorkoutCard: React.FC<RunnaHeroWorkoutCardProps> = ({
                     ? "bg-primary border-primary text-black shadow-[0_0_12px_rgba(234,252,95,0.4)]"
                     : "border-white/25 hover:border-white/50 bg-white/5 text-transparent"
                 }`}
-                aria-label={isCompleted ? "Marcar como pendiente" : "Marcar como completado"}
+                aria-label={
+                  isCompleted
+                    ? "Marcar como pendiente"
+                    : "Marcar como completado"
+                }
                 title={isCompleted ? "Completado" : "Pendiente"}
               >
-                <Check className={`size-5 stroke-[3] ${isCompleted ? "opacity-100" : "opacity-0"}`} />
+                <Check
+                  className={`size-5 stroke-[3] ${isCompleted ? "opacity-100" : "opacity-0"}`}
+                />
               </button>
             )}
           </div>
