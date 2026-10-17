@@ -215,6 +215,7 @@ class DashboardActivity(SQLModel):
     timestamp: datetime
     name: str | None
     source_type: str
+    sport_type: str | None = None
     duration_seconds: int
     distance_meters: float | None = None
 

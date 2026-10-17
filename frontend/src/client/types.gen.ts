@@ -169,6 +169,7 @@ export type DashboardActivity = {
     timestamp: string;
     name: (string | null);
     source_type: string;
+    sport_type?: (string | null);
     duration_seconds: number;
     distance_meters?: (number | null);
 };

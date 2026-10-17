@@ -26,6 +26,7 @@ from app.models import (
     UpcomingRacePublic,
     WeeklyGoal,
 )
+from app.services.running import RUNNING_TIMEZONE
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -70,9 +71,32 @@ def read_cardio_analytics(
     )
 
 
+def _as_local_date(moment: datetime) -> date:
+    """Local (``RUNNING_TIMEZONE``) calendar day for an activity timestamp.
+
+    SQLite drops ``tzinfo`` on round-trip, so a naive timestamp is first pinned
+    to UTC before converting — otherwise ``astimezone`` would read the wall
+    clock as the host zone and the bucket would depend on the host clock.
+    Mirrors ``app.services.fitness._local_date`` and the UTC-anchored windows
+    in ``app.services.running``.
+    """
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    return moment.astimezone(RUNNING_TIMEZONE).date()
+
+
 def _week_bounds(week_start: date) -> tuple[datetime, datetime]:
-    start = datetime.combine(week_start, time.min, tzinfo=UTC)
-    return start, start + timedelta(days=7)
+    """Half-open ``[start, end)`` UTC window covering the local week.
+
+    Anchored on local midnight (``RUNNING_TIMEZONE``) and returned as UTC
+    instants, so the query window and the local-day buckets below describe the
+    exact same 7 local days regardless of the host clock.
+    """
+    start = datetime.combine(week_start, time.min, tzinfo=RUNNING_TIMEZONE)
+    end = datetime.combine(
+        week_start + timedelta(days=7), time.min, tzinfo=RUNNING_TIMEZONE
+    )
+    return start.astimezone(UTC), end.astimezone(UTC)
 
 
 @router.get("/dashboard", response_model=DashboardPublic)
@@ -195,14 +219,20 @@ def _compute_week_kpis(
         week_start + timedelta(days=offset): [] for offset in range(7)
     }
     for activity in activities:
-        day = activity.timestamp.astimezone(UTC).date()
+        day = _as_local_date(activity.timestamp)
+        bucket = timeline_by_day.get(day)
+        if bucket is None:
+            # Defensive: the window and the buckets share the same local anchor,
+            # so this should be unreachable — never 500 on a boundary/extra day.
+            continue
         cardio = cardio_by_activity.get(activity.id)
-        timeline_by_day[day].append(
+        bucket.append(
             DashboardActivity(
                 id=activity.id,
                 timestamp=activity.timestamp,
                 name=activity.name,
                 source_type=activity.source_type,
+                sport_type=activity.sport_type,
                 duration_seconds=activity.duration_seconds,
                 distance_meters=cardio.distance_meters if cardio else None,
             )
