@@ -44,11 +44,15 @@ const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("es-AR", {
   year: "numeric",
 })
 
-function getDotColor(
-  workoutType?: string | null,
-  isCompleted?: boolean,
-): string {
-  if (isCompleted) return "bg-emerald-400"
+/**
+ * R10 — the token that mutes a planned-but-not-done dot. It is the single
+ * stylistic difference the tests hang on, so the dot's other utilities stay free
+ * to change.
+ */
+export const PENDING_DOT_CLASS = "opacity-30"
+
+/** Colour of the session dot, by workout type. Never depends on completion. */
+function getDotColor(workoutType?: string | null): string {
   switch (workoutType) {
     case "tempo":
       return "bg-amber-400"
@@ -65,6 +69,19 @@ function getDotColor(
     default:
       return "bg-lime-400"
   }
+}
+
+/**
+ * R10 — a session that is DONE keeps its type colour at full strength; a session
+ * that is still pending (future/planned, or past but never done) shows the very
+ * same hue muted, so "planned" never reads like "done".
+ */
+export function getDotClassName(
+  workoutType?: string | null,
+  isCompleted?: boolean,
+): string {
+  const color = getDotColor(workoutType)
+  return isCompleted ? color : `${color} ${PENDING_DOT_CLASS}`
 }
 
 export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
@@ -140,7 +157,7 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
         <div className="grid grid-cols-7 gap-1 text-center">
           {days.map((day) => {
             const dotColor = day.hasWorkout
-              ? getDotColor(day.workoutType, day.isCompleted)
+              ? getDotClassName(day.workoutType, day.isCompleted)
               : "transparent"
 
             return (
@@ -242,7 +259,7 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
               }
 
               const dotColor = item.hasWorkout
-                ? getDotColor(item.workoutType, item.isCompleted)
+                ? getDotClassName(item.workoutType, item.isCompleted)
                 : "transparent"
 
               return (

@@ -1,11 +1,17 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
+import type { RunningWorkoutPublic } from "@/client"
 import type { MonthCursor } from "@/lib/dashboard-dates"
-import { type RunnaDayItem, RunnaWeekStrip } from "./RunnaWeekStrip"
+import {
+  getDotClassName,
+  type RunnaDayItem,
+  RunnaWeekStrip,
+} from "./RunnaWeekStrip"
 
 /**
  * Wiring test for the strip's two branches: the weekly grid (R5/R6, S10,
- * E8/E9) and the expanded month grid (R9).
+ * E8/E9), the expanded month grid (R9) and the planned-vs-done dot semantics
+ * shared by both (R10).
  *
  * Lifting `isMonthExpanded` to the route made the month grid a controlled prop
  * instead of a `useState(false)` default, so `renderToStaticMarkup` can now
@@ -15,6 +21,13 @@ import { type RunnaDayItem, RunnaWeekStrip } from "./RunnaWeekStrip"
  */
 
 const MARCH_2026: MonthCursor = { year: 2026, month: 2 }
+
+/**
+ * R10's single distinguishing token: the utility that mutes a planned-but-not-
+ * done dot. Assertions target this token (never the whole class string), so the
+ * dot's other utilities stay free to change.
+ */
+const MUTED_DOT_TOKEN = "opacity-30"
 
 const WEEK = [
   "2026-03-09",
@@ -52,12 +65,36 @@ function weeklyDays(
   return WEEK.map((iso, index) => dayItem(iso, index, marks[iso]))
 }
 
+function workout(
+  date: string,
+  overrides: Partial<RunningWorkoutPublic> = {},
+): RunningWorkoutPublic {
+  return {
+    id: `wo-${date}`,
+    date,
+    type: "easy_run",
+    objective: null,
+    name: null,
+    distance_km: 5,
+    duration_seconds: null,
+    pace_seconds_per_km: null,
+    intensity: "easy",
+    description: null,
+    notes: null,
+    cancelled: false,
+    status: "planned",
+    matched_activity: null,
+    ...overrides,
+  }
+}
+
 function renderStrip(
   days: RunnaDayItem[],
   overrides: Partial<{
     isMonthExpanded: boolean
     monthCursor: MonthCursor
     monthActivityDates: ReadonlySet<string>
+    workoutsByDate: Map<string, RunningWorkoutPublic>
   }> = {},
 ): string {
   return renderToStaticMarkup(
@@ -86,6 +123,17 @@ function activityMarker(tag: string): string | undefined {
   return tag.match(/<span[^>]*data-activity="true"[^>]*>/)?.[0]
 }
 
+/**
+ * The plan dot is the only span in a day cell carrying a `bg-*` utility (the
+ * activity mark is a hollow ring and the empty spacer has no background), so
+ * this isolates it without depending on its full class list.
+ */
+function planDot(tag: string): string {
+  const dot = tag.match(/<span[^>]*class="[^"]*\bbg-[^"]*"[^>]*><\/span>/)?.[0]
+  if (!dot) throw new Error("Plan dot not rendered in this day cell")
+  return dot
+}
+
 describe("RunnaWeekStrip — activity marks (weekly branch)", () => {
   it("renders one marker on a marked day and keeps the plan dot distinct (R5/R6/S10)", () => {
     const html = renderStrip(
@@ -102,13 +150,15 @@ describe("RunnaWeekStrip — activity marks (weekly branch)", () => {
     expect(html.match(/data-activity="true"/g)?.length).toBe(1)
 
     const marked = daySection(html, "2026-03-10")
-    // Both carriers coexist and stay visually distinct: the plan dot keeps its
-    // filled completion colour, the activity mark is a separate hollow ring.
-    expect(marked).toContain("bg-emerald-400")
+    // Both carriers coexist and stay visually distinct: the done plan dot keeps
+    // its vivid type colour, the activity mark is a separate hollow ring.
+    const dot = planDot(marked)
+    expect(dot).toContain("bg-lime-400")
+    expect(dot).not.toContain(MUTED_DOT_TOKEN)
     const marker = activityMarker(marked)
     expect(marker).toBeDefined()
     expect(marker).toContain("border-sky-400")
-    expect(marker).not.toContain("bg-emerald-400")
+    expect(marker).not.toContain("bg-lime-400")
     expect(marker).toContain('aria-label="Actividad registrada"')
   })
 
@@ -172,5 +222,125 @@ describe("RunnaWeekStrip — activity marks (expanded month branch)", () => {
     const html = renderStrip([], { isMonthExpanded: true })
 
     expect(html).not.toContain('data-activity="true"')
+  })
+})
+
+describe("RunnaWeekStrip — planned vs done dot semantics (R10)", () => {
+  it("mutes exactly the pending sessions, whatever the type (unit)", () => {
+    const types = ["easy_run", "tempo", "intervals", "long_run", "test", null]
+
+    for (const type of types) {
+      const done = getDotClassName(type, true)
+      const pending = getDotClassName(type, false)
+
+      expect(done).not.toContain(MUTED_DOT_TOKEN)
+      expect(pending).toContain(MUTED_DOT_TOKEN)
+      // Muting keeps the very same colour token: only the strength changes.
+      expect(pending).toBe(`${done} ${MUTED_DOT_TOKEN}`)
+    }
+  })
+
+  it("keeps the done dot vivid and mutes the pending one, same type colour (weekly grid)", () => {
+    const html = renderStrip(
+      weeklyDays({
+        "2026-03-10": {
+          hasWorkout: true,
+          isCompleted: true,
+          workoutType: "easy_run",
+        },
+        "2026-03-12": {
+          hasWorkout: true,
+          isCompleted: false,
+          workoutType: "easy_run",
+        },
+      }),
+    )
+
+    const doneDot = planDot(daySection(html, "2026-03-10"))
+    const pendingDot = planDot(daySection(html, "2026-03-12"))
+
+    // Same hue for both planned sessions...
+    expect(doneDot).toContain("bg-lime-400")
+    expect(pendingDot).toContain("bg-lime-400")
+    // ...and the muting token is exactly what tells "done" from "not done".
+    expect(pendingDot).toContain(MUTED_DOT_TOKEN)
+    expect(doneDot).not.toContain(MUTED_DOT_TOKEN)
+    expect(doneDot).not.toBe(pendingDot)
+  })
+
+  it("keeps each workout type's colour when done (R10)", () => {
+    const html = renderStrip(
+      weeklyDays({
+        "2026-03-10": {
+          hasWorkout: true,
+          isCompleted: true,
+          workoutType: "intervals",
+        },
+        "2026-03-12": {
+          hasWorkout: true,
+          isCompleted: true,
+          workoutType: "long_run",
+        },
+      }),
+    )
+
+    expect(planDot(daySection(html, "2026-03-10"))).toContain("bg-orange-400")
+    expect(planDot(daySection(html, "2026-03-12"))).toContain("bg-purple-500")
+  })
+
+  it("mutes a past-but-not-done session as well (R10)", () => {
+    // The dot reads completion only from the resolved status, so a session that
+    // never happened is muted exactly like a future one.
+    const html = renderStrip(
+      weeklyDays({
+        "2026-03-10": {
+          hasWorkout: true,
+          isCompleted: false,
+          workoutType: "tempo",
+        },
+      }),
+    )
+
+    const dot = planDot(daySection(html, "2026-03-10"))
+    expect(dot).toContain("bg-amber-400")
+    expect(dot).toContain(MUTED_DOT_TOKEN)
+  })
+
+  it("keeps the activity mark distinguishable from a muted pending dot (R6/R10)", () => {
+    const html = renderStrip(
+      weeklyDays({
+        "2026-03-12": {
+          hasWorkout: true,
+          isCompleted: false,
+          workoutType: "easy_run",
+          hasActivity: true,
+        },
+      }),
+    )
+
+    const marked = daySection(html, "2026-03-12")
+    expect(planDot(marked)).toContain(MUTED_DOT_TOKEN)
+    const marker = activityMarker(marked)
+    expect(marker).toBeDefined()
+    expect(marker).toContain("border-sky-400")
+    expect(marker).not.toContain(MUTED_DOT_TOKEN)
+  })
+
+  it("applies the same semantics to the expanded month grid (R10)", () => {
+    const html = renderStrip([], {
+      isMonthExpanded: true,
+      workoutsByDate: new Map([
+        ["2026-03-10", workout("2026-03-10", { status: "completed" })],
+        ["2026-03-12", workout("2026-03-12", { status: "planned" })],
+      ]),
+    })
+
+    const doneDot = planDot(daySection(html, "2026-03-10"))
+    const pendingDot = planDot(daySection(html, "2026-03-12"))
+
+    expect(doneDot).toContain("bg-lime-400")
+    expect(doneDot).not.toContain(MUTED_DOT_TOKEN)
+    expect(pendingDot).toContain("bg-lime-400")
+    expect(pendingDot).toContain(MUTED_DOT_TOKEN)
   })
 })
