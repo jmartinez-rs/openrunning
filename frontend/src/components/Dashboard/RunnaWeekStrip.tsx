@@ -45,9 +45,16 @@ const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("es-AR", {
 })
 
 /**
- * R10 — the token that mutes a planned-but-not-done dot. It is the single
- * stylistic difference the tests hang on, so the dot's other utilities stay free
- * to change.
+ * R10 — the token that cues a DONE session. It belongs to `getDotClassName`, so
+ * the weekly and the monthly grids show the very same completion cue and
+ * neither grid adds styling of its own. It is the single stylistic difference
+ * the tests hang on, so the dot's other utilities stay free to change.
+ */
+export const COMPLETED_DOT_CLASS = "ring-2 ring-emerald-500/20"
+
+/**
+ * R10 — the token that mutes a planned-but-not-done dot. Like
+ * `COMPLETED_DOT_CLASS`, it is applied by `getDotClassName` for both grids.
  */
 export const PENDING_DOT_CLASS = "opacity-30"
 
@@ -72,16 +79,19 @@ function getDotColor(workoutType?: string | null): string {
 }
 
 /**
- * R10 — a session that is DONE keeps its type colour at full strength; a session
- * that is still pending (future/planned, or past but never done) shows the very
- * same hue muted, so "planned" never reads like "done".
+ * R10 — a session that is DONE keeps its type colour at full strength plus the
+ * shared completion cue; a session that is still pending (future/planned, or
+ * past but never done) shows the very same hue muted, so "planned" never reads
+ * like "done". Both grids call this, so neither can invent its own cue.
  */
 export function getDotClassName(
   workoutType?: string | null,
   isCompleted?: boolean,
 ): string {
   const color = getDotColor(workoutType)
-  return isCompleted ? color : `${color} ${PENDING_DOT_CLASS}`
+  return isCompleted
+    ? `${color} ${COMPLETED_DOT_CLASS}`
+    : `${color} ${PENDING_DOT_CLASS}`
 }
 
 export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
@@ -189,11 +199,7 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
                 {/* Punto indicador: sesión planificada + marca de actividad */}
                 <div className="h-2 flex items-center justify-center gap-1 mt-1">
                   {day.hasWorkout ? (
-                    <span
-                      className={`size-2 rounded-full ${dotColor} ${
-                        day.isCompleted ? "ring-2 ring-emerald-500/20" : ""
-                      }`}
-                    />
+                    <span className={`size-2 rounded-full ${dotColor}`} />
                   ) : (
                     <span className="size-2 opacity-0" />
                   )}

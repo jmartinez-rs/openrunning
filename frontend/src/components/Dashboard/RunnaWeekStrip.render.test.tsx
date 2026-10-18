@@ -23,11 +23,13 @@ import {
 const MARCH_2026: MonthCursor = { year: 2026, month: 2 }
 
 /**
- * R10's single distinguishing token: the utility that mutes a planned-but-not-
- * done dot. Assertions target this token (never the whole class string), so the
- * dot's other utilities stay free to change.
+ * R10's two distinguishing tokens: the utility that cues a done session
+ * (emerald ring) and the one that mutes a planned-but-not-done dot. Assertions
+ * target these tokens (never the whole class string), so the dot's other
+ * utilities stay free to change.
  */
 const MUTED_DOT_TOKEN = "opacity-30"
+const COMPLETED_DOT_TOKEN = "ring-emerald-500/20"
 
 const WEEK = [
   "2026-03-09",
@@ -151,14 +153,17 @@ describe("RunnaWeekStrip — activity marks (weekly branch)", () => {
 
     const marked = daySection(html, "2026-03-10")
     // Both carriers coexist and stay visually distinct: the done plan dot keeps
-    // its vivid type colour, the activity mark is a separate hollow ring.
+    // its vivid type colour plus the completion cue, the activity mark is a
+    // separate hollow ring.
     const dot = planDot(marked)
     expect(dot).toContain("bg-lime-400")
     expect(dot).not.toContain(MUTED_DOT_TOKEN)
+    expect(dot).toContain(COMPLETED_DOT_TOKEN)
     const marker = activityMarker(marked)
     expect(marker).toBeDefined()
     expect(marker).toContain("border-sky-400")
     expect(marker).not.toContain("bg-lime-400")
+    expect(marker).not.toContain(COMPLETED_DOT_TOKEN)
     expect(marker).toContain('aria-label="Actividad registrada"')
   })
 
@@ -226,17 +231,20 @@ describe("RunnaWeekStrip — activity marks (expanded month branch)", () => {
 })
 
 describe("RunnaWeekStrip — planned vs done dot semantics (R10)", () => {
-  it("mutes exactly the pending sessions, whatever the type (unit)", () => {
+  it("cues done and pending with mutually exclusive shared tokens (unit)", () => {
     const types = ["easy_run", "tempo", "intervals", "long_run", "test", null]
 
     for (const type of types) {
       const done = getDotClassName(type, true)
       const pending = getDotClassName(type, false)
 
+      // The cue — never the hue — is what tells done from pending...
+      expect(done).toContain(COMPLETED_DOT_TOKEN)
       expect(done).not.toContain(MUTED_DOT_TOKEN)
       expect(pending).toContain(MUTED_DOT_TOKEN)
-      // Muting keeps the very same colour token: only the strength changes.
-      expect(pending).toBe(`${done} ${MUTED_DOT_TOKEN}`)
+      expect(pending).not.toContain(COMPLETED_DOT_TOKEN)
+      // ...and both build on the very same type colour.
+      expect(done.split(" ")[0]).toBe(pending.split(" ")[0])
     }
   })
 
@@ -262,10 +270,11 @@ describe("RunnaWeekStrip — planned vs done dot semantics (R10)", () => {
     // Same hue for both planned sessions...
     expect(doneDot).toContain("bg-lime-400")
     expect(pendingDot).toContain("bg-lime-400")
-    // ...and the muting token is exactly what tells "done" from "not done".
-    expect(pendingDot).toContain(MUTED_DOT_TOKEN)
+    // ...and the cue is exactly what tells "done" from "not done".
+    expect(doneDot).toContain(COMPLETED_DOT_TOKEN)
     expect(doneDot).not.toContain(MUTED_DOT_TOKEN)
-    expect(doneDot).not.toBe(pendingDot)
+    expect(pendingDot).toContain(MUTED_DOT_TOKEN)
+    expect(pendingDot).not.toContain(COMPLETED_DOT_TOKEN)
   })
 
   it("keeps each workout type's colour when done (R10)", () => {
@@ -339,8 +348,10 @@ describe("RunnaWeekStrip — planned vs done dot semantics (R10)", () => {
     const pendingDot = planDot(daySection(html, "2026-03-12"))
 
     expect(doneDot).toContain("bg-lime-400")
+    expect(doneDot).toContain(COMPLETED_DOT_TOKEN)
     expect(doneDot).not.toContain(MUTED_DOT_TOKEN)
     expect(pendingDot).toContain("bg-lime-400")
     expect(pendingDot).toContain(MUTED_DOT_TOKEN)
+    expect(pendingDot).not.toContain(COMPLETED_DOT_TOKEN)
   })
 })
