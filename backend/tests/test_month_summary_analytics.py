@@ -129,6 +129,101 @@ def test_month_day_keys_follow_the_local_calendar_for_every_type(
     assert _type_summary(body, "Ride")["dot_days"] == ["2026-03-20"]
 
 
+def test_late_local_run_on_the_last_day_stays_in_its_own_month(db_engine, user, client):
+    """R9: a 22:00-local run on the last day belongs to that local month.
+
+    2026-03-31 22:00 local is 2026-04-01 01:00 UTC, so a UTC-anchored window
+    dropped it from March (its ``calendar`` and ``dot_days`` lost the run) while
+    April, whose window opened at 00:00 UTC, pulled it in under the
+    out-of-month key ``2026-03-31``.
+    """
+    _seed_activity(
+        db_engine,
+        user.id,
+        timestamp=_local(2026, 3, 31, 22, 0),
+        sport_type="Run",
+    )
+
+    march = _get_month(client, "2026-03")
+    assert _calendar_by_day(march)["2026-03-31"] == ["Run"]
+    assert _type_summary(march, "Run")["dot_days"] == ["2026-03-31"]
+
+    april = _get_month(client, "2026-04")
+    assert [entry["type"] for entry in april["by_type"]] == []
+    assert all(day["types"] == [] for day in april["calendar"])
+
+
+def test_previous_month_late_local_run_does_not_leak_into_the_next_month(
+    db_engine, user, client
+):
+    """R9: a 22:00-local run on Feb 28 must not appear in March.
+
+    2026-02-28 22:00 local is 2026-03-01 01:00 UTC, inside the UTC-anchored
+    March window — which reported it as an out-of-month ``2026-02-28`` key.
+    """
+    _seed_activity(
+        db_engine,
+        user.id,
+        timestamp=_local(2026, 2, 28, 22, 0),
+        sport_type="Run",
+    )
+
+    march = _get_month(client, "2026-03")
+    assert [entry["type"] for entry in march["by_type"]] == []
+    assert all(day["types"] == [] for day in march["calendar"])
+
+    february = _get_month(client, "2026-02")
+    assert _calendar_by_day(february)["2026-02-28"] == ["Run"]
+    assert _type_summary(february, "Run")["dot_days"] == ["2026-02-28"]
+
+
+def test_early_local_run_on_the_first_day_stays_in_its_own_month(
+    db_engine, user, client
+):
+    """R9: 00:30 local on the 1st is 03:30 UTC the same day, inside the month."""
+    _seed_activity(
+        db_engine,
+        user.id,
+        timestamp=_local(2026, 3, 1, 0, 30),
+        sport_type="Run",
+    )
+
+    march = _get_month(client, "2026-03")
+    assert _calendar_by_day(march)["2026-03-01"] == ["Run"]
+    assert _type_summary(march, "Run")["dot_days"] == ["2026-03-01"]
+
+    february = _get_month(client, "2026-02")
+    assert [entry["type"] for entry in february["by_type"]] == []
+
+
+def test_month_counters_match_the_local_month_window(db_engine, user, client):
+    """total_activities/coverage count exactly the rows inside the local month.
+
+    One run late on the last local day (outside a UTC-anchored window) and one
+    on the first local day must both be counted: 2 activities, half with a
+    ``sport_type``.
+    """
+    _seed_activity(
+        db_engine,
+        user.id,
+        timestamp=_local(2026, 3, 31, 22, 0),
+        sport_type="Run",
+    )
+    _seed_activity(
+        db_engine,
+        user.id,
+        timestamp=_local(2026, 3, 1, 0, 30),
+        sport_type=None,
+    )
+
+    march = _get_month(client, "2026-03")
+
+    assert march["total_activities"] == 2
+    assert march["coverage"] == 0.5
+    assert _calendar_by_day(march)["2026-03-31"] == ["Run"]
+    assert _calendar_by_day(march)["2026-03-01"] == ["Other"]
+
+
 def test_local_day_derivation_is_host_timezone_independent():
     """A naive (SQLite round-trip) timestamp is pinned to UTC before converting.
 

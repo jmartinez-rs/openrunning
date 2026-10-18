@@ -493,8 +493,19 @@ def read_activities_summary(
     )
     month_key = period_start.strftime("%Y-%m")
 
-    start_dt = datetime.combine(period_start, time.min, tzinfo=UTC)
-    end_dt = datetime.combine(period_end, time.max, tzinfo=UTC)
+    # Ventana half-open ``[start, end)`` en UTC sobre la medianoche LOCAL del
+    # mes, igual que ``_week_bounds``: los day keys de abajo
+    # (``_as_local_date``) son locales, así que la ventana también tiene que
+    # serlo. Con un ancla UTC una corrida de las 22:00 locales del último día
+    # quedaba fuera de su mes y entraba en el siguiente con una clave
+    # out-of-month.
+    next_month_start = period_end + timedelta(days=1)
+    start_dt = datetime.combine(
+        period_start, time.min, tzinfo=RUNNING_TIMEZONE
+    ).astimezone(UTC)
+    end_dt = datetime.combine(
+        next_month_start, time.min, tzinfo=RUNNING_TIMEZONE
+    ).astimezone(UTC)
 
     rows = session.exec(
         select(Activity, ActivityCardio)
@@ -502,7 +513,7 @@ def read_activities_summary(
         .where(
             Activity.user_id == current_user.id,
             Activity.timestamp >= start_dt,
-            Activity.timestamp <= end_dt,
+            Activity.timestamp < end_dt,
         )
         .order_by(col(Activity.timestamp))
     ).all()
