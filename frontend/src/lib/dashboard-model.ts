@@ -77,17 +77,12 @@ export interface TimelineDayCandidate {
   activities?: readonly RunActivityCandidate[] | null
 }
 
-/** Canonical positive set: the running-family Strava types. */
-export const RUN_SPORTS: ReadonlySet<string> = new Set([
-  "Run",
-  "TrailRun",
-  "VirtualRun",
-])
-
 /**
  * Explicitly non-running Strava sport types (R7, amended). Anything else —
- * including `null` (GPX/FIT uploads never carry a `sport_type`) and types this
- * build does not know yet — counts as a run.
+ * including `null` (GPX/FIT uploads never carry a `sport_type`), the running
+ * family itself and types this build does not know yet — counts as a run. This
+ * exclusion set is the predicate's only allow/deny authority; a second positive
+ * list would be a rule that can contradict it.
  */
 export const NON_RUN_SPORTS: ReadonlySet<string> = new Set([
   "Ride",
