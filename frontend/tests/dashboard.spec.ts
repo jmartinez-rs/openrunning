@@ -23,6 +23,29 @@ async function ensureActivity(page: import("@playwright/test").Page) {
   })
 }
 
+/** Crea una actividad en un instante exacto (sport_type nulo ⇒ cuenta, R7). */
+async function seedRunAt(
+  page: import("@playwright/test").Page,
+  timestampIso: string,
+) {
+  const token = await page.evaluate(() => localStorage.getItem("access_token"))
+  if (!token) throw new Error("No hay token de sesión")
+  const response = await page.request.post("/api/v1/activities/", {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      source_id: `e2e-activity-mark-${Date.now()}`,
+      source_type: "strava",
+      timestamp: timestampIso,
+      duration_seconds: 1800,
+      name: "Run E2E marca",
+      cardio: { distance_meters: 5000, avg_pace_seconds_per_km: 360 },
+    },
+  })
+  if (!response.ok()) {
+    throw new Error(`No se pudo crear la actividad: ${response.status()}`)
+  }
+}
+
 test.describe("Dashboard", () => {
   test("muestra KPIs y timeline semanal", async ({ page }) => {
     await page.goto("/")
@@ -47,6 +70,26 @@ test.describe("Dashboard", () => {
     await expect(
       page.getByRole("button", { name: "Iniciar sesión" }),
     ).toHaveCount(0)
+  })
+})
+
+// No bloqueante: requiere el stack completo (Docker + .env raíz), por lo que no
+// forma parte del gate de cobertura. Cubre S1/E1/E9: el reloj fijo evita que la
+// marca caiga en el día UTC equivocado en el límite de la semana local.
+test.describe("Dashboard — marca de actividad (no bloqueante)", () => {
+  test("marca la actividad en el día local límite de la semana", async ({
+    page,
+  }) => {
+    // 21:30 del domingo 2026-03-15 en UTC-3 (= 2026-03-16T00:30Z; en UTC ya es lunes).
+    await page.clock.setFixedTime(new Date("2026-03-16T00:30:00Z"))
+    await page.goto("/")
+    // 21:00 local del 2026-03-15: debe bucketizar al 2026-03-15, no al lunes.
+    await seedRunAt(page, "2026-03-16T00:00:00Z")
+    await page.reload()
+    await expect(page.getByRole("heading", { name: /Hola/ })).toBeVisible()
+    await expect(
+      page.locator('[data-day="2026-03-15"] [data-activity="true"]'),
+    ).toBeVisible()
   })
 })
 
