@@ -30,6 +30,12 @@ const WEEKDAY_DAY_MONTH_FORMATTER = new Intl.DateTimeFormat("es-AR", {
   month: "short",
 })
 
+const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("es-AR", {
+  timeZone: RUNNING_TIMEZONE,
+  month: "long",
+  year: "numeric",
+})
+
 const ISO_DAY_KEY = /^(\d{4})-(\d{2})-(\d{2})$/
 
 interface IsoParts {
@@ -173,4 +179,19 @@ export function formatWeekdayDayMonth(iso: string): string {
   )
     .replace(".", "")
     .trim()
+}
+
+/** Capitalises the first letter of a locale-formatted label for display. */
+function capitaliseFirst(label: string): string {
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
+/**
+ * Display-only label ("Marzo de 2026") of a month grid cursor. Formatted from
+ * the cursor's numbers on a noon-UTC anchor in the pinned zone, so the label
+ * neither drifts to a neighbouring month nor varies with the host timezone.
+ */
+export function formatMonthLabel(cursor: MonthCursor): string {
+  const anchor = new Date(Date.UTC(cursor.year, cursor.month, 1, 12))
+  return capitaliseFirst(MONTH_LABEL_FORMATTER.format(anchor))
 }

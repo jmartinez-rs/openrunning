@@ -371,6 +371,7 @@ function OpenRunningDashboard() {
       <RunnaWeekStrip
         days={weekDays}
         selectedDateIso={selectedDateIso}
+        todayIso={todayIso}
         workoutsByDate={workoutsByDate}
         isMonthExpanded={isMonthExpanded}
         monthCursor={monthCursor}

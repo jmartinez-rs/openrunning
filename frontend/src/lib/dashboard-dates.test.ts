@@ -3,6 +3,7 @@ import {
   addDaysIso,
   dayOfMonthIso,
   formatDayKey,
+  formatMonthLabel,
   formatShortDayMonth,
   formatWeekdayDayMonth,
   mondayIso,
@@ -175,5 +176,22 @@ describe("dashboard-dates", () => {
     expect(days[0]).toBe("2026-02-01")
     expect(days[days.length - 1]).toBe("2026-02-28")
     expect(monthDayKeys({ year: 2028, month: 1 })).toHaveLength(29)
+  })
+
+  // R9 — the month grid label. Built from the cursor's numbers on a noon-UTC
+  // anchor inside the pinned zone, so the phrasing never shifts with the host
+  // timezone and the month cannot drift to its neighbour.
+  it("formats the capitalised month label in the pinned zone", () => {
+    const march = formatMonthLabel({ year: 2026, month: 2 })
+
+    expect(march.startsWith("Marzo")).toBe(true)
+    expect(march).toContain("2026")
+    // Capitalised for display, not the raw lower-case locale pattern.
+    expect(march.charAt(0)).toBe("M")
+    expect(formatMonthLabel({ year: 2026, month: 0 }).startsWith("Enero")).toBe(
+      true,
+    )
+    expect(formatMonthLabel({ year: 2025, month: 11 })).toContain("2025")
+    expect(formatMonthLabel({ year: 2026, month: 11 })).not.toBe(march)
   })
 })

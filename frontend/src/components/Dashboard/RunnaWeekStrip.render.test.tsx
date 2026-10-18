@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import type { RunningWorkoutPublic } from "@/client"
-import type { MonthCursor } from "@/lib/dashboard-dates"
+import { dayOfMonthIso, type MonthCursor } from "@/lib/dashboard-dates"
 import {
   getDotClassName,
   type RunnaDayItem,
@@ -50,7 +50,7 @@ function dayItem(
   return {
     dateIso,
     dayName: DAY_NAMES[index],
-    dayNumber: Number(dateIso.slice(8, 10)),
+    dayNumber: dayOfMonthIso(dateIso),
     isToday: false,
     isSelected: false,
     hasWorkout: false,
@@ -97,12 +97,14 @@ function renderStrip(
     monthCursor: MonthCursor
     monthActivityDates: ReadonlySet<string>
     workoutsByDate: Map<string, RunningWorkoutPublic>
+    todayIso: string
   }> = {},
 ): string {
   return renderToStaticMarkup(
     <RunnaWeekStrip
       days={days}
       selectedDateIso={WEEK[0]}
+      todayIso={WEEK[0]}
       isMonthExpanded={false}
       monthCursor={MARCH_2026}
       onToggleMonth={() => {}}
@@ -198,6 +200,22 @@ describe("RunnaWeekStrip — activity marks (expanded month branch)", () => {
     expect(html).toContain("2026")
     expect(html).toContain('data-day="2026-03-01"')
     expect(html).toContain('data-day="2026-03-31"')
+    // Each day number is read from its own day key.
+    expect(daySection(html, "2026-03-01")).toContain(">1<")
+    expect(daySection(html, "2026-03-31")).toContain(">31<")
+  })
+
+  it("marks today from the injected clock, not from a second new Date() (R1/E1)", () => {
+    const html = renderStrip([], {
+      isMonthExpanded: true,
+      todayIso: "2026-03-10",
+    })
+
+    // The route owns the pinned clock (`formatDayKey`); the strip consumes it,
+    // so a second host-clock read cannot mark a different day. The real clock is
+    // never March 2026, so this only passes through the prop.
+    expect(daySection(html, "2026-03-10")).toContain("ring-primary/40")
+    expect(daySection(html, "2026-03-11")).not.toContain("ring-primary/40")
   })
 
   it("marks every day of the month present in the month set, keyed by day (R9)", () => {

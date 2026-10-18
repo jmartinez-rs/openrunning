@@ -3,11 +3,11 @@ import type React from "react"
 import { useMemo } from "react"
 import type { RunningWorkoutPublic } from "@/client"
 import {
-  formatDayKey,
+  dayOfMonthIso,
+  formatMonthLabel,
   type MonthCursor,
   monthDayKeys,
   monthStartOffset,
-  RUNNING_TIMEZONE,
 } from "@/lib/dashboard-dates"
 import { isWorkoutCompleted } from "@/lib/dashboard-model"
 
@@ -26,6 +26,11 @@ export interface RunnaDayItem {
 interface RunnaWeekStripProps {
   days: RunnaDayItem[]
   selectedDateIso: string
+  /**
+   * Today's local day key (R1/E1), owned by the route's pinned clock. Passed in
+   * so the strip never reads the host clock a second time.
+   */
+  todayIso: string
   workoutsByDate?: Map<string, RunningWorkoutPublic>
   /** Run days (local keys) of the displayed month, for the expanded grid (R9). */
   monthActivityDates?: ReadonlySet<string>
@@ -37,12 +42,6 @@ interface RunnaWeekStripProps {
   onShiftMonth: (delta: number) => void
   onSelectDay: (dateIso: string) => void
 }
-
-const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("es-AR", {
-  timeZone: RUNNING_TIMEZONE,
-  month: "long",
-  year: "numeric",
-})
 
 /**
  * R10 — the token that cues a DONE session. It belongs to `getDotClassName`, so
@@ -97,6 +96,7 @@ export function getDotClassName(
 export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
   days,
   selectedDateIso,
+  todayIso,
   workoutsByDate,
   monthActivityDates,
   isMonthExpanded,
@@ -105,18 +105,7 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
   onShiftMonth,
   onSelectDay,
 }) => {
-  // "Hoy" pinned al huso de running: nunca `toISOString()`, que rota de día
-  // entre las 21:00 y las 24:00 locales (R1/E1).
-  const todayIso = useMemo(() => formatDayKey(new Date()), [])
-
-  const monthLabel = useMemo(() => {
-    // Ancla a mediodía UTC para que la etiqueta no se corra de mes.
-    const anchor = new Date(
-      Date.UTC(monthCursor.year, monthCursor.month, 1, 12),
-    )
-    const formatted = MONTH_LABEL_FORMATTER.format(anchor)
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1)
-  }, [monthCursor])
+  const monthLabel = useMemo(() => formatMonthLabel(monthCursor), [monthCursor])
 
   // Días del mes como claves locales puras (`monthDayKeys`), sin getters del
   // host; el offset Monday-first viene de `monthStartOffset`.
@@ -132,7 +121,8 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
       hasActivity: boolean
     } | null> = []
 
-    for (let i = 0; i < monthStartOffset(monthCursor); i++) {
+    const leadingBlanks = monthStartOffset(monthCursor)
+    for (let i = 0; i < leadingBlanks; i++) {
       items.push(null)
     }
 
@@ -141,7 +131,7 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
 
       items.push({
         dateIso: iso,
-        dayNumber: Number(iso.slice(8, 10)),
+        dayNumber: dayOfMonthIso(iso),
         isToday: iso === todayIso,
         isSelected: iso === selectedDateIso,
         hasWorkout: Boolean(wo),
