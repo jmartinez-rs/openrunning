@@ -1,8 +1,14 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react"
 import type React from "react"
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import type { RunningWorkoutPublic } from "@/client"
-import { formatDayKey, RUNNING_TIMEZONE } from "@/lib/dashboard-dates"
+import {
+  dayOfMonthIso,
+  formatMonthLabel,
+  type MonthCursor,
+  monthDayKeys,
+  monthStartOffset,
+} from "@/lib/dashboard-dates"
 import { isWorkoutCompleted } from "@/lib/dashboard-model"
 
 export interface RunnaDayItem {
@@ -20,29 +26,39 @@ export interface RunnaDayItem {
 interface RunnaWeekStripProps {
   days: RunnaDayItem[]
   selectedDateIso: string
+  /**
+   * Today's local day key (R1/E1), owned by the route's pinned clock. Passed in
+   * so the strip never reads the host clock a second time.
+   */
+  todayIso: string
   workoutsByDate?: Map<string, RunningWorkoutPublic>
-  /** Run days (local keys) that must show the activity mark (R5). */
-  activityDates?: ReadonlySet<string>
+  /** Run days (local keys) of the displayed month, for the expanded grid (R9). */
+  monthActivityDates?: ReadonlySet<string>
+  /** Month-grid expansion is owned by the route; this component is controlled. */
+  isMonthExpanded: boolean
+  /** Calendar month shown when expanded (0-based `month`). */
+  monthCursor: MonthCursor
+  onToggleMonth: () => void
+  onShiftMonth: (delta: number) => void
   onSelectDay: (dateIso: string) => void
 }
 
-const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("es-AR", {
-  timeZone: RUNNING_TIMEZONE,
-  month: "long",
-  year: "numeric",
-})
+/**
+ * R10 — the token that cues a DONE session. It belongs to `getDotClassName`, so
+ * the weekly and the monthly grids show the very same completion cue and
+ * neither grid adds styling of its own. It is the single stylistic difference
+ * the tests hang on, so the dot's other utilities stay free to change.
+ */
+export const COMPLETED_DOT_CLASS = "ring-2 ring-emerald-500/20"
 
-/** Numeric `{ year, month }` (month 0-based) of a canonical local day key. */
-function monthCursorOf(dateIso: string): { year: number; month: number } {
-  const [year, month] = dateIso.split("-").map(Number)
-  return { year, month: month - 1 }
-}
+/**
+ * R10 — the token that mutes a planned-but-not-done dot. Like
+ * `COMPLETED_DOT_CLASS`, it is applied by `getDotClassName` for both grids.
+ */
+export const PENDING_DOT_CLASS = "opacity-30"
 
-function getDotColor(
-  workoutType?: string | null,
-  isCompleted?: boolean,
-): string {
-  if (isCompleted) return "bg-emerald-400"
+/** Colour of the session dot, by workout type. Never depends on completion. */
+function getDotColor(workoutType?: string | null): string {
   switch (workoutType) {
     case "tempo":
       return "bg-amber-400"
@@ -61,49 +77,39 @@ function getDotColor(
   }
 }
 
+/**
+ * R10 — a session that is DONE keeps its type colour at full strength plus the
+ * shared completion cue; a session that is still pending (future/planned, or
+ * past but never done) shows the very same hue muted, so "planned" never reads
+ * like "done". Both grids call this, so neither can invent its own cue.
+ */
+export function getDotClassName(
+  workoutType?: string | null,
+  isCompleted?: boolean,
+): string {
+  const color = getDotColor(workoutType)
+  return isCompleted
+    ? `${color} ${COMPLETED_DOT_CLASS}`
+    : `${color} ${PENDING_DOT_CLASS}`
+}
+
 export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
   days,
   selectedDateIso,
+  todayIso,
   workoutsByDate,
-  activityDates,
+  monthActivityDates,
+  isMonthExpanded,
+  monthCursor,
+  onToggleMonth,
+  onShiftMonth,
   onSelectDay,
 }) => {
-  const [isMonthExpanded, setIsMonthExpanded] = useState(false)
+  const monthLabel = useMemo(() => formatMonthLabel(monthCursor), [monthCursor])
 
-  // "Hoy" pinned al huso de running: nunca `toISOString()`, que rota de día
-  // entre las 21:00 y las 24:00 locales (R1/E1).
-  const todayIso = useMemo(() => formatDayKey(new Date()), [])
-
-  // Mes/año del calendario mensual como partes numéricas ancladas al huso
-  // pinneado, sin getters locales del host.
-  const [monthCursor, setMonthCursor] = useState(() =>
-    monthCursorOf(selectedDateIso || todayIso),
-  )
-
-  const monthLabel = useMemo(() => {
-    // Ancla a mediodía UTC para que la etiqueta no se corra de mes.
-    const anchor = new Date(
-      Date.UTC(monthCursor.year, monthCursor.month, 1, 12),
-    )
-    const formatted = MONTH_LABEL_FORMATTER.format(anchor)
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1)
-  }, [monthCursor])
-
-  const shiftMonth = (delta: number) => {
-    setMonthCursor((prev) => {
-      const shifted = new Date(Date.UTC(prev.year, prev.month + delta, 1))
-      return { year: shifted.getUTCFullYear(), month: shifted.getUTCMonth() }
-    })
-  }
-
-  // Generación de días del mes (partes numéricas, sin getters del host)
+  // Días del mes como claves locales puras (`monthDayKeys`), sin getters del
+  // host; el offset Monday-first viene de `monthStartOffset`.
   const monthCalendarData = useMemo(() => {
-    const { year, month } = monthCursor
-
-    // Lunes = 0, Domingo = 6
-    const startOffset = (new Date(Date.UTC(year, month, 1)).getUTCDay() + 6) % 7
-    const totalDays = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
-
     const items: Array<{
       dateIso: string
       dayNumber: number
@@ -115,28 +121,34 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
       hasActivity: boolean
     } | null> = []
 
-    for (let i = 0; i < startOffset; i++) {
+    const leadingBlanks = monthStartOffset(monthCursor)
+    for (let i = 0; i < leadingBlanks; i++) {
       items.push(null)
     }
 
-    for (let d = 1; d <= totalDays; d++) {
-      const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+    for (const iso of monthDayKeys(monthCursor)) {
       const wo = workoutsByDate?.get(iso)
 
       items.push({
         dateIso: iso,
-        dayNumber: d,
+        dayNumber: dayOfMonthIso(iso),
         isToday: iso === todayIso,
         isSelected: iso === selectedDateIso,
         hasWorkout: Boolean(wo),
         workoutType: wo?.type || null,
         isCompleted: wo ? isWorkoutCompleted(wo) : false,
-        hasActivity: Boolean(activityDates?.has(iso)),
+        hasActivity: Boolean(monthActivityDates?.has(iso)),
       })
     }
 
     return items
-  }, [monthCursor, workoutsByDate, selectedDateIso, todayIso, activityDates])
+  }, [
+    monthCursor,
+    workoutsByDate,
+    selectedDateIso,
+    todayIso,
+    monthActivityDates,
+  ])
 
   return (
     <div className="w-full pt-1 pb-2 transition-all">
@@ -145,7 +157,7 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
         <div className="grid grid-cols-7 gap-1 text-center">
           {days.map((day) => {
             const dotColor = day.hasWorkout
-              ? getDotColor(day.workoutType, day.isCompleted)
+              ? getDotClassName(day.workoutType, day.isCompleted)
               : "transparent"
 
             return (
@@ -177,11 +189,7 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
                 {/* Punto indicador: sesión planificada + marca de actividad */}
                 <div className="h-2 flex items-center justify-center gap-1 mt-1">
                   {day.hasWorkout ? (
-                    <span
-                      className={`size-2 rounded-full ${dotColor} ${
-                        day.isCompleted ? "ring-2 ring-emerald-500/20" : ""
-                      }`}
-                    />
+                    <span className={`size-2 rounded-full ${dotColor}`} />
                   ) : (
                     <span className="size-2 opacity-0" />
                   )}
@@ -206,7 +214,7 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
           <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/5 px-1">
             <button
               type="button"
-              onClick={() => shiftMonth(-1)}
+              onClick={() => onShiftMonth(-1)}
               className="size-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-zinc-300 hover:text-white transition-all cursor-pointer"
               aria-label="Mes anterior"
             >
@@ -219,7 +227,7 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
 
             <button
               type="button"
-              onClick={() => shiftMonth(1)}
+              onClick={() => onShiftMonth(1)}
               className="size-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-zinc-300 hover:text-white transition-all cursor-pointer"
               aria-label="Mes siguiente"
             >
@@ -247,13 +255,14 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
               }
 
               const dotColor = item.hasWorkout
-                ? getDotColor(item.workoutType, item.isCompleted)
+                ? getDotClassName(item.workoutType, item.isCompleted)
                 : "transparent"
 
               return (
                 <button
                   key={item.dateIso}
                   type="button"
+                  data-day={item.dateIso}
                   onClick={() => {
                     onSelectDay(item.dateIso)
                   }}
@@ -297,7 +306,7 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
       {/* Notch / Drawer handle interactivo para expandir/contraer el mes */}
       <button
         type="button"
-        onClick={() => setIsMonthExpanded((prev) => !prev)}
+        onClick={onToggleMonth}
         className="group flex flex-col items-center justify-center mx-auto mt-2.5 p-1 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60 transition-all hover:scale-105"
         title={
           isMonthExpanded

@@ -25,15 +25,20 @@ import {
   dayOfMonthIso,
   formatDayKey,
   formatShortDayMonth,
+  type MonthCursor,
   mondayIso,
+  monthCursorOf,
+  shiftMonth,
   weekIsoKeys,
 } from "@/lib/dashboard-dates"
 import {
   buildActivityDates,
   buildWeekDayItems,
   isWorkoutCompleted,
+  monthActivityDates as monthActivityDateKeys,
   selectActivePlan,
 } from "@/lib/dashboard-model"
+import { monthSummaryRequest } from "@/lib/dashboard-query"
 import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/_layout/")({
@@ -62,6 +67,20 @@ function OpenRunningDashboard() {
 
   const [weekOffset, setWeekOffset] = useState(0)
 
+  // Estado de la rejilla mensual: vive acá (no en `RunnaWeekStrip`) para que el
+  // strip siga siendo presentacional y SSR-safe (sin `useQuery` adentro), y para
+  // que su cursor pueda alimentar la query del resumen mensual.
+  const [isMonthExpanded, setIsMonthExpanded] = useState(false)
+  const [monthCursor, setMonthCursor] = useState<MonthCursor>(() =>
+    monthCursorOf(todayIso),
+  )
+  // Seam único del resumen mensual (mes + query key + gate) en un helper puro,
+  // para que la clave no pueda divergir del cursor (ver `dashboard-query.ts`).
+  const monthSummary = useMemo(
+    () => monthSummaryRequest(monthCursor, isMonthExpanded),
+    [monthCursor, isMonthExpanded],
+  )
+
   // Lunes local de la semana con offset de navegación (autoridad: RUNNING_TIMEZONE)
   const weekStartIso = useMemo(
     () => addDaysIso(mondayIso(new Date()), weekOffset * 7),
@@ -86,6 +105,21 @@ function OpenRunningDashboard() {
   const activityDates = useMemo(
     () => buildActivityDates(dashboard?.timeline),
     [dashboard?.timeline],
+  )
+
+  // R9: el mes expandido marca TODOS los días del mes mostrado, no sólo los 7 de
+  // la semana cargada. Sólo se consulta el resumen mensual con la rejilla abierta;
+  // mientras carga (o si falla) `data` es `undefined` y el mes queda sin marcas
+  // extra, sin bloquear ni romper el render.
+  const monthSummaryQuery = useQuery({
+    queryKey: monthSummary.queryKey,
+    queryFn: () =>
+      AnalyticsService.readActivitiesSummary({ month: monthSummary.month }),
+    enabled: monthSummary.enabled,
+  })
+  const monthActivityDates = useMemo(
+    () => monthActivityDateKeys(monthSummaryQuery.data),
+    [monthSummaryQuery.data],
   )
 
   // Planes de running
@@ -337,8 +371,15 @@ function OpenRunningDashboard() {
       <RunnaWeekStrip
         days={weekDays}
         selectedDateIso={selectedDateIso}
+        todayIso={todayIso}
         workoutsByDate={workoutsByDate}
-        activityDates={activityDates}
+        isMonthExpanded={isMonthExpanded}
+        monthCursor={monthCursor}
+        monthActivityDates={monthActivityDates}
+        onToggleMonth={() => setIsMonthExpanded((prev) => !prev)}
+        onShiftMonth={(delta) =>
+          setMonthCursor((prev) => shiftMonth(prev, delta))
+        }
         onSelectDay={(dateIso) => setSelectedDateIso(dateIso)}
       />
 

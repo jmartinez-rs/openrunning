@@ -30,6 +30,12 @@ const WEEKDAY_DAY_MONTH_FORMATTER = new Intl.DateTimeFormat("es-AR", {
   month: "short",
 })
 
+const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("es-AR", {
+  timeZone: RUNNING_TIMEZONE,
+  month: "long",
+  year: "numeric",
+})
+
 const ISO_DAY_KEY = /^(\d{4})-(\d{2})-(\d{2})$/
 
 interface IsoParts {
@@ -105,6 +111,55 @@ export function weekIsoKeys(mondayIsoKey: string): string[] {
   )
 }
 
+/** Calendar month of the expanded month grid; `month` is 0-based. */
+export interface MonthCursor {
+  year: number
+  month: number
+}
+
+/**
+ * Month cursor of a local day key ("2026-03-10" → `{ year: 2026, month: 2 }`).
+ * The day key is the only accepted input, so the cursor can never be built
+ * from a host-local `getMonth()`.
+ */
+export function monthCursorOf(iso: string): MonthCursor {
+  const { year, month } = parseIsoDayKey(iso)
+  return { year, month: month - 1 }
+}
+
+/**
+ * Shifts a month cursor by `delta` months. Arithmetic runs on a UTC anchor, so
+ * it is immune to host timezone and DST shifts (including year boundaries).
+ */
+export function shiftMonth(cursor: MonthCursor, delta: number): MonthCursor {
+  const shifted = new Date(Date.UTC(cursor.year, cursor.month + delta, 1))
+  return { year: shifted.getUTCFullYear(), month: shifted.getUTCMonth() }
+}
+
+/** Number of calendar days in the cursor's month (leap years included). */
+export function monthTotalDays(cursor: MonthCursor): number {
+  return new Date(Date.UTC(cursor.year, cursor.month + 1, 0)).getUTCDate()
+}
+
+/** Leading blank cells before day 1 of a Monday-first month grid (Monday = 0). */
+export function monthStartOffset(cursor: MonthCursor): number {
+  return (new Date(Date.UTC(cursor.year, cursor.month, 1)).getUTCDay() + 6) % 7
+}
+
+/** Backend `month` query key (`YYYY-MM`) of a cursor. */
+export function monthKey(cursor: MonthCursor): string {
+  return `${cursor.year}-${pad2(cursor.month + 1)}`
+}
+
+/** The ordered local day keys of the cursor's month. */
+export function monthDayKeys(cursor: MonthCursor): string[] {
+  const key = monthKey(cursor)
+  return Array.from(
+    { length: monthTotalDays(cursor) },
+    (_, index) => `${key}-${pad2(index + 1)}`,
+  )
+}
+
 /** Display-only short label ("10 mar") for a day key, formatted in the pinned zone. */
 export function formatShortDayMonth(iso: string): string {
   const { year, month, day } = parseIsoDayKey(iso)
@@ -124,4 +179,19 @@ export function formatWeekdayDayMonth(iso: string): string {
   )
     .replace(".", "")
     .trim()
+}
+
+/** Capitalises the first letter of a locale-formatted label for display. */
+function capitaliseFirst(label: string): string {
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
+/**
+ * Display-only label ("Marzo de 2026") of a month grid cursor. Formatted from
+ * the cursor's numbers on a noon-UTC anchor in the pinned zone, so the label
+ * neither drifts to a neighbouring month nor varies with the host timezone.
+ */
+export function formatMonthLabel(cursor: MonthCursor): string {
+  const anchor = new Date(Date.UTC(cursor.year, cursor.month, 1, 12))
+  return capitaliseFirst(MONTH_LABEL_FORMATTER.format(anchor))
 }

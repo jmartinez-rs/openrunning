@@ -493,8 +493,19 @@ def read_activities_summary(
     )
     month_key = period_start.strftime("%Y-%m")
 
-    start_dt = datetime.combine(period_start, time.min, tzinfo=UTC)
-    end_dt = datetime.combine(period_end, time.max, tzinfo=UTC)
+    # Ventana half-open ``[start, end)`` en UTC sobre la medianoche LOCAL del
+    # mes, igual que ``_week_bounds``: los day keys de abajo
+    # (``_as_local_date``) son locales, así que la ventana también tiene que
+    # serlo. Con un ancla UTC una corrida de las 22:00 locales del último día
+    # quedaba fuera de su mes y entraba en el siguiente con una clave
+    # out-of-month.
+    next_month_start = period_end + timedelta(days=1)
+    start_dt = datetime.combine(
+        period_start, time.min, tzinfo=RUNNING_TIMEZONE
+    ).astimezone(UTC)
+    end_dt = datetime.combine(
+        next_month_start, time.min, tzinfo=RUNNING_TIMEZONE
+    ).astimezone(UTC)
 
     rows = session.exec(
         select(Activity, ActivityCardio)
@@ -502,7 +513,7 @@ def read_activities_summary(
         .where(
             Activity.user_id == current_user.id,
             Activity.timestamp >= start_dt,
-            Activity.timestamp <= end_dt,
+            Activity.timestamp < end_dt,
         )
         .order_by(col(Activity.timestamp))
     ).all()
@@ -515,7 +526,7 @@ def read_activities_summary(
     calendar_by_day: dict[str, list[str]] = {}
     for activity, cardio in rows:
         sport_type = activity.sport_type or "Other"
-        day = activity.timestamp.astimezone(UTC).strftime("%Y-%m-%d")
+        day = _as_local_date(activity.timestamp).isoformat()
         calendar_by_day.setdefault(day, [])
         if sport_type not in calendar_by_day[day]:
             calendar_by_day[day].append(sport_type)
@@ -528,10 +539,7 @@ def read_activities_summary(
         duration = sum(activity.duration_seconds for activity, _ in items)
         elevation = sum(cardio.elevation_gain_meters for _, cardio in items)
         dot_days = sorted(
-            {
-                activity.timestamp.astimezone(UTC).strftime("%Y-%m-%d")
-                for activity, _ in items
-            }
+            {_as_local_date(activity.timestamp).isoformat() for activity, _ in items}
         )
         by_type.append(
             ActivityTypeSummary(

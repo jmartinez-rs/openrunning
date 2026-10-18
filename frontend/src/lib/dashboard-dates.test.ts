@@ -3,10 +3,17 @@ import {
   addDaysIso,
   dayOfMonthIso,
   formatDayKey,
+  formatMonthLabel,
   formatShortDayMonth,
   formatWeekdayDayMonth,
   mondayIso,
+  monthCursorOf,
+  monthDayKeys,
+  monthKey,
+  monthStartOffset,
+  monthTotalDays,
   RUNNING_TIMEZONE,
+  shiftMonth,
   weekdayOfIso,
   weekIsoKeys,
 } from "./dashboard-dates"
@@ -111,5 +118,80 @@ describe("dashboard-dates", () => {
     expect(() => formatWeekdayDayMonth("22/10/2026")).toThrow(
       /Invalid ISO day key/,
     )
+  })
+
+  // R9 — the expanded month grid's layout math is pure so it can be covered
+  // without SSR-reaching the (controlled) month branch.
+  it("derives a 0-based month cursor from a day key", () => {
+    expect(monthCursorOf("2026-03-10")).toEqual({ year: 2026, month: 2 })
+    expect(monthCursorOf("2026-01-01")).toEqual({ year: 2026, month: 0 })
+    expect(monthCursorOf("2026-12-31")).toEqual({ year: 2026, month: 11 })
+    expect(() => monthCursorOf("2026-3-1")).toThrow(/Invalid ISO day key/)
+  })
+
+  it("shifts the cursor by months, across year boundaries", () => {
+    expect(shiftMonth({ year: 2026, month: 2 }, 1)).toEqual({
+      year: 2026,
+      month: 3,
+    })
+    expect(shiftMonth({ year: 2026, month: 0 }, -1)).toEqual({
+      year: 2025,
+      month: 11,
+    })
+    expect(shiftMonth({ year: 2026, month: 11 }, 1)).toEqual({
+      year: 2027,
+      month: 0,
+    })
+    expect(shiftMonth({ year: 2026, month: 2 }, -3)).toEqual({
+      year: 2025,
+      month: 11,
+    })
+  })
+
+  it("counts the days of the month, leap years included", () => {
+    expect(monthTotalDays({ year: 2026, month: 1 })).toBe(28)
+    expect(monthTotalDays({ year: 2028, month: 1 })).toBe(29)
+    expect(monthTotalDays({ year: 2026, month: 2 })).toBe(31)
+    expect(monthTotalDays({ year: 2026, month: 3 })).toBe(30)
+  })
+
+  // E2 — leading blank cells before day 1 in a Monday-first grid.
+  it("reports the Monday-first grid offset of day 1", () => {
+    // 2026-03-01 is a Sunday -> six leading cells.
+    expect(monthStartOffset({ year: 2026, month: 2 })).toBe(6)
+    // 2026-06-01 is a Monday -> no leading cells.
+    expect(monthStartOffset({ year: 2026, month: 5 })).toBe(0)
+  })
+
+  it("formats the backend month key (YYYY-MM)", () => {
+    expect(monthKey({ year: 2026, month: 2 })).toBe("2026-03")
+    expect(monthKey({ year: 2026, month: 0 })).toBe("2026-01")
+    expect(monthKey({ year: 2026, month: 11 })).toBe("2026-12")
+  })
+
+  it("lists every local day key of the month in order", () => {
+    const days = monthDayKeys({ year: 2026, month: 1 })
+
+    expect(days).toHaveLength(28)
+    expect(days[0]).toBe("2026-02-01")
+    expect(days[days.length - 1]).toBe("2026-02-28")
+    expect(monthDayKeys({ year: 2028, month: 1 })).toHaveLength(29)
+  })
+
+  // R9 — the month grid label. Built from the cursor's numbers on a noon-UTC
+  // anchor inside the pinned zone, so the phrasing never shifts with the host
+  // timezone and the month cannot drift to its neighbour.
+  it("formats the capitalised month label in the pinned zone", () => {
+    const march = formatMonthLabel({ year: 2026, month: 2 })
+
+    expect(march.startsWith("Marzo")).toBe(true)
+    expect(march).toContain("2026")
+    // Capitalised for display, not the raw lower-case locale pattern.
+    expect(march.charAt(0)).toBe("M")
+    expect(formatMonthLabel({ year: 2026, month: 0 }).startsWith("Enero")).toBe(
+      true,
+    )
+    expect(formatMonthLabel({ year: 2025, month: 11 })).toContain("2025")
+    expect(formatMonthLabel({ year: 2026, month: 11 })).not.toBe(march)
   })
 })
