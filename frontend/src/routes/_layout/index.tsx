@@ -28,7 +28,6 @@ import {
   type MonthCursor,
   mondayIso,
   monthCursorOf,
-  monthKey,
   shiftMonth,
   weekIsoKeys,
 } from "@/lib/dashboard-dates"
@@ -39,6 +38,7 @@ import {
   monthActivityDates as monthActivityDateKeys,
   selectActivePlan,
 } from "@/lib/dashboard-model"
+import { monthSummaryRequest } from "@/lib/dashboard-query"
 import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/_layout/")({
@@ -74,7 +74,12 @@ function OpenRunningDashboard() {
   const [monthCursor, setMonthCursor] = useState<MonthCursor>(() =>
     monthCursorOf(todayIso),
   )
-  const monthKeyOfCursor = monthKey(monthCursor)
+  // Seam único del resumen mensual (mes + query key + gate) en un helper puro,
+  // para que la clave no pueda divergir del cursor (ver `dashboard-query.ts`).
+  const monthSummary = useMemo(
+    () => monthSummaryRequest(monthCursor, isMonthExpanded),
+    [monthCursor, isMonthExpanded],
+  )
 
   // Lunes local de la semana con offset de navegación (autoridad: RUNNING_TIMEZONE)
   const weekStartIso = useMemo(
@@ -107,10 +112,10 @@ function OpenRunningDashboard() {
   // mientras carga (o si falla) `data` es `undefined` y el mes queda sin marcas
   // extra, sin bloquear ni romper el render.
   const monthSummaryQuery = useQuery({
-    queryKey: ["activities-summary", monthKeyOfCursor],
+    queryKey: monthSummary.queryKey,
     queryFn: () =>
-      AnalyticsService.readActivitiesSummary({ month: monthKeyOfCursor }),
-    enabled: isMonthExpanded,
+      AnalyticsService.readActivitiesSummary({ month: monthSummary.month }),
+    enabled: monthSummary.enabled,
   })
   const monthActivityDates = useMemo(
     () => monthActivityDateKeys(monthSummaryQuery.data),
