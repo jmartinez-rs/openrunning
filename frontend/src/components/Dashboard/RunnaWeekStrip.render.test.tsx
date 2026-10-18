@@ -1,16 +1,20 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
+import type { MonthCursor } from "@/lib/dashboard-dates"
 import { type RunnaDayItem, RunnaWeekStrip } from "./RunnaWeekStrip"
 
 /**
- * Wiring test for the SSR-reachable weekly branch (R5/R6, S10, E8/E9).
+ * Wiring test for the strip's two branches: the weekly grid (R5/R6, S10,
+ * E8/E9) and the expanded month grid (R9).
  *
- * The expanded month grid is intentionally NOT covered here: it is gated by
- * `isMonthExpanded`, a `useState(false)` default, so `renderToStaticMarkup`
- * cannot reach it (SSR cannot click). Its completion + activity-marker logic is
- * therefore covered by the pure helpers (`isWorkoutCompleted`, `isRunActivity`,
- * `buildActivityDates`, `buildWeekDayItems`) in `dashboard-model.test.ts`.
+ * Lifting `isMonthExpanded` to the route made the month grid a controlled prop
+ * instead of a `useState(false)` default, so `renderToStaticMarkup` can now
+ * reach it too. Its layout math (`monthCursorOf`/`shiftMonth`/`monthStartOffset`/
+ * `monthTotalDays`/`monthDayKeys`) and the run criterion (`isRunActivity`) stay
+ * covered as pure helpers in `dashboard-dates.test.ts` / `dashboard-model.test.ts`.
  */
+
+const MARCH_2026: MonthCursor = { year: 2026, month: 2 }
 
 const WEEK = [
   "2026-03-09",
@@ -48,12 +52,24 @@ function weeklyDays(
   return WEEK.map((iso, index) => dayItem(iso, index, marks[iso]))
 }
 
-function renderStrip(days: RunnaDayItem[]): string {
+function renderStrip(
+  days: RunnaDayItem[],
+  overrides: Partial<{
+    isMonthExpanded: boolean
+    monthCursor: MonthCursor
+    monthActivityDates: ReadonlySet<string>
+  }> = {},
+): string {
   return renderToStaticMarkup(
     <RunnaWeekStrip
       days={days}
       selectedDateIso={WEEK[0]}
+      isMonthExpanded={false}
+      monthCursor={MARCH_2026}
+      onToggleMonth={() => {}}
+      onShiftMonth={() => {}}
       onSelectDay={() => {}}
+      {...overrides}
     />,
   )
 }
@@ -114,5 +130,47 @@ describe("RunnaWeekStrip — activity marks (weekly branch)", () => {
 
     expect(daySection(html, "2026-03-15")).toContain('data-activity="true"')
     expect(daySection(html, "2026-03-14")).not.toContain('data-activity="true"')
+  })
+})
+
+describe("RunnaWeekStrip — activity marks (expanded month branch)", () => {
+  it("labels and lays out the controlled month (R9)", () => {
+    const html = renderStrip([], { isMonthExpanded: true })
+
+    // `es-AR` renders the year with a connective ("marzo de 2026"), so the
+    // assertion stays on the parts, not on one locale's exact phrasing.
+    expect(html).toContain("Marzo")
+    expect(html).toContain("2026")
+    expect(html).toContain('data-day="2026-03-01"')
+    expect(html).toContain('data-day="2026-03-31"')
+  })
+
+  it("marks every day of the month present in the month set, keyed by day (R9)", () => {
+    const html = renderStrip([], {
+      isMonthExpanded: true,
+      monthActivityDates: new Set(["2026-03-02", "2026-03-28"]),
+    })
+
+    expect(html.match(/data-activity="true"/g)?.length).toBe(2)
+    expect(daySection(html, "2026-03-02")).toContain('data-activity="true"')
+    expect(daySection(html, "2026-03-28")).toContain('data-activity="true"')
+    expect(daySection(html, "2026-03-03")).not.toContain('data-activity="true"')
+  })
+
+  it("ignores the weekly days' activity flags when the month is expanded (R9)", () => {
+    // The 7-day timeline set must not leak into the month grid: only the month
+    // summary keys mark it.
+    const html = renderStrip(
+      weeklyDays({ "2026-03-10": { hasActivity: true } }),
+      { isMonthExpanded: true },
+    )
+
+    expect(html).not.toContain('data-activity="true"')
+  })
+
+  it("shows no month marks while the summary is missing or errored (E8)", () => {
+    const html = renderStrip([], { isMonthExpanded: true })
+
+    expect(html).not.toContain('data-activity="true"')
   })
 })
