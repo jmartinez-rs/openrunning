@@ -15,6 +15,7 @@ import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
 import { PaccerWorkoutSheet } from "./PaccerWorkoutSheet"
+import { PlanFitnessCard } from "./PlanFitnessCard"
 import { PlanGuideSheet } from "./PlanGuideSheet"
 import { PlanPaceInsightsCard } from "./PlanPaceInsightsCard"
 import { PlanWeekOverviewCard } from "./PlanWeekOverviewCard"
@@ -384,6 +385,9 @@ export function RunningPlanDetail({
         onDeletePlan={handleDelete}
         onStatusChange={(status) => updatePlanStatus.mutate(status)}
       />
+
+      {/* ── 2b. Estado de Forma y Recalibración VDOT (M1) ── */}
+      <PlanFitnessCard plan={plan} />
 
       {/* ── 3. Análisis del Ritmo & Tiempos Estimados ── */}
       <PlanPaceInsightsCard plan={plan} race={raceQuery.data} />

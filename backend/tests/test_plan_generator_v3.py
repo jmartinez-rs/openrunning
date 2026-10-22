@@ -121,3 +121,27 @@ def test_specific_phase_long_run_race_pace_blocks():
     # At least one long run in phase 3 should have race pace blocks
     block_workout = [w for w in long_runs_p3 if len(w.blocks) >= 3]
     assert len(block_workout) > 0
+
+
+def test_auto_scheduled_shape_test_for_estimated_confidence():
+    baseline_est = AthleteBaseline(
+        weekly_km=BaselineData(value=30.0, confidence="estimated"),
+        longest_run_km=BaselineData(value=12.0, confidence="estimated"),
+        vdot=BaselineData(value=38.0, confidence="estimated"),
+        runs_per_week=BaselineData(value=3.0, confidence="estimated"),
+    )
+    cfg = PlanGeneratorConfig(
+        target_km=10.0,
+        num_weeks=10,
+        start_date=dt.date(2026, 10, 12),
+        baseline=baseline_est,
+    )
+    res = generate_plan_draft_v2(cfg)
+
+    # In Phase 1, the final week should have a test session (shape test)
+    phase_1 = res.draft.phases[0]
+    p1_last_week = phase_1.weeks[-1]
+    test_workouts_p1 = [w for w in p1_last_week.workouts if w.type == "test"]
+    assert len(test_workouts_p1) == 1
+    assert test_workouts_p1[0].distance_km == 5.0
+

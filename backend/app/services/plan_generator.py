@@ -235,7 +235,7 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
 
     num_weeks = config.num_weeks
 
-    # Determine Tune-up race week
+    # Determine Tune-up race weeks and shape tests
     tuneup_week = None
     tuneup_distance = 0.0
     if config.target_km >= 42.2 and num_weeks >= 12:
@@ -244,6 +244,20 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
     elif config.target_km >= 21.1 and num_weeks >= 8:
         tuneup_week = num_weeks - 4
         tuneup_distance = 10.0
+
+    test_weeks: dict[int, float] = {}
+    if tuneup_week is not None:
+        test_weeks[tuneup_week] = tuneup_distance
+
+    # Auto-schedule shape test when confidence is estimated
+    vdot_conf = getattr(config.baseline.vdot, "confidence", None) if config.baseline and config.baseline.vdot else None
+    if vdot_conf == "estimated" and num_weeks >= 6:
+        p1_end = phase_splits[0][5]
+        test_dist = 10.0 if config.target_km >= 42.2 else 5.0
+        if config.target_km <= 5.0:
+            test_dist = 3.0
+        if p1_end not in test_weeks and p1_end < num_weeks - 2:
+            test_weeks[p1_end] = test_dist
 
     # Distance caps for long run
     long_run_caps = {5.0: 12.0, 10.0: 16.0, 21.1: 22.0, 42.2: 32.0}
@@ -263,7 +277,8 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
             week_end = _add_days(week_start, 6)
 
             is_last_week = (week_num == num_weeks)
-            is_tuneup_week = (week_num == tuneup_week)
+            is_tuneup_week = (week_num in test_weeks)
+            tuneup_distance = test_weeks.get(week_num, 0.0)
             is_cutback_week = (
                 week_num < num_weeks
                 and w_idx >= 1
