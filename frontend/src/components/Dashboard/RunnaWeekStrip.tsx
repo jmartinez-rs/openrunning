@@ -303,11 +303,11 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
         </div>
       )}
 
-      {/* Notch / Drawer handle interactivo para expandir/contraer el mes */}
+      {/* Botón interactivo para expandir/contraer el mes */}
       <button
         type="button"
         onClick={onToggleMonth}
-        className="group flex flex-col items-center justify-center mx-auto mt-2.5 p-1 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60 transition-all hover:scale-105"
+        className="group flex items-center justify-center mx-auto mt-2 p-1 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60 transition-all hover:scale-110"
         title={
           isMonthExpanded
             ? "Contraer a vista semanal"
@@ -319,14 +319,11 @@ export const RunnaWeekStrip: React.FC<RunnaWeekStripProps> = ({
             : "Agrandar y mostrar calendario del mes"
         }
       >
-        <div className="flex items-center gap-1">
-          <div className="w-12 h-1.5 bg-white/20 group-hover:bg-white/40 rounded-full transition-colors" />
-          {isMonthExpanded ? (
-            <ChevronUp className="size-3 text-zinc-400 group-hover:text-white" />
-          ) : (
-            <ChevronDown className="size-3 text-zinc-400 group-hover:text-white" />
-          )}
-        </div>
+        {isMonthExpanded ? (
+          <ChevronUp className="size-4 text-zinc-400 group-hover:text-white transition-colors" />
+        ) : (
+          <ChevronDown className="size-4 text-zinc-400 group-hover:text-white transition-colors" />
+        )}
       </button>
     </div>
   )
