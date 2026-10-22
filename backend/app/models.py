@@ -1286,3 +1286,22 @@ class PlanPausesPublic(SQLModel):
     count: int
 
 
+# ---------------------------------------------------------------------------
+# Weather (M5)
+# ---------------------------------------------------------------------------
+
+
+class WeatherForecastPublic(SQLModel):
+    date: dt.date
+    latitude: float
+    longitude: float
+    temperature_min_c: float
+    temperature_max_c: float
+    precipitation_mm: float
+    wind_speed_kmh: float
+    weather_code: int
+    condition: str
+    apparel_recommendation: str
+
+
+

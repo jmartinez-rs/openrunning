@@ -1,11 +1,14 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import {
   Activity,
   ChevronLeft,
   ChevronRight,
+  CloudRain,
   Compass,
   Download,
   Footprints,
+  Heart,
   HelpCircle,
   Link2,
   Music,
@@ -14,13 +17,17 @@ import {
   Repeat,
   RotateCcw,
   Share2,
+  Shirt,
   Sparkles,
+  Sun,
   Timer,
   Wind,
   XCircle,
 } from "lucide-react"
 
-import type { RunningWorkoutPublic } from "@/client"
+import { type RunningWorkoutPublic, WeatherService } from "@/client"
+import { calculateHeartRateZones } from "@/lib/running-math"
+import { downloadWorkoutTcx } from "@/lib/tcx-export"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -79,6 +86,50 @@ export function PaccerWorkoutSheet({
   const [showLinkModal, setShowLinkModal] = useState(false)
   const [showMusicModal, setShowMusicModal] = useState(false)
   const [showSkipModal, setShowSkipModal] = useState(false)
+
+  // M5: Consulta en vivo de clima e indumentaria
+  const weatherQuery = useQuery({
+    queryKey: ["workout-weather", workout?.date],
+    queryFn: () =>
+      WeatherService.getWeather({
+        date: workout?.date ? String(workout.date) : undefined,
+      }),
+    enabled: Boolean(workout?.date),
+  })
+  const weather = weatherQuery.data
+
+  // M5: Zonas FC reales basadas en fórmula Karvonen
+  const hrZones = useMemo(() => calculateHeartRateZones(185, 55), [])
+  const targetHrZoneInfo = useMemo(() => {
+    switch (workout?.type) {
+      case "tempo":
+        return {
+          name: "Zona 3-4 (Tempo / Umbral)",
+          range: `${hrZones.z3Tempo[0]} - ${hrZones.z4Threshold[1]} bpm`,
+        }
+      case "intervals":
+        return {
+          name: "Zona 4-5 (Potencia / VO2)",
+          range: `${hrZones.z4Threshold[0]} - ${hrZones.z5Anaerobic[1]} bpm`,
+        }
+      case "long_run":
+        return {
+          name: "Zona 2 (Resistencia Aeróbica)",
+          range: `${hrZones.z2Aerobic[0]} - ${hrZones.z2Aerobic[1]} bpm`,
+        }
+      case "regeneration":
+        return {
+          name: "Zona 1 (Recuperación Activa)",
+          range: `${hrZones.z1Recovery[0]} - ${hrZones.z1Recovery[1]} bpm`,
+        }
+      case "easy_run":
+      default:
+        return {
+          name: "Zona 2 (Aeróbico Conversacional)",
+          range: `${hrZones.z2Aerobic[0]} - ${hrZones.z2Aerobic[1]} bpm`,
+        }
+    }
+  }, [workout?.type, hrZones])
 
   if (!workout) return null
 
@@ -203,30 +254,46 @@ export function PaccerWorkoutSheet({
               {workout.name || typeMeta.label}
             </h2>
 
-            {/* Subtítulo tipo de sesión y duración */}
-            <div className="mt-2 flex items-center gap-3 text-sm text-zinc-300 font-medium">
+            {/* Subtítulo tipo de sesión, duración y Zona FC */}
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-zinc-300 font-medium">
               <span className="text-amber-300 font-bold">{typeMeta.label}</span>
               <span>·</span>
               <span className="inline-flex items-center gap-1.5 text-zinc-400">
                 <Timer className="size-4 text-zinc-400" />
                 {durationEstimateStr}
               </span>
+              <span>·</span>
+              <span className="inline-flex items-center gap-1.5 text-rose-400 font-semibold text-xs bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-500/20">
+                <Heart className="size-3.5 fill-current" />
+                {targetHrZoneInfo.name}: {targetHrZoneInfo.range}
+              </span>
             </div>
           </div>
 
           <div className="px-6 space-y-6 pb-24">
-            {/* ── Card: Informe personalizado del entrenamiento ── */}
+            {/* ── Card: Informe personalizado del clima & entrenamiento ── */}
             <div className="rounded-2xl bg-black/40 border border-white/5 p-4 flex flex-col gap-3">
               <div className="flex items-start gap-3">
                 <div className="size-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-400">
                   <Sparkles className="size-4" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-bold text-white">
-                    Informe personalizado del entrenamiento
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    {weather ? (
+                      <>
+                        <Sun className="size-3.5 text-amber-400" />
+                        <span>
+                          {weather.condition} · {weather.temperature_min_c}°C a {weather.temperature_max_c}°C
+                        </span>
+                      </>
+                    ) : (
+                      <span>Informe personalizado de condiciones</span>
+                    )}
                   </span>
-                  <span className="text-[11px] text-zinc-400">
-                    Disponible el día antes de tu carrera
+                  <span className="text-[11px] text-zinc-400 mt-0.5">
+                    {weather
+                      ? `${weather.wind_speed_kmh} km/h viento · ${weather.precipitation_mm} mm lluvia · ${weather.apparel_recommendation}`
+                      : "Consultando pronóstico y recomendaciones meteorológicas..."}
                   </span>
                 </div>
               </div>
@@ -237,7 +304,7 @@ export function PaccerWorkoutSheet({
                 className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-zinc-300 hover:text-white flex items-center justify-center gap-2 transition-colors cursor-pointer border border-white/5"
               >
                 <Wind className="size-3.5 text-amber-400" />
-                <span>¿Cómo adaptarse a las condiciones?</span>
+                <span>Ver clima detallado y adaptación a condiciones</span>
               </button>
             </div>
 
@@ -604,13 +671,43 @@ export function PaccerWorkoutSheet({
       <Dialog open={showWeatherModal} onOpenChange={setShowWeatherModal}>
         <DialogContent className="max-w-md rounded-3xl bg-[#12151a] border-white/10 text-white p-6">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black font-display text-white">
-              Adaptación a las Condiciones
+            <DialogTitle className="text-xl font-black font-display text-white flex items-center gap-2">
+              <Sun className="size-5 text-amber-400" />
+              <span>Condiciones Meteorológicas</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-zinc-400">
-              Estrategias para correr con calor, frío o viento.
+              Datos meteorológicos en vivo y recomendaciones para tu salida.
             </DialogDescription>
           </DialogHeader>
+
+          {weather && (
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2.5 my-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-400 font-semibold">Estado del tiempo</span>
+                <span className="text-xs font-bold text-amber-300">{weather.condition}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-400 font-semibold">Temperatura</span>
+                <span className="text-xs font-bold text-white">
+                  {weather.temperature_min_c}°C mín / {weather.temperature_max_c}°C máx
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-zinc-400 font-semibold">Viento y Lluvia</span>
+                <span className="text-xs font-bold text-white">
+                  {weather.wind_speed_kmh} km/h · {weather.precipitation_mm} mm
+                </span>
+              </div>
+              <div className="pt-2 border-t border-white/10">
+                <span className="text-[10px] text-zinc-400 uppercase font-bold block mb-1">
+                  Indumentaria sugerida
+                </span>
+                <p className="text-xs text-emerald-300/90 leading-relaxed font-medium">
+                  {weather.apparel_recommendation}
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="mt-3 space-y-3 text-xs text-zinc-300">
             <p>
@@ -627,7 +724,7 @@ export function PaccerWorkoutSheet({
           <div className="mt-4 flex justify-end">
             <Button
               type="button"
-              className="rounded-full bg-white text-zinc-950 font-bold text-xs"
+              className="rounded-full bg-white text-zinc-950 font-bold text-xs cursor-pointer"
               onClick={() => setShowWeatherModal(false)}
             >
               Entendido
@@ -636,15 +733,15 @@ export function PaccerWorkoutSheet({
         </DialogContent>
       </Dialog>
 
-      {/* ── Modal Cargar Ruta GPX ── */}
+      {/* ── Modal Cargar Ruta GPX / Exportar TCX ── */}
       <Dialog open={showRouteModal} onOpenChange={setShowRouteModal}>
         <DialogContent className="max-w-md rounded-3xl bg-[#12151a] border-white/10 text-white p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-black font-display text-white">
-              Cargar Ruta del Entrenamiento
+              Exportar Entrenamiento a tu Reloj
             </DialogTitle>
             <DialogDescription className="text-xs text-zinc-400">
-              Podés exportar este entrenamiento a tu reloj o cargar un archivo GPX.
+              Descargá este entrenamiento con sus intervalos y ritmos programados para Garmin, Coros o Apple Watch.
             </DialogDescription>
           </DialogHeader>
 
@@ -652,14 +749,15 @@ export function PaccerWorkoutSheet({
             <Button
               type="button"
               variant="outline"
-              className="border-white/10 text-white hover:bg-white/10 rounded-2xl justify-start text-xs font-bold py-6"
+              className="border-white/10 text-white hover:bg-white/10 rounded-2xl justify-start text-xs font-bold py-6 cursor-pointer"
               onClick={() => {
-                showSuccessToast("Descargando archivo estructurado (.FIT) para Garmin / Apple Watch")
+                downloadWorkoutTcx(workout)
+                showSuccessToast("¡Archivo de entrenamiento (.TCX) descargado exitosamente!")
                 setShowRouteModal(false)
               }}
             >
               <Download className="mr-3 size-4 text-primary" />
-              Descargar archivo estructurado (.FIT)
+              Descargar archivo estructurado (.TCX / Garmin Connect)
             </Button>
           </div>
 
@@ -667,7 +765,7 @@ export function PaccerWorkoutSheet({
             <Button
               type="button"
               variant="ghost"
-              className="text-xs"
+              className="text-xs cursor-pointer"
               onClick={() => setShowRouteModal(false)}
             >
               Cerrar

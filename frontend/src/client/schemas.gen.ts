@@ -5434,6 +5434,55 @@ export const ValidationErrorSchema = {
     title: 'ValidationError'
 } as const;
 
+export const WeatherForecastPublicSchema = {
+    properties: {
+        date: {
+            type: 'string',
+            format: 'date',
+            title: 'Date'
+        },
+        latitude: {
+            type: 'number',
+            title: 'Latitude'
+        },
+        longitude: {
+            type: 'number',
+            title: 'Longitude'
+        },
+        temperature_min_c: {
+            type: 'number',
+            title: 'Temperature Min C'
+        },
+        temperature_max_c: {
+            type: 'number',
+            title: 'Temperature Max C'
+        },
+        precipitation_mm: {
+            type: 'number',
+            title: 'Precipitation Mm'
+        },
+        wind_speed_kmh: {
+            type: 'number',
+            title: 'Wind Speed Kmh'
+        },
+        weather_code: {
+            type: 'integer',
+            title: 'Weather Code'
+        },
+        condition: {
+            type: 'string',
+            title: 'Condition'
+        },
+        apparel_recommendation: {
+            type: 'string',
+            title: 'Apparel Recommendation'
+        }
+    },
+    type: 'object',
+    required: ['date', 'latitude', 'longitude', 'temperature_min_c', 'temperature_max_c', 'precipitation_mm', 'wind_speed_kmh', 'weather_code', 'condition', 'apparel_recommendation'],
+    title: 'WeatherForecastPublic'
+} as const;
+
 export const WeekInSchema = {
     properties: {
         number: {

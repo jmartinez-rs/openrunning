@@ -13,6 +13,7 @@ from app.api.routes import (
     sync,
     users,
     utils,
+    weather,
     webhooks,
 )
 from app.api.routes import (
@@ -33,6 +34,7 @@ api_router.include_router(shoes.router)
 api_router.include_router(settings_routes.router)
 api_router.include_router(sync.router)
 api_router.include_router(storage.router)
+api_router.include_router(weather.router)
 api_router.include_router(webhooks.router)
 
 

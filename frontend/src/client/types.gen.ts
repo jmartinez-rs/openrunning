@@ -983,6 +983,19 @@ export type ValidationError = {
     };
 };
 
+export type WeatherForecastPublic = {
+    date: string;
+    latitude: number;
+    longitude: number;
+    temperature_min_c: number;
+    temperature_max_c: number;
+    precipitation_mm: number;
+    wind_speed_kmh: number;
+    weather_code: number;
+    condition: string;
+    apparel_recommendation: string;
+};
+
 export type WeekIn = {
     number: number;
     start_date?: (string | null);
@@ -1552,6 +1565,14 @@ export type UtilsTestEmailData = {
 export type UtilsTestEmailResponse = (Message);
 
 export type UtilsHealthCheckResponse = (boolean);
+
+export type WeatherGetWeatherData = {
+    date?: (string | null);
+    latitude?: number;
+    longitude?: number;
+};
+
+export type WeatherGetWeatherResponse = (WeatherForecastPublic);
 
 export type WebhooksVerifyStravaWebhookData = {
     hubChallenge: string;
