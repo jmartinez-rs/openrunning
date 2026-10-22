@@ -15,6 +15,7 @@ import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
 import { PaccerWorkoutSheet } from "./PaccerWorkoutSheet"
+import { PlanAdaptationBanner } from "./PlanAdaptationBanner"
 import { PlanFitnessCard } from "./PlanFitnessCard"
 import { PlanGuideSheet } from "./PlanGuideSheet"
 import { PlanPaceInsightsCard } from "./PlanPaceInsightsCard"
@@ -374,6 +375,9 @@ export function RunningPlanDetail({
         weeks={weeks}
         totalKm={summary.plannedKm}
       />
+
+      {/* ── Banner de Adaptación del Plan (M2) ── */}
+      <PlanAdaptationBanner planId={planId} />
 
       {/* ── 2. Acciones Rápidas: Visión general | Apps conectadas | Gestionar plan ── */}
       <RunnaPlanQuickActions

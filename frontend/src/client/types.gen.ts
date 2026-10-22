@@ -118,6 +118,22 @@ export type ActivityUpdate = {
     name?: (string | null);
 };
 
+export type AdaptationSuggestionPublic = {
+    rule_code: string;
+    title: string;
+    reason: string;
+    severity?: 'info' | 'warning' | 'critical';
+    before_summary: string;
+    after_summary: string;
+    affected_weeks?: Array<(number)>;
+    affected_workouts_count?: number;
+    params?: {
+        [key: string]: unknown;
+    };
+};
+
+export type severity = 'info' | 'warning' | 'critical';
+
 export type AthleteBaseline = {
     weekly_km: BaselineData;
     longest_run_km: BaselineData;
@@ -249,6 +265,44 @@ export type PhaseIn = {
     weeks?: Array<WeekIn>;
 };
 
+export type PlanAdaptationApplyRequest = {
+    selected_rule_codes?: Array<(string)>;
+    confirm?: boolean;
+};
+
+export type PlanAdaptationApplyResultPublic = {
+    applied_rules: Array<(string)>;
+    adaptations: Array<PlanAdaptationPublic>;
+    updated_workouts_count: number;
+};
+
+export type PlanAdaptationPreviewPublic = {
+    plan_id: string;
+    suggestions?: Array<AdaptationSuggestionPublic>;
+    evaluated_week_number?: (number | null);
+    evaluated_at: string;
+};
+
+export type PlanAdaptationPublic = {
+    id: string;
+    plan_id: string;
+    user_id: string;
+    rule_code: string;
+    reason: string;
+    before_summary?: (string | null);
+    after_summary?: (string | null);
+    changes_json?: ({
+    [key: string]: unknown;
+} | null);
+    applied: boolean;
+    created_at: string;
+};
+
+export type PlanAdaptationsPublic = {
+    data: Array<PlanAdaptationPublic>;
+    count: number;
+};
+
 export type PlanDraftResponse = {
     draft: RunningPlanCreate;
     warnings?: Array<PlanValidationIssue>;
@@ -343,7 +397,7 @@ export type PlanValidationIssue = {
 } | null);
 };
 
-export type severity = 'error' | 'warning' | 'info';
+export type severity2 = 'error' | 'warning' | 'info';
 
 export type PrivateUserCreate = {
     email: string;
@@ -1216,6 +1270,27 @@ export type RunningPlansReadRecalibrationsData = {
 };
 
 export type RunningPlansReadRecalibrationsResponse = (PlanRecalibrationsPublic);
+
+export type RunningPlansPreviewPlanAdaptationsData = {
+    planId: string;
+};
+
+export type RunningPlansPreviewPlanAdaptationsResponse = (PlanAdaptationPreviewPublic);
+
+export type RunningPlansApplyAdaptationsToPlanData = {
+    planId: string;
+    requestBody?: (PlanAdaptationApplyRequest | null);
+};
+
+export type RunningPlansApplyAdaptationsToPlanResponse = (PlanAdaptationApplyResultPublic);
+
+export type RunningPlansReadPlanAdaptationsData = {
+    limit?: number;
+    planId: string;
+    skip?: number;
+};
+
+export type RunningPlansReadPlanAdaptationsResponse = (PlanAdaptationsPublic);
 
 export type SettingsReadSettingsResponse = (SettingsPublic);
 

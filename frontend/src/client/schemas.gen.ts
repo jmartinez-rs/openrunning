@@ -709,6 +709,57 @@ export const ActivityUpdateSchema = {
     title: 'ActivityUpdate'
 } as const;
 
+export const AdaptationSuggestionPublicSchema = {
+    properties: {
+        rule_code: {
+            type: 'string',
+            title: 'Rule Code'
+        },
+        title: {
+            type: 'string',
+            title: 'Title'
+        },
+        reason: {
+            type: 'string',
+            title: 'Reason'
+        },
+        severity: {
+            type: 'string',
+            enum: ['info', 'warning', 'critical'],
+            title: 'Severity',
+            default: 'info'
+        },
+        before_summary: {
+            type: 'string',
+            title: 'Before Summary'
+        },
+        after_summary: {
+            type: 'string',
+            title: 'After Summary'
+        },
+        affected_weeks: {
+            items: {
+                type: 'integer'
+            },
+            type: 'array',
+            title: 'Affected Weeks'
+        },
+        affected_workouts_count: {
+            type: 'integer',
+            title: 'Affected Workouts Count',
+            default: 0
+        },
+        params: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Params'
+        }
+    },
+    type: 'object',
+    required: ['rule_code', 'title', 'reason', 'before_summary', 'after_summary'],
+    title: 'AdaptationSuggestionPublic'
+} as const;
+
 export const AthleteBaselineSchema = {
     properties: {
         weekly_km: {
@@ -1300,6 +1351,180 @@ export const PhaseInSchema = {
     type: 'object',
     required: ['name', 'start_week', 'end_week'],
     title: 'PhaseIn'
+} as const;
+
+export const PlanAdaptationApplyRequestSchema = {
+    properties: {
+        selected_rule_codes: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Selected Rule Codes'
+        },
+        confirm: {
+            type: 'boolean',
+            title: 'Confirm',
+            default: true
+        }
+    },
+    type: 'object',
+    title: 'PlanAdaptationApplyRequest'
+} as const;
+
+export const PlanAdaptationApplyResultPublicSchema = {
+    properties: {
+        applied_rules: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Applied Rules'
+        },
+        adaptations: {
+            items: {
+                '$ref': '#/components/schemas/PlanAdaptationPublic'
+            },
+            type: 'array',
+            title: 'Adaptations'
+        },
+        updated_workouts_count: {
+            type: 'integer',
+            title: 'Updated Workouts Count'
+        }
+    },
+    type: 'object',
+    required: ['applied_rules', 'adaptations', 'updated_workouts_count'],
+    title: 'PlanAdaptationApplyResultPublic'
+} as const;
+
+export const PlanAdaptationPreviewPublicSchema = {
+    properties: {
+        plan_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Plan Id'
+        },
+        suggestions: {
+            items: {
+                '$ref': '#/components/schemas/AdaptationSuggestionPublic'
+            },
+            type: 'array',
+            title: 'Suggestions'
+        },
+        evaluated_week_number: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Evaluated Week Number'
+        },
+        evaluated_at: {
+            type: 'string',
+            format: 'date',
+            title: 'Evaluated At'
+        }
+    },
+    type: 'object',
+    required: ['plan_id', 'evaluated_at'],
+    title: 'PlanAdaptationPreviewPublic'
+} as const;
+
+export const PlanAdaptationPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        plan_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Plan Id'
+        },
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        rule_code: {
+            type: 'string',
+            title: 'Rule Code'
+        },
+        reason: {
+            type: 'string',
+            title: 'Reason'
+        },
+        before_summary: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Before Summary'
+        },
+        after_summary: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'After Summary'
+        },
+        changes_json: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Changes Json'
+        },
+        applied: {
+            type: 'boolean',
+            title: 'Applied'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'plan_id', 'user_id', 'rule_code', 'reason', 'applied', 'created_at'],
+    title: 'PlanAdaptationPublic'
+} as const;
+
+export const PlanAdaptationsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/PlanAdaptationPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'PlanAdaptationsPublic'
 } as const;
 
 export const PlanDraftResponseSchema = {

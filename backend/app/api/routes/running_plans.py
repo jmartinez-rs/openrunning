@@ -17,6 +17,13 @@ from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     Activity,
     ActivityCardio,
+    AdaptationSuggestionPublic,
+    PlanAdaptation,
+    PlanAdaptationApplyRequest,
+    PlanAdaptationApplyResultPublic,
+    PlanAdaptationPreviewPublic,
+    PlanAdaptationPublic,
+    PlanAdaptationsPublic,
     PlanDraftResponse,
     PlanGeneratorConfig,
     PlanRecalibration,
@@ -53,6 +60,10 @@ from app.services.fitness import (
     recalibration_preview,
     resolve_effective_from_week,
     snapshot_plan,
+)
+from app.services.plan_adaptation import (
+    apply_plan_adaptations,
+    evaluate_plan_adaptations,
 )
 from app.services.plan_generator import generate_plan_draft_v2
 from app.services.plan_validator import (
@@ -1144,3 +1155,97 @@ def read_recalibrations(
         current_vdot_source=current_source,
         current_vdot_date=current_date,
     )
+
+
+# ---------------------------------------------------------------------------
+# Adaptación dinámica del plan (M2: adherencia, tirada larga, RPE y fatiga)
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/{plan_id}/adaptation/preview", response_model=PlanAdaptationPreviewPublic
+)
+def preview_plan_adaptations(
+    session: SessionDep,
+    current_user: CurrentUser,
+    plan_id: uuid.UUID,
+) -> PlanAdaptationPreviewPublic:
+    """Previsualiza ajustes adaptativos recomendados (R1-R5) según adherencia y feedback."""
+    plan = _get_owned_plan(session, current_user.id, plan_id)
+    today = _today_local()
+    suggestions, eval_week = evaluate_plan_adaptations(session, plan, today_local=today)
+    return PlanAdaptationPreviewPublic(
+        plan_id=plan.id,
+        suggestions=suggestions,
+        evaluated_week_number=eval_week,
+        evaluated_at=today,
+    )
+
+
+@router.post(
+    "/{plan_id}/adaptation/apply", response_model=PlanAdaptationApplyResultPublic
+)
+def apply_adaptations_to_plan(
+    session: SessionDep,
+    current_user: CurrentUser,
+    plan_id: uuid.UUID,
+    body: PlanAdaptationApplyRequest | None = None,
+) -> PlanAdaptationApplyResultPublic:
+    """Aplica las reglas de adaptación seleccionadas al plan."""
+    plan = _get_owned_plan(session, current_user.id, plan_id)
+    if body is None or not body.confirm:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="confirmation_required"
+        )
+
+    lock_plan_for_update(session, plan)
+    today = _today_local()
+    adaptations, updated_count = apply_plan_adaptations(
+        session,
+        plan,
+        selected_rule_codes=body.selected_rule_codes,
+        today_local=today,
+    )
+    session.commit()
+
+    return PlanAdaptationApplyResultPublic(
+        applied_rules=body.selected_rule_codes,
+        adaptations=[PlanAdaptationPublic.model_validate(a) for a in adaptations],
+        updated_workouts_count=updated_count,
+    )
+
+
+@router.get(
+    "/{plan_id}/adaptations", response_model=PlanAdaptationsPublic
+)
+def read_plan_adaptations(
+    session: SessionDep,
+    current_user: CurrentUser,
+    plan_id: uuid.UUID,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+) -> PlanAdaptationsPublic:
+    """Historial de adaptaciones aplicadas al plan."""
+    plan = _get_owned_plan(session, current_user.id, plan_id)
+    scope = (
+        PlanAdaptation.plan_id == plan.id,
+        PlanAdaptation.user_id == plan.user_id,
+    )
+    count = session.exec(
+        select(func.count()).select_from(PlanAdaptation).where(*scope)
+    ).one()
+    rows = session.exec(
+        select(PlanAdaptation)
+        .where(*scope)
+        .order_by(
+            col(PlanAdaptation.created_at).desc(),
+            col(PlanAdaptation.id).desc(),
+        )
+        .offset(skip)
+        .limit(limit)
+    ).all()
+    return PlanAdaptationsPublic(
+        data=[PlanAdaptationPublic.model_validate(r) for r in rows],
+        count=count,
+    )
+

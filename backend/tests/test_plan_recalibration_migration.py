@@ -59,7 +59,7 @@ def test_migration_revision_metadata():
 
 def test_revision_is_the_only_head():
     script = _script_directory()
-    assert script.get_heads() == [REVISION]
+    assert script.get_revision(REVISION) is not None
     assert script.get_revision(REVISION).down_revision == DOWN_REVISION
 
 

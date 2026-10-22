@@ -1136,3 +1136,81 @@ class PlanRecalibrationsPublic(SQLModel):
     current_vdot: float | None = None
     current_vdot_source: str | None = None
     current_vdot_date: dt.date | None = None
+
+
+# ---------------------------------------------------------------------------
+# Dynamic Plan Adaptation (M2: adherence, missed long runs, RPE & injury)
+# ---------------------------------------------------------------------------
+
+
+class PlanAdaptation(SQLModel, table=True):
+    """Audit row for one applied plan adaptation rule (R1-R5)."""
+
+    __tablename__ = "planadaptation"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    plan_id: uuid.UUID = Field(
+        foreign_key="runningplan.id", nullable=False, ondelete="CASCADE", index=True
+    )
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE", index=True
+    )
+    rule_code: str = Field(sa_column=Column("rule_code", String(64), nullable=False))
+    reason: str = Field(sa_column=Column("reason", String(1000), nullable=False))
+    before_summary: str | None = Field(default=None, sa_column=Column(String(1000)))
+    after_summary: str | None = Field(default=None, sa_column=Column(String(1000)))
+    changes_json: dict[str, object] | None = Field(default=None, sa_column=Column(JSON))
+    applied: bool = True
+    created_at: datetime = Field(  # type: ignore[call-overload]
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),
+    )
+
+
+class AdaptationSuggestionPublic(SQLModel):
+    rule_code: str
+    title: str
+    reason: str
+    severity: Literal["info", "warning", "critical"] = "info"
+    before_summary: str
+    after_summary: str
+    affected_weeks: list[int] = Field(default_factory=list)
+    affected_workouts_count: int = 0
+    params: dict[str, object] = Field(default_factory=dict)
+
+
+class PlanAdaptationPreviewPublic(SQLModel):
+    plan_id: uuid.UUID
+    suggestions: list[AdaptationSuggestionPublic] = Field(default_factory=list)
+    evaluated_week_number: int | None = None
+    evaluated_at: dt.date
+
+
+class PlanAdaptationApplyRequest(SQLModel):
+    selected_rule_codes: list[str] = Field(default_factory=list)
+    confirm: bool = True
+
+
+class PlanAdaptationPublic(SQLModel):
+    id: uuid.UUID
+    plan_id: uuid.UUID
+    user_id: uuid.UUID
+    rule_code: str
+    reason: str
+    before_summary: str | None = None
+    after_summary: str | None = None
+    changes_json: dict[str, object] | None = None
+    applied: bool
+    created_at: datetime
+
+
+class PlanAdaptationsPublic(SQLModel):
+    data: list[PlanAdaptationPublic]
+    count: int
+
+
+class PlanAdaptationApplyResultPublic(SQLModel):
+    applied_rules: list[str]
+    adaptations: list[PlanAdaptationPublic]
+    updated_workouts_count: int
+
