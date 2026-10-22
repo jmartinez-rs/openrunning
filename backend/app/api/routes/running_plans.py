@@ -24,6 +24,12 @@ from app.models import (
     PlanAdaptationPreviewPublic,
     PlanAdaptationPublic,
     PlanAdaptationsPublic,
+    PlanPause,
+    PlanPauseApplyRequest,
+    PlanPausePreviewPublic,
+    PlanPausePreviewRequest,
+    PlanPausePublic,
+    PlanPausesPublic,
     PlanDraftResponse,
     PlanGeneratorConfig,
     PlanRecalibration,
@@ -64,6 +70,10 @@ from app.services.fitness import (
 from app.services.plan_adaptation import (
     apply_plan_adaptations,
     evaluate_plan_adaptations,
+)
+from app.services.plan_schedule import (
+    apply_pause_shift,
+    preview_pause_shift,
 )
 from app.services.plan_generator import generate_plan_draft_v2
 from app.services.plan_validator import (
@@ -1248,4 +1258,94 @@ def read_plan_adaptations(
         data=[PlanAdaptationPublic.model_validate(r) for r in rows],
         count=count,
     )
+
+
+@router.post(
+    "/{plan_id}/pause/preview", response_model=PlanPausePreviewPublic
+)
+def preview_plan_pause(
+    session: SessionDep,
+    current_user: CurrentUser,
+    plan_id: uuid.UUID,
+    body: PlanPausePreviewRequest,
+) -> PlanPausePreviewPublic:
+    """Previsualiza el desplazamiento de fechas del plan por pausa/vacaciones."""
+    plan = _get_owned_plan(session, current_user.id, plan_id)
+    try:
+        return preview_pause_shift(
+            session=session,
+            plan=plan,
+            pause_start=body.start_date,
+            pause_end=body.end_date,
+            reason=body.reason,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post(
+    "/{plan_id}/pause/apply", response_model=PlanPausePublic
+)
+def apply_plan_pause(
+    session: SessionDep,
+    current_user: CurrentUser,
+    plan_id: uuid.UUID,
+    body: PlanPauseApplyRequest,
+) -> PlanPausePublic:
+    """Aplica la pausa y desplaza el calendario del plan y sus sesiones."""
+    plan = _get_owned_plan(session, current_user.id, plan_id)
+    if not body.confirm:
+        raise HTTPException(
+            status_code=400,
+            detail="Debe confirmar el desplazamiento del plan con confirm=true.",
+        )
+    try:
+        pause_record = apply_pause_shift(
+            session=session,
+            plan=plan,
+            user_id=current_user.id,
+            pause_start=body.start_date,
+            pause_end=body.end_date,
+            reason=body.reason,
+        )
+        session.commit()
+        return PlanPausePublic.model_validate(pause_record)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get(
+    "/{plan_id}/pauses", response_model=PlanPausesPublic
+)
+def read_plan_pauses(
+    session: SessionDep,
+    current_user: CurrentUser,
+    plan_id: uuid.UUID,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+) -> PlanPausesPublic:
+    """Historial de pausas/vacaciones aplicadas al plan."""
+    plan = _get_owned_plan(session, current_user.id, plan_id)
+    scope = (
+        PlanPause.plan_id == plan.id,
+        PlanPause.user_id == plan.user_id,
+    )
+    count = session.exec(
+        select(func.count()).select_from(PlanPause).where(*scope)
+    ).one()
+    rows = session.exec(
+        select(PlanPause)
+        .where(*scope)
+        .order_by(
+            col(PlanPause.created_at).desc(),
+            col(PlanPause.id).desc(),
+        )
+        .offset(skip)
+        .limit(limit)
+    ).all()
+    return PlanPausesPublic(
+        data=[PlanPausePublic.model_validate(r) for r in rows],
+        count=count,
+    )
+
 

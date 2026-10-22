@@ -7,6 +7,7 @@ import {
   FileDown,
   FileText,
   LayoutGrid,
+  Palmtree,
   Pencil,
   Play,
   Trash2,
@@ -25,6 +26,7 @@ import {
 import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { PlanEvolutionTab } from "./PlanEvolutionTab"
+import { PlanPauseModal } from "./PlanPauseModal"
 import { PlanTimeline } from "./PlanTimeline"
 import { type WeekOverview } from "./running-utils"
 
@@ -61,6 +63,7 @@ export function RunnaPlanQuickActions({
   const [showOverviewModal, setShowOverviewModal] = useState(false)
   const [showAppsModal, setShowAppsModal] = useState(false)
   const [showManageModal, setShowManageModal] = useState(false)
+  const [showPauseModal, setShowPauseModal] = useState(false)
 
   return (
     <>
@@ -291,6 +294,19 @@ export function RunnaPlanQuickActions({
             <Button
               type="button"
               variant="outline"
+              className="w-full justify-start rounded-2xl border-amber-500/20 bg-amber-500/10 py-5 text-xs font-bold hover:bg-amber-500/20 text-amber-400 cursor-pointer"
+              onClick={() => {
+                setShowManageModal(false)
+                setShowPauseModal(true)
+              }}
+            >
+              <Palmtree className="mr-3 size-4 text-amber-400" />
+              Pausar / Modo Vacaciones (reprogramar fechas)
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
               className="w-full justify-start rounded-2xl border-white/10 py-5 text-xs font-bold hover:bg-white/10 text-white cursor-pointer"
               onClick={() => {
                 setShowManageModal(false)
@@ -343,6 +359,13 @@ export function RunnaPlanQuickActions({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ── Modal 4: Pausar Plan / Vacaciones (M4) ── */}
+      <PlanPauseModal
+        planId={plan.id}
+        open={showPauseModal}
+        onOpenChange={setShowPauseModal}
+      />
     </>
   )
 }

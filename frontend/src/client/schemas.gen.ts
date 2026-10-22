@@ -1697,6 +1697,207 @@ export const PlanGeneratorConfigSchema = {
     title: 'PlanGeneratorConfig'
 } as const;
 
+export const PlanPauseApplyRequestSchema = {
+    properties: {
+        start_date: {
+            type: 'string',
+            format: 'date',
+            title: 'Start Date'
+        },
+        end_date: {
+            type: 'string',
+            format: 'date',
+            title: 'End Date'
+        },
+        reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reason'
+        },
+        confirm: {
+            type: 'boolean',
+            title: 'Confirm',
+            default: true
+        }
+    },
+    type: 'object',
+    required: ['start_date', 'end_date'],
+    title: 'PlanPauseApplyRequest'
+} as const;
+
+export const PlanPausePreviewPublicSchema = {
+    properties: {
+        plan_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Plan Id'
+        },
+        pause_start: {
+            type: 'string',
+            format: 'date',
+            title: 'Pause Start'
+        },
+        pause_end: {
+            type: 'string',
+            format: 'date',
+            title: 'Pause End'
+        },
+        shift_days: {
+            type: 'integer',
+            title: 'Shift Days'
+        },
+        affected_workouts_count: {
+            type: 'integer',
+            title: 'Affected Workouts Count'
+        },
+        original_end_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Original End Date'
+        },
+        new_end_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'New End Date'
+        },
+        reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reason'
+        }
+    },
+    type: 'object',
+    required: ['plan_id', 'pause_start', 'pause_end', 'shift_days', 'affected_workouts_count'],
+    title: 'PlanPausePreviewPublic'
+} as const;
+
+export const PlanPausePreviewRequestSchema = {
+    properties: {
+        start_date: {
+            type: 'string',
+            format: 'date',
+            title: 'Start Date'
+        },
+        end_date: {
+            type: 'string',
+            format: 'date',
+            title: 'End Date'
+        },
+        reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reason'
+        }
+    },
+    type: 'object',
+    required: ['start_date', 'end_date'],
+    title: 'PlanPausePreviewRequest'
+} as const;
+
+export const PlanPausePublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        plan_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Plan Id'
+        },
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        start_date: {
+            type: 'string',
+            format: 'date',
+            title: 'Start Date'
+        },
+        end_date: {
+            type: 'string',
+            format: 'date',
+            title: 'End Date'
+        },
+        shifted_days: {
+            type: 'integer',
+            title: 'Shifted Days'
+        },
+        reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reason'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'plan_id', 'user_id', 'start_date', 'end_date', 'shifted_days', 'created_at'],
+    title: 'PlanPausePublic'
+} as const;
+
+export const PlanPausesPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/PlanPausePublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'PlanPausesPublic'
+} as const;
+
 export const PlanRecalibrationPublicSchema = {
     properties: {
         id: {

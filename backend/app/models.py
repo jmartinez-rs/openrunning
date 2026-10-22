@@ -1218,3 +1218,71 @@ class PlanAdaptationApplyResultPublic(SQLModel):
     adaptations: list[PlanAdaptationPublic]
     updated_workouts_count: int
 
+
+# ---------------------------------------------------------------------------
+# Holiday / Schedule Pause (M4)
+# ---------------------------------------------------------------------------
+
+
+class PlanPause(SQLModel, table=True):
+    """Stores applied pause / holiday periods for a running plan."""
+
+    __tablename__ = "planpause"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    plan_id: uuid.UUID = Field(
+        foreign_key="runningplan.id", nullable=False, ondelete="CASCADE", index=True
+    )
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE", index=True
+    )
+    start_date: dt.date
+    end_date: dt.date
+    shifted_days: int
+    reason: str | None = Field(default=None, max_length=500)
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+
+
+class PlanPausePreviewRequest(SQLModel):
+    start_date: dt.date
+    end_date: dt.date
+    reason: str | None = None
+
+
+class PlanPausePreviewPublic(SQLModel):
+    plan_id: uuid.UUID
+    pause_start: dt.date
+    pause_end: dt.date
+    shift_days: int
+    affected_workouts_count: int
+    original_end_date: dt.date | None = None
+    new_end_date: dt.date | None = None
+    reason: str | None = None
+
+
+class PlanPauseApplyRequest(SQLModel):
+    start_date: dt.date
+    end_date: dt.date
+    reason: str | None = None
+    confirm: bool = True
+
+
+class PlanPausePublic(SQLModel):
+    id: uuid.UUID
+    plan_id: uuid.UUID
+    user_id: uuid.UUID
+    start_date: dt.date
+    end_date: dt.date
+    shifted_days: int
+    reason: str | None = None
+    created_at: datetime
+
+
+class PlanPausesPublic(SQLModel):
+    data: list[PlanPausePublic]
+    count: int
+
+

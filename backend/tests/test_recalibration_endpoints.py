@@ -1193,6 +1193,11 @@ def test_recalibration_surface_exposes_exactly_three_routes(client, db_engine, u
         (f"{namespace}adaptation/apply", "post"),
         (f"{namespace}adaptations", "get"),
     }
+    pause_routes = {
+        (f"{namespace}pause/preview", "post"),
+        (f"{namespace}pause/apply", "post"),
+        (f"{namespace}pauses", "get"),
+    }
 
     declared = {
         (path, method)
@@ -1201,9 +1206,9 @@ def test_recalibration_surface_exposes_exactly_three_routes(client, db_engine, u
         for method in operations
     }
 
-    assert declared == pre_existing_plan_routes | recalibration_routes | adaptation_routes
+    assert declared == pre_existing_plan_routes | recalibration_routes | adaptation_routes | pause_routes
     # The feature adds these three and nothing else to the plan namespace.
-    assert declared - (pre_existing_plan_routes | adaptation_routes) == recalibration_routes
+    assert declared - (pre_existing_plan_routes | adaptation_routes | pause_routes) == recalibration_routes
 
 
 def test_double_apply_advances_current_vdot_and_keeps_baseline_immutable(

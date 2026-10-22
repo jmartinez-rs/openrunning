@@ -364,6 +364,46 @@ export type PlanGeneratorConfig = {
  */
 export type goal_type = 'finish' | 'time' | 'performance';
 
+export type PlanPauseApplyRequest = {
+    start_date: string;
+    end_date: string;
+    reason?: (string | null);
+    confirm?: boolean;
+};
+
+export type PlanPausePreviewPublic = {
+    plan_id: string;
+    pause_start: string;
+    pause_end: string;
+    shift_days: number;
+    affected_workouts_count: number;
+    original_end_date?: (string | null);
+    new_end_date?: (string | null);
+    reason?: (string | null);
+};
+
+export type PlanPausePreviewRequest = {
+    start_date: string;
+    end_date: string;
+    reason?: (string | null);
+};
+
+export type PlanPausePublic = {
+    id: string;
+    plan_id: string;
+    user_id: string;
+    start_date: string;
+    end_date: string;
+    shifted_days: number;
+    reason?: (string | null);
+    created_at: string;
+};
+
+export type PlanPausesPublic = {
+    data: Array<PlanPausePublic>;
+    count: number;
+};
+
 export type PlanRecalibrationPublic = {
     id: string;
     plan_id: string;
@@ -1307,6 +1347,28 @@ export type RunningPlansReadPlanAdaptationsData = {
 };
 
 export type RunningPlansReadPlanAdaptationsResponse = (PlanAdaptationsPublic);
+
+export type RunningPlansPreviewPlanPauseData = {
+    planId: string;
+    requestBody: PlanPausePreviewRequest;
+};
+
+export type RunningPlansPreviewPlanPauseResponse = (PlanPausePreviewPublic);
+
+export type RunningPlansApplyPlanPauseData = {
+    planId: string;
+    requestBody: PlanPauseApplyRequest;
+};
+
+export type RunningPlansApplyPlanPauseResponse = (PlanPausePublic);
+
+export type RunningPlansReadPlanPausesData = {
+    limit?: number;
+    planId: string;
+    skip?: number;
+};
+
+export type RunningPlansReadPlanPausesResponse = (PlanPausesPublic);
 
 export type SettingsReadSettingsResponse = (SettingsPublic);
 
