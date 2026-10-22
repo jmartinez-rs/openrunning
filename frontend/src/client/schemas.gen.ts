@@ -1652,7 +1652,44 @@ export const PlanGeneratorConfigSchema = {
             type: 'string',
             title: 'Engine Version',
             description: 'Versión del motor algorítmico',
-            default: 'v2'
+            default: 'v3'
+        },
+        cutback_cadence: {
+            type: 'integer',
+            maximum: 6,
+            minimum: 2,
+            title: 'Cutback Cadence',
+            description: 'Frecuencia de semanas de descarga',
+            default: 4
+        },
+        hard_day_min_gap_days: {
+            type: 'integer',
+            maximum: 4,
+            minimum: 1,
+            title: 'Hard Day Min Gap Days',
+            description: 'Separación mínima entre sesiones duras',
+            default: 2
+        },
+        avoid_long_adjacent_quality: {
+            type: 'boolean',
+            title: 'Avoid Long Adjacent Quality',
+            description: 'Evitar calidad pegada a tirada larga',
+            default: true
+        },
+        quality_days_preference: {
+            anyOf: [
+                {
+                    items: {
+                        type: 'integer'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Quality Days Preference',
+            description: 'Preferencia de días de calidad'
         }
     },
     type: 'object',

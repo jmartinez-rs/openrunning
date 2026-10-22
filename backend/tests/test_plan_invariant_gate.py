@@ -77,3 +77,80 @@ def test_resolved_pre_existing_error_is_not_reported_as_new():
     post = [_issue("DUPLICATE_WORKOUT_DATES", details={"date": "2026-10-06"})]
 
     assert new_error_issues(pre, post) == []
+
+
+def test_validator_m3_invariants():
+    import datetime as dt
+    from app.models import (
+        AthleteBaseline,
+        BaselineData,
+        PlanGeneratorConfig,
+        RunningPlanCreate,
+        PhaseIn,
+        WeekIn,
+        WorkoutIn,
+    )
+    from app.services.plan_validator import validate_plan_invariants
+
+    baseline = AthleteBaseline(
+        weekly_km=BaselineData(value=30.0, confidence="measured"),
+        longest_run_km=BaselineData(value=12.0, confidence="measured"),
+        vdot=BaselineData(value=40.0, confidence="measured"),
+        runs_per_week=BaselineData(value=4.0, confidence="measured"),
+    )
+    config = PlanGeneratorConfig(
+        target_km=10.0,
+        num_weeks=8,
+        start_date=dt.date(2026, 10, 12),
+        baseline=baseline,
+        avoid_long_adjacent_quality=True,
+        hard_day_min_gap_days=3,
+        cutback_cadence=3,
+    )
+
+    # Build plan with adjacent quality to long run and quality sessions too close
+    w_quality1 = WorkoutIn(
+        date=dt.date(2026, 10, 14),
+        type="intervals",
+        distance_km=6.0,
+        intensity="hard",
+    )
+    w_quality2 = WorkoutIn(
+        date=dt.date(2026, 10, 16),  # Gap is 2 days (< min_gap 3)
+        type="tempo",
+        distance_km=6.0,
+        intensity="hard",
+    )
+    w_long_run = WorkoutIn(
+        date=dt.date(2026, 10, 17),  # Adjacent to quality2! (abs diff == 1)
+        type="long_run",
+        distance_km=10.0,
+        intensity="easy",
+    )
+    week1 = WeekIn(
+        number=1,
+        start_date=dt.date(2026, 10, 12),
+        end_date=dt.date(2026, 10, 18),
+        workouts=[w_quality1, w_quality2, w_long_run],
+    )
+    phase1 = PhaseIn(
+        position=1,
+        name="Fase 1",
+        color="emerald",
+        start_week=1,
+        end_week=8,
+        weeks=[week1],
+    )
+    plan = RunningPlanCreate(
+        name="Plan Test M3",
+        distance_km=10.0,
+        start_date=dt.date(2026, 10, 12),
+        phases=[phase1],
+    )
+
+    issues = validate_plan_invariants(plan, config)
+    codes = {issue.code for issue in issues}
+
+    assert "LONG_RUN_ADJACENT_QUALITY" in codes
+    assert "QUALITY_TOO_CLOSE" in codes
+

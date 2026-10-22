@@ -210,6 +210,65 @@ def validate_plan_invariants(
             )
         )
 
+    # 9. Invariante: Fondo contiguo a calidad (LONG_RUN_ADJACENT_QUALITY)
+    if config.avoid_long_adjacent_quality:
+        for phase in plan.phases:
+            for week in phase.weeks:
+                lr = next((w for w in week.workouts if w.type == "long_run"), None)
+                if lr:
+                    for w in week.workouts:
+                        if w is not lr and (w.intensity == "hard" or w.type in ["intervals", "tempo", "repetition", "race"]):
+                            if abs((w.date - lr.date).days) == 1:
+                                issues.append(
+                                    PlanValidationIssue(
+                                        code="LONG_RUN_ADJACENT_QUALITY",
+                                        severity="warning",
+                                        message=f"En la semana {week.number}, la sesión de calidad del {w.date} está contigua a la tirada larga del {lr.date}.",
+                                        details={"week": week.number, "quality_date": w.date.isoformat(), "long_run_date": lr.date.isoformat()},
+                                    )
+                                )
+
+    # 10. Invariante: Calidades demasiado próximas (QUALITY_TOO_CLOSE)
+    min_gap = config.hard_day_min_gap_days
+    for phase in plan.phases:
+        for week in phase.weeks:
+            q_workouts = sorted(
+                [w for w in week.workouts if w.intensity == "hard" or w.type in ["intervals", "tempo", "repetition", "race"]],
+                key=lambda x: x.date,
+            )
+            for i in range(len(q_workouts) - 1):
+                gap_days = (q_workouts[i + 1].date - q_workouts[i].date).days
+                if 1 < gap_days < min_gap:
+                    issues.append(
+                        PlanValidationIssue(
+                            code="QUALITY_TOO_CLOSE",
+                            severity="warning",
+                            message=f"En la semana {week.number}, dos sesiones de calidad tienen solo {gap_days} día(s) de separación (mínimo configurado: {min_gap}).",
+                            details={"week": week.number, "gap_days": gap_days, "min_gap": min_gap},
+                        )
+                    )
+
+    # 11. Invariante: Cadencia de descargas (CUTBACK_CADENCE_MISSED)
+    cadence = config.cutback_cadence
+    if num_weeks >= cadence + 2:
+        consecutive_build = 0
+        for w in range(num_weeks - 1):  # exclude taper final week
+            is_cutback = (w >= 1 and weekly_volumes[w] < weekly_volumes[w - 1] * 0.85)
+            if is_cutback:
+                consecutive_build = 0
+            else:
+                consecutive_build += 1
+                if consecutive_build > cadence:
+                    issues.append(
+                        PlanValidationIssue(
+                            code="CUTBACK_CADENCE_MISSED",
+                            severity="warning",
+                            message=f"Han pasado {consecutive_build} semanas consecutivas sin semana de descarga (cadencia configurada: cada {cadence} semanas).",
+                            details={"consecutive_weeks": consecutive_build, "cadence": cadence},
+                        )
+                    )
+                    break
+
     return issues
 
 
@@ -275,4 +334,8 @@ def reconstruct_generator_config(plan: RunningPlan) -> PlanGeneratorConfig:
         confidence=params.get("confidence"),
         conservative_mode=bool(params.get("conservative_mode", False)),
         engine_version=plan.engine_version or "v2",
+        cutback_cadence=int(params.get("cutback_cadence", 4)),
+        hard_day_min_gap_days=int(params.get("hard_day_min_gap_days", 2)),
+        avoid_long_adjacent_quality=bool(params.get("avoid_long_adjacent_quality", True)),
+        quality_days_preference=params.get("quality_days_preference"),
     )

@@ -341,6 +341,22 @@ export type PlanGeneratorConfig = {
      * Versión del motor algorítmico
      */
     engine_version?: string;
+    /**
+     * Frecuencia de semanas de descarga
+     */
+    cutback_cadence?: number;
+    /**
+     * Separación mínima entre sesiones duras
+     */
+    hard_day_min_gap_days?: number;
+    /**
+     * Evitar calidad pegada a tirada larga
+     */
+    avoid_long_adjacent_quality?: boolean;
+    /**
+     * Preferencia de días de calidad
+     */
+    quality_days_preference?: (Array<(number)> | null);
 };
 
 /**

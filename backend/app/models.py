@@ -623,7 +623,11 @@ class PlanGeneratorConfig(SQLModel):
     baseline: AthleteBaseline
     confidence: Confidence | None = Field(default=None, description="Confianza global o override")
     conservative_mode: bool = Field(default=False, description="Modo conservador por prevención/inactividad")
-    engine_version: str = Field(default="v2", description="Versión del motor algorítmico")
+    engine_version: str = Field(default="v3", description="Versión del motor algorítmico")
+    cutback_cadence: int = Field(default=4, ge=2, le=6, description="Frecuencia de semanas de descarga")
+    hard_day_min_gap_days: int = Field(default=2, ge=1, le=4, description="Separación mínima entre sesiones duras")
+    avoid_long_adjacent_quality: bool = Field(default=True, description="Evitar calidad pegada a tirada larga")
+    quality_days_preference: list[int] | None = Field(default=None, description="Preferencia de días de calidad")
 
 
 class RunningPlanBase(SQLModel):

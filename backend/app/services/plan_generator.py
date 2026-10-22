@@ -56,6 +56,7 @@ def generate_volume_curve(
     num_weeks: int,
     confidence: Confidence = "measured",
     conservative_mode: bool = False,
+    cutback_cadence: int | None = None,
 ) -> List[float]:
     """Generates periodized weekly volume curve with cutbacks and distance-tailored taper."""
     if num_weeks <= 0:
@@ -74,7 +75,10 @@ def generate_volume_curve(
     peak_km = calculate_peak_volume(start_km, target_km)
 
     # Cutback frequency
-    cutback_every = 3 if conservative_mode or num_weeks <= 8 else 4
+    if cutback_cadence is not None and cutback_cadence >= 2:
+        cutback_every = cutback_cadence
+    else:
+        cutback_every = 3 if conservative_mode or num_weeks <= 8 else 4
 
     # Determine taper weeks at the end
     taper_weeks = 1
@@ -198,6 +202,7 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
         num_weeks=config.num_weeks,
         confidence=confidence,
         conservative_mode=config.conservative_mode,
+        cutback_cadence=config.cutback_cadence,
     )
 
     # ISO weekdays: 1=Mon .. 7=Sun
@@ -205,11 +210,24 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
     long_run_day = config.long_run_day if config.long_run_day in selected_days else selected_days[-1]
     other_days = [d for d in selected_days if d != long_run_day]
 
-    # Quality days placement avoiding Sunday-Monday consecutive hard days
-    valid_q_candidates = [d for d in other_days if not (d == 1 and long_run_day == 7)]
-    if not valid_q_candidates:
-        valid_q_candidates = other_days
+    # Quality days placement avoiding Sunday-Monday consecutive hard days and long run adjacency
+    if config.avoid_long_adjacent_quality:
+        valid_q_candidates = [
+            d for d in other_days
+            if abs(d - long_run_day) not in (1, 6)
+        ]
+        if not valid_q_candidates:
+            valid_q_candidates = [d for d in other_days if not (d == 1 and long_run_day == 7)] or other_days
+    else:
+        valid_q_candidates = [d for d in other_days if not (d == 1 and long_run_day == 7)] or other_days
 
+    # Honor quality days preference if provided
+    if config.quality_days_preference:
+        pref = [d for d in config.quality_days_preference if d in valid_q_candidates]
+        if pref:
+            valid_q_candidates = pref + [d for d in valid_q_candidates if d not in pref]
+
+    min_gap = max(1, config.hard_day_min_gap_days)
     quality_days: List[int] = []
     easy_days: List[int] = []
 
@@ -218,8 +236,13 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
         easy_days = [d for d in other_days if d not in quality_days]
     else: # 5+ days total
         q1 = valid_q_candidates[0]
-        rem_candidates = [d for d in valid_q_candidates if abs(d - q1) > 1 and abs(d - q1) < 6]
-        q2 = rem_candidates[0] if rem_candidates else valid_q_candidates[-1]
+        rem_candidates = [
+            d for d in valid_q_candidates
+            if abs(d - q1) >= min_gap and abs(d - q1) <= (7 - min_gap)
+        ]
+        q2 = rem_candidates[0] if rem_candidates else (
+            [d for d in valid_q_candidates if abs(d - q1) > 1 and abs(d - q1) < 6] or [valid_q_candidates[-1]]
+        )[0]
         quality_days = [q1, q2]
         easy_days = [d for d in other_days if d not in quality_days]
 
@@ -588,6 +611,10 @@ def generate_plan_draft_v2(config: PlanGeneratorConfig) -> PlanDraftResponse:
             "conservative_mode": config.conservative_mode,
             "target_km": config.target_km,
             "num_weeks": config.num_weeks,
+            "cutback_cadence": config.cutback_cadence,
+            "hard_day_min_gap_days": config.hard_day_min_gap_days,
+            "avoid_long_adjacent_quality": config.avoid_long_adjacent_quality,
+            "quality_days_preference": config.quality_days_preference,
         },
         phases=phases,
     )

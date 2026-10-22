@@ -917,6 +917,12 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
   const [conservativeMode, setConservativeMode] = useState<boolean>(false)
   const [warnings, setWarnings] = useState<Array<{ code: string; severity: string; message: string }>>([])
 
+  // M3: Reglas estructurales configurables
+  const [cutbackCadence, setCutbackCadence] = useState<number>(4)
+  const [hardDayMinGapDays, setHardDayMinGapDays] = useState<number>(2)
+  const [avoidLongAdjacentQuality, setAvoidLongAdjacentQuality] = useState<boolean>(true)
+  const [showAdvancedStructure, setShowAdvancedStructure] = useState<boolean>(false)
+
   const [refDistanceKm, setRefDistanceKm] = useState<number>(5)
   const [refTimeInput, setRefTimeInput] = useState<string>("00:24:30")
 
@@ -1208,6 +1214,9 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
         },
         confidence: confidence,
         conservative_mode: conservativeMode || hasInjury,
+        cutback_cadence: cutbackCadence,
+        hard_day_min_gap_days: hardDayMinGapDays,
+        avoid_long_adjacent_quality: avoidLongAdjacentQuality,
       }
       return RunningPlansService.generateDraft({ requestBody: payload as any })
     },
@@ -2380,6 +2389,81 @@ export function PlanWizard({ editId }: { editId?: string | null }) {
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Configuración avanzada de estructura */}
+            <div className="rounded-2xl border border-border/80 bg-surface-container-high/40 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedStructure((prev) => !prev)}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="size-4 text-primary" />
+                  <span className="font-bold text-sm text-white">
+                    Configuración avanzada de estructura
+                  </span>
+                </div>
+                {showAdvancedStructure ? (
+                  <ChevronUp className="size-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="size-4 text-muted-foreground" />
+                )}
+              </button>
+
+              {showAdvancedStructure && (
+                <div className="p-4 pt-1 border-t border-border/50 flex flex-col gap-4 text-xs">
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs font-semibold text-muted-foreground">
+                      Frecuencia de semana de descarga (Cutback)
+                    </Label>
+                    <Select
+                      value={cutbackCadence.toString()}
+                      onValueChange={(val) => setCutbackCadence(Number(val))}
+                    >
+                      <SelectTrigger className="h-10 bg-card border-border text-white rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="3">Cada 3 semanas (más conservador)</SelectItem>
+                        <SelectItem value="4">Cada 4 semanas (estándar recomendado)</SelectItem>
+                        <SelectItem value="5">Cada 5 semanas (atletas avanzados)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-xs font-semibold text-muted-foreground">
+                      Separación mínima entre sesiones duras
+                    </Label>
+                    <Select
+                      value={hardDayMinGapDays.toString()}
+                      onValueChange={(val) => setHardDayMinGapDays(Number(val))}
+                    >
+                      <SelectTrigger className="h-10 bg-card border-border text-white rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 día mínimo de descanso/fácil</SelectItem>
+                        <SelectItem value="2">2 días mínimos (recomendado)</SelectItem>
+                        <SelectItem value="3">3 días mínimos (máxima recuperación)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <label className="flex items-center gap-2.5 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={avoidLongAdjacentQuality}
+                      onChange={(e) => setAvoidLongAdjacentQuality(e.target.checked)}
+                      className="size-4 rounded accent-primary bg-card border-border cursor-pointer"
+                    />
+                    <span className="text-xs text-white">
+                      Evitar entrenamientos de calidad adyacentes a la tirada larga
+                    </span>
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* Cuándo comenzás */}
